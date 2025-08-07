@@ -1,0 +1,159 @@
+<template>
+  <div>
+    <!-- Hero Section -->
+    <div
+      class="relative overflow-hidden bg-gradient-diveco rounded-lg shadow-lg mb-8 animate-fade-in-up"
+      style="box-shadow: var(--diveco-shadow)"
+    >
+      <!-- Decorative background element -->
+      <div class="absolute inset-0 opacity-10">
+        <div
+          class="absolute top-0 right-0 w-64 h-64 bg-cyan-400 rounded-full mix-blend-multiply filter blur-2xl animate-pulse-soft"
+        ></div>
+      </div>
+
+      <!-- Content -->
+      <div class="relative px-6 py-4 sm:px-8 sm:py-6">
+        <div class="flex items-center justify-between">
+          <!-- Logo and Welcome -->
+          <div class="flex items-center space-x-4">
+            <div class="flex-shrink-0">
+              <img
+                src="/2-hijo-dormilon-sobre-medidor-de-confort.png"
+                alt="Diveco"
+                class="w-20 h-20 object-contain"
+              />
+            </div>
+            <div>
+              <h1 class="text-2xl font-bold text-white sm:text-3xl">
+                Bienvenido al Portal
+                <span class="text-cyan-300">DIVECO</span>
+              </h1>
+              <p class="text-cyan-100 text-sm sm:text-base mt-1">
+                Accede a tus herramientas empresariales
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Herramientas Principales -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+          Herramientas Principales
+        </h2>
+        <NuxtLink
+          to="/herramientas"
+          class="text-cyan-600 dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-300 font-medium transition-colors duration-200 hover-scale interactive"
+        >
+          Ver todas →
+        </NuxtLink>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div
+          v-for="(tool, index) in mainTools"
+          :key="tool.id"
+          class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer hover-lift interactive border border-gray-100 dark:border-gray-700 hover:border-cyan-200 dark:hover:border-cyan-700 animate-fade-in-up"
+          :style="`box-shadow: var(--diveco-shadow); transition: box-shadow 0.3s ease, transform 0.3s ease; animation-delay: ${
+            index * 0.1
+          }s;`"
+          @click="navigateToTool(tool.route)"
+        >
+          <div class="p-6">
+            <div class="flex items-center mb-4">
+              <div
+                class="flex-shrink-0 p-2 bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-900/20 dark:to-cyan-800/20 rounded-lg"
+              >
+                <UIcon
+                  :name="getModuleIcon(tool.name)"
+                  class="h-12 w-12 text-cyan-600 dark:text-cyan-400 transition-transform duration-200 hover:scale-110"
+                />
+              </div>
+              <div class="ml-5">
+                <h3
+                  class="text-xl font-bold text-gray-900 dark:text-white mb-1"
+                >
+                  {{ tool.name }}
+                </h3>
+                <p class="text-sm text-cyan-600 dark:text-cyan-400 font-medium">
+                  {{ tool.category }}
+                </p>
+              </div>
+            </div>
+            <p class="text-gray-600 dark:text-gray-300 text-sm">
+              {{ tool.description }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref } from "vue";
+
+// Definir el layout
+definePageMeta({
+  layout: "default",
+});
+
+// Datos reactivos
+const stats = ref({
+  activeUsers: "156",
+  availableTools: "12",
+  reportsGenerated: "2,847",
+  averageTime: "2.3m",
+});
+
+const mainTools = ref([
+  {
+    id: 1,
+    name: "Gestión de Contraseñas SAP",
+    category: "Auto Gestion",
+    description: "Administra las contraseñas de los usuarios de SAP.",
+    icon: "i-heroicons-cube",
+    iconColor: "text-blue-600",
+    route: "/herramientas/sap",
+    lastUpdate: "2 días",
+    status: "active",
+  },
+]);
+
+// Métodos
+const navigateToTool = (route) => {
+  navigateTo(route);
+};
+
+const getModuleIcon = (toolName) => {
+  const iconMap = {
+    "Gestión de Contraseñas SAP": "i-heroicons-key",
+    "Gestión de Inventario": "i-heroicons-cube",
+    "Reportes Financieros": "i-heroicons-chart-pie",
+    "Control de Calidad": "i-heroicons-shield-check",
+    "Gestión de Personal": "i-heroicons-user-group",
+    "Planificación MRP": "i-heroicons-cog-6-tooth",
+    "Dashboard Ejecutivo": "i-heroicons-presentation-chart-line",
+    "Sistema de Ventas": "i-heroicons-shopping-cart",
+    Contabilidad: "i-heroicons-calculator",
+    "Recursos Humanos": "i-heroicons-users",
+    Producción: "i-heroicons-wrench-screwdriver",
+    Compras: "i-heroicons-shopping-bag",
+    Logística: "i-heroicons-truck",
+    CRM: "i-heroicons-phone",
+    "BI Analytics": "i-heroicons-chart-bar-square",
+  };
+
+  return iconMap[toolName] || "i-heroicons-squares-2x2";
+};
+
+// Meta tags
+useSeoMeta({
+  title: "Portal Diveco - Inicio",
+  description:
+    "Portal interno de Diveco para acceso a herramientas corporativas",
+});
+</script>
