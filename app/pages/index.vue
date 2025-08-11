@@ -113,12 +113,13 @@ const mainTools = ref([
   {
     id: 1,
     name: "Gestión de Contraseñas SAP",
-    category: "Auto Gestion",
-    description: "Administra las contraseñas de los usuarios de SAP.",
-    icon: "i-heroicons-cube",
-    iconColor: "text-blue-600",
-    route: "/herramientas/sap",
-    lastUpdate: "2 días",
+    category: "Auto Gestión",
+    description:
+      "Reinicia contraseñas y desbloquea usuarios SAP de forma autogestionada.",
+    icon: "i-heroicons-key",
+    iconColor: "text-cyan-600",
+    route: "/tools/contrasenias-sap",
+    lastUpdate: "Hoy",
     status: "active",
   },
 ]);

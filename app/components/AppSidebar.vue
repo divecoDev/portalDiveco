@@ -24,13 +24,18 @@
         class="flex items-center justify-center h-16 px-4 border-b border-cyan-400/30 relative"
       >
         <Transition name="logo-fade" mode="out-in">
-          <img
-            v-if="!isCompact"
-            key="full-logo"
-            class="w-full transition-all duration-300"
-            src="/logo.png"
-            alt="Diveco Logo"
-          />
+          <div v-if="!isCompact" class="flex items-center space-x-2">
+            <img
+              class="w-12 transition-all duration-300"
+              src="/DORMILON-FRESH.png"
+              alt="Diveco Logo"
+            />
+
+            <h1 class="text-2xl font-bold text-white sm:text-lg">
+              Portal <span class="text-cyan-300">DIVECO</span>
+            </h1>
+          </div>
+
           <img
             v-else
             key="compact-logo"
@@ -59,38 +64,6 @@
       >
         <!-- Navegación principal -->
         <nav class="flex-1 px-3 py-4 space-y-2 overflow-y-auto min-h-0">
-          <!-- Sección Dashboard -->
-          <div class="mb-6">
-            <NuxtLink
-              to="/"
-              :class="[
-                'flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-500 interactive transform hover:scale-105',
-                isCompact ? 'justify-center' : 'space-x-3',
-                isActiveRoute('/')
-                  ? 'bg-cyan-400 text-gray-900 border-r-2 border-cyan-300 shadow-lg font-semibold'
-                  : 'text-cyan-100 hover:bg-cyan-400/20 hover:text-cyan-200 hover-lift',
-              ]"
-              @click="handleLinkClick"
-              :title="isCompact ? 'Dashboard' : ''"
-            >
-              <UIcon
-                name="i-heroicons-home"
-                :class="[
-                  'h-5 w-5 transition-all duration-300',
-                  isCompact ? 'transform hover:rotate-12' : '',
-                ]"
-              />
-              <Transition name="text-slide" mode="out-in">
-                <span
-                  v-if="!isCompact"
-                  key="dashboard-text"
-                  class="whitespace-nowrap"
-                  >Dashboard</span
-                >
-              </Transition>
-            </NuxtLink>
-          </div>
-
           <!-- Secciones de navegación -->
           <div
             v-for="section in navigationSections"
@@ -347,9 +320,21 @@ const navigationSections = ref([
     title: "Principal",
     items: [
       {
+        name: "Inicio",
+        href: "/",
+        icon: "i-heroicons-home",
+      },
+    ],
+  },
+  {
+    title: "Herramientas",
+    items: [
+      {
         name: "Contraseñas SAP",
-        href: "/sap/passwords",
+        href: "/tools/contrasenias-sap",
         icon: "i-heroicons-key",
+        badge: "Nuevo",
+        badgeColor: "green",
       },
     ],
   },
