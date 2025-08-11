@@ -196,18 +196,20 @@
         <!-- Footer del sidebar -->
         <div class="p-3 border-t border-cyan-400/30 space-y-3 flex-shrink-0">
           <!-- Perfil de usuario -->
-          <UDropdown
-            :items="userMenuItems"
-            :popper="{ placement: 'top-start' }"
-          >
+          <div class="relative" data-user-menu>
             <div
               :class="[
-                'cursor-pointer hover:bg-cyan-400/20 rounded-lg p-2 transition-all duration-300 hover-scale interactive',
+                'cursor-pointer hover:bg-cyan-400/20 rounded-lg p-2 transition-all duration-300 hover-scale interactive group border border-transparent hover:border-cyan-400/30',
                 isCompact
                   ? 'flex justify-center'
                   : 'flex items-center space-x-3',
               ]"
               :title="isCompact ? userProfile.name : ''"
+              role="button"
+              tabindex="0"
+              @click="toggleUserMenu"
+              @keydown.enter="toggleUserMenu"
+              @keydown.space="toggleUserMenu"
             >
               <UAvatar
                 :src="userProfile.avatar"
@@ -224,11 +226,101 @@
               </div>
               <UIcon
                 v-if="!isCompact"
-                name="i-heroicons-chevron-up"
-                class="h-4 w-4 text-cyan-200 flex-shrink-0"
+                :name="
+                  isUserMenuOpen
+                    ? 'i-heroicons-chevron-up'
+                    : 'i-heroicons-chevron-down'
+                "
+                class="h-4 w-4 text-cyan-200 flex-shrink-0 transition-transform duration-200"
               />
             </div>
-          </UDropdown>
+
+            <!-- Menú desplegable -->
+            <Transition
+              name="user-menu"
+              enter-active-class="transition ease-out duration-200"
+              enter-from-class="transform opacity-0 scale-95"
+              enter-to-class="transform opacity-100 scale-100"
+              leave-active-class="transition ease-in duration-150"
+              leave-from-class="transform opacity-100 scale-100"
+              leave-to-class="transform opacity-0 scale-95"
+            >
+              <div
+                v-if="isUserMenuOpen"
+                class="absolute bottom-full left-0 mb-2 w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1.5 z-50 mx-2"
+              >
+                <!-- Mi Perfil -->
+                <button
+                  @click="navigateTo('/perfil')"
+                  class="w-full px-3 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors duration-150"
+                >
+                  <UIcon
+                    name="i-heroicons-user"
+                    class="h-4 w-4 flex-shrink-0"
+                  />
+                  <span>Mi Perfil</span>
+                </button>
+
+                <!-- Configuración -->
+                <button
+                  @click="navigateTo('/configuracion')"
+                  class="w-full px-3 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors duration-150"
+                >
+                  <UIcon
+                    name="i-heroicons-cog-6-tooth"
+                    class="h-4 w-4 flex-shrink-0"
+                  />
+                  <span>Configuración</span>
+                </button>
+
+                <!-- Preferencias -->
+                <button
+                  @click="navigateTo('/preferencias')"
+                  class="w-full px-3 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors duration-150"
+                >
+                  <UIcon
+                    name="i-heroicons-adjustments-horizontal"
+                    class="h-4 w-4 flex-shrink-0"
+                  />
+                  <span>Preferencias</span>
+                </button>
+
+                <!-- Separador -->
+                <div
+                  class="border-t border-gray-200 dark:border-gray-700 my-1.5 mx-3"
+                ></div>
+
+                <!-- Ayuda y Soporte -->
+                <button
+                  @click="navigateTo('/ayuda')"
+                  class="w-full px-3 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors duration-150"
+                >
+                  <UIcon
+                    name="i-heroicons-question-mark-circle"
+                    class="h-4 w-4 flex-shrink-0"
+                  />
+                  <span>Ayuda y Soporte</span>
+                </button>
+
+                <!-- Separador -->
+                <div
+                  class="border-t border-gray-200 dark:border-gray-700 my-1.5 mx-3"
+                ></div>
+
+                <!-- Cerrar Sesión -->
+                <button
+                  @click="logout"
+                  class="w-full px-3 py-2.5 text-left text-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20 flex items-center space-x-3 transition-colors duration-150"
+                >
+                  <UIcon
+                    name="i-heroicons-arrow-right-on-rectangle"
+                    class="h-4 w-4 flex-shrink-0"
+                  />
+                  <span>Cerrar Sesión</span>
+                </button>
+              </div>
+            </Transition>
+          </div>
 
           <!-- Acceso rápido a configuración -->
           <UButton
@@ -283,6 +375,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import { signOut } from "aws-amplify/auth";
 
 // Props
 const props = defineProps({
@@ -306,6 +399,7 @@ const { toggleSidebarCompact } = useLayoutState();
 // Estado reactivo
 const openSubmenus = ref([]); // Sin submenús abiertos por defecto
 const isMobile = ref(false);
+const isUserMenuOpen = ref(false); // Control del menú de usuario
 
 // Datos del usuario
 const userProfile = ref({
@@ -373,6 +467,8 @@ const userMenuItems = ref([
       label: "Cerrar Sesión",
       icon: "i-heroicons-arrow-right-on-rectangle",
       click: () => logout(),
+      class:
+        "text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20",
     },
   ],
 ]);
@@ -413,21 +509,54 @@ const checkIsMobile = () => {
   isMobile.value = window.innerWidth < 1024;
 };
 
-const logout = () => {
-  // Implementar lógica de logout
-  console.log("Cerrando sesión...");
-  // Ejemplo: await $auth.logout()
-  // navigateTo('/login')
+const toggleUserMenu = () => {
+  isUserMenuOpen.value = !isUserMenuOpen.value;
+};
+
+const closeUserMenu = () => {
+  isUserMenuOpen.value = false;
+};
+
+const logout = async () => {
+  // Cerrar el menú de usuario
+  closeUserMenu();
+
+  try {
+    console.log("Cerrando sesión...");
+
+    // Cerrar sesión usando Amplify Auth
+    await signOut();
+
+    console.log("Sesión cerrada exitosamente");
+
+    // Redireccionar a la raíz después del cierre de sesión
+    await window.location.reload();
+  } catch (error) {
+    console.error("Error al cerrar sesión:", error);
+
+    // Si hay un error, mostrar mensaje y redireccionar de todas formas
+    console.log("Redirigiendo a la raíz...");
+    await navigateTo("/");
+  }
 };
 
 // Lifecycle
 onMounted(() => {
   checkIsMobile();
   window.addEventListener("resize", checkIsMobile);
+
+  // Cerrar menú de usuario al hacer clic fuera
+  document.addEventListener("click", (event) => {
+    const userMenu = document.querySelector("[data-user-menu]");
+    if (userMenu && !userMenu.contains(event.target)) {
+      closeUserMenu();
+    }
+  });
 });
 
 onUnmounted(() => {
   window.removeEventListener("resize", checkIsMobile);
+  document.removeEventListener("click", closeUserMenu);
 });
 </script>
 
@@ -596,11 +725,31 @@ nav::-webkit-scrollbar-thumb:hover {
 
 /* Efectos de profundidad */
 .shadow-depth {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.24);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .shadow-depth:hover {
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.25),
+    0 10px 10px rgba(0, 0, 0, 0.22);
+}
+
+/* Transiciones del menú de usuario */
+.user-menu-enter-active,
+.user-menu-leave-active {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.user-menu-enter-from {
+  opacity: 0;
+  transform: scale(0.95) translateY(10px);
+}
+
+.user-menu-leave-to {
+  opacity: 0;
+  transform: scale(0.95) translateY(10px);
 }
 </style>
