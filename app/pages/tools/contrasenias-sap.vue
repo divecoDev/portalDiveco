@@ -257,6 +257,13 @@ useSeoMeta({
 const activeTab = ref("reset");
 const isProcessing = ref(false);
 
+const webServiceUrl = ref(
+  "http://QASAP.diveco.intranet:8000/sap/bc/srt/rfc/sap/zsdsrv_webservice_srvusrsap/410/zws_srvusrsap/zbn_srvusrsap"
+);
+
+const webServiceUser = ref("JOB_USER");
+const webServicePassword = ref("Sapdiv+2025*");
+
 // Tabs configuration
 const tabs = ref([
   { id: "reset", name: "Reinicio de Contraseña", icon: "i-heroicons-key" },

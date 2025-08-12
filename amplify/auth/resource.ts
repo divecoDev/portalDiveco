@@ -1,4 +1,4 @@
-import { defineAuth } from "@aws-amplify/backend";
+import { defineAuth, secret } from "@aws-amplify/backend";
 
 /**
  * Define and configure your auth resource
@@ -24,8 +24,8 @@ export const auth = defineAuth({
             "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
         },
       },
-      logoutUrls: ["https://portal.grupo-diveco.com/"],
-      callbackUrls: ["https://portal.grupo-diveco.com/"],
+      logoutUrls: ["http://localhost:3000/"],
+      callbackUrls: ["http://localhost:3000/"],
     },
   },
 });
