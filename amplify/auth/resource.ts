@@ -24,14 +24,8 @@ export const auth = defineAuth({
             "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
         },
       },
-      logoutUrls: [
-        "http://localhost:3000/",
-        "https://portal.grupo-diveco.com/",
-      ],
-      callbackUrls: [
-        "http://localhost:3000/",
-        "https://portal.grupo-diveco.com/",
-      ],
+      logoutUrls: ["https://portal.grupo-diveco.com/"],
+      callbackUrls: ["https://portal.grupo-diveco.com/"],
     },
   },
 });
