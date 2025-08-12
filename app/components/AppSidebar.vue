@@ -376,7 +376,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { signOut } from "aws-amplify/auth";
+import { getCurrentUser } from "aws-amplify/auth";
+import { fetchUserAttributes } from "aws-amplify/auth";
 
+const userAttributes = await fetchUserAttributes();
 // Props
 const props = defineProps({
   isOpen: {
@@ -403,7 +406,7 @@ const isUserMenuOpen = ref(false); // Control del menú de usuario
 
 // Datos del usuario
 const userProfile = ref({
-  name: "Juan Pérez",
+  name: userAttributes.email,
   role: "Administrador",
   avatar: "/api/placeholder/32/32",
 });

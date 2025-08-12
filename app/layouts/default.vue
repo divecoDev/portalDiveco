@@ -14,6 +14,7 @@
 
     <!-- Contenedor principal -->
     <div
+      class=""
       :class="[
         'flex flex-col min-h-screen transition-all duration-500 ease-in-out',
         sidebarCompact ? 'lg:ml-16' : 'lg:ml-56',
