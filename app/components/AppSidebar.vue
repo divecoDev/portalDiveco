@@ -309,7 +309,7 @@
 
                 <!-- Cerrar Sesión -->
                 <button
-                  @click="logout"
+                  @click="navigateToLogout"
                   class="w-full px-3 py-2.5 text-left text-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20 flex items-center space-x-3 transition-colors duration-150"
                 >
                   <UIcon
@@ -518,6 +518,14 @@ const toggleUserMenu = () => {
 
 const closeUserMenu = () => {
   isUserMenuOpen.value = false;
+};
+
+const navigateToLogout = () => {
+  // Cerrar el menú de usuario
+  closeUserMenu();
+
+  // Redirigir a la página de logout
+  navigateTo("/logout");
 };
 
 const logout = async () => {

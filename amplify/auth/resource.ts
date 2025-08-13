@@ -9,6 +9,11 @@ const ENTRA_ID_METADATA_URL: string =
   process.env.ENTRA_ID_METADATA_URL ||
   "https://login.microsoftonline.com/e7744151-acb7-4516-a9ef-828e5529b311/federationmetadata/2007-06/federationmetadata.xml?appid=f9bf9d92-d2e6-4a68-9b89-6a7f4daf9d39";
 
+const LOGOUT_URL: string =
+  process.env.LOGOUT_URL || "http://localhost:3000/logout";
+const CALLBACK_URL: string =
+  process.env.CALLBACK_URL || "http://localhost:3000/";
+
 export const auth = defineAuth({
   loginWith: {
     email: true,
@@ -24,8 +29,8 @@ export const auth = defineAuth({
             "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
         },
       },
-      logoutUrls: ["http://localhost:3000/"],
-      callbackUrls: ["http://localhost:3000/"],
+      logoutUrls: [LOGOUT_URL],
+      callbackUrls: [CALLBACK_URL],
     },
   },
 });
