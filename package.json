@@ -14,10 +14,13 @@
   "dependencies": {
     "@aws-amplify/ui-vue": "^4.3.3",
     "@nuxt/ui": "^3.3.0",
+    "@types/xml2js": "^0.4.14",
     "aws-amplify": "^6.15.5",
+    "mssql": "^11.0.1",
     "nuxt": "^4.0.1",
     "vue": "^3.5.18",
-    "vue-router": "^4.5.1"
+    "vue-router": "^4.5.1",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@aws-amplify/backend": "^1.16.1",

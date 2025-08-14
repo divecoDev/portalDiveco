@@ -7,7 +7,7 @@ import { defineAuth, secret } from "@aws-amplify/backend";
 
 const ENTRA_ID_METADATA_URL: string =
   process.env.ENTRA_ID_METADATA_URL ||
-  "https://login.microsoftonline.com/e7744151-acb7-4516-a9ef-828e5529b311/federationmetadata/2007-06/federationmetadata.xml?appid=f9bf9d92-d2e6-4a68-9b89-6a7f4daf9d39";
+  "https://login.microsoftonline.com/e7744151-acb7-4516-a9ef-828e5529b311/federationmetadata/2007-06/federationmetadata.xml?appid=f099ee72-9437-459e-878d-2ef8dee3179f";
 
 const LOGOUT_URL: string =
   process.env.LOGOUT_URL || "http://localhost:3000/logout";
