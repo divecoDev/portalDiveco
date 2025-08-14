@@ -2,6 +2,7 @@ import {
   SAP_WEB_SERVICE_CONFIG,
   type SAPWebServiceResponse,
 } from "~/config/sap-web-service";
+import { parseString } from "xml2js";
 
 /**
  * Cliente para el Web Service SAP
@@ -79,7 +80,7 @@ export class SAPWebServiceClient {
         responseText.substring(0, 300) + "..."
       );
 
-      return this.parseSOAPResponse(responseText);
+      return await this.parseSOAPResponse(responseText);
     } catch (error) {
       console.error("💥 Error en llamada al web service SAP:", error);
       throw error;
@@ -89,31 +90,101 @@ export class SAPWebServiceClient {
   /**
    * Parsea la respuesta SOAP del web service
    */
-  private parseSOAPResponse(xmlString: string): SAPWebServiceResponse {
-    try {
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+  private parseSOAPResponse(xmlString: string): Promise<SAPWebServiceResponse> {
+    return new Promise((resolve) => {
+      try {
+        parseString(xmlString, { explicitArray: false }, (err, result) => {
+          if (err) {
+            console.error("Error parsing SOAP response:", err);
+            resolve({
+              mensaje: "Error al procesar la respuesta del servidor",
+              nombre: "",
+              codigo: -1,
+              success: false,
+              responseType: "error",
+            });
+            return;
+          }
 
-      // Extraer información de la respuesta
-      const mensaje = xmlDoc.querySelector("PC_MENSAJE")?.textContent || "";
-      const nombre = xmlDoc.querySelector("PC_NOMBRE")?.textContent || "";
-      const codigo = xmlDoc.querySelector("PN_CODIGO")?.textContent || "";
+          try {
+            // Extraer información de la respuesta usando xml2js
+            const response =
+              result["soap-env:Envelope"]?.["soap-env:Body"]?.[
+                "n0:ZGLFU_WS_SRVUSERSAPResponse"
+              ];
 
-      return {
-        mensaje,
-        nombre,
-        codigo: parseInt(codigo),
-        success: parseInt(codigo) === 0,
-      };
-    } catch (error) {
-      console.error("Error parsing SOAP response:", error);
-      return {
-        mensaje: "Error al procesar la respuesta del servidor",
-        nombre: "",
-        codigo: -1,
-        success: false,
-      };
-    }
+            if (!response) {
+              console.error("Estructura SOAP inesperada:", result);
+              resolve({
+                mensaje: "Estructura de respuesta SOAP inesperada",
+                nombre: "",
+                codigo: -1,
+                success: false,
+                responseType: "error",
+              });
+              return;
+            }
+
+            const mensaje = response.PC_MENSAJE || "";
+            const nombre = response.PC_NOMBRE || "";
+            const codigo = response.PN_CODIGO || "";
+
+            const codigoNumero = parseInt(codigo);
+
+            // Determinar el tipo de respuesta basado en el código
+            let responseType: "success" | "error" | "warning" = "error";
+            let isSuccess = false;
+
+            if (codigoNumero === 0) {
+              responseType = "success";
+              isSuccess = true;
+            } else if (codigoNumero === 1) {
+              // Código 1 indica usuario inexistente - es un warning de validación
+              responseType = "warning";
+              isSuccess = false;
+            } else {
+              // Otros códigos de error
+              responseType = "error";
+              isSuccess = false;
+            }
+
+            console.log("🔍 Parseando respuesta SOAP:", {
+              codigo: codigoNumero,
+              mensaje,
+              nombre,
+              responseType,
+              isSuccess,
+            });
+
+            resolve({
+              mensaje,
+              nombre,
+              codigo: codigoNumero,
+              success: isSuccess,
+              responseType,
+            });
+          } catch (parseError) {
+            console.error("Error procesando estructura SOAP:", parseError);
+            resolve({
+              mensaje: "Error al procesar la estructura de la respuesta",
+              nombre: "",
+              codigo: -1,
+              success: false,
+              responseType: "error",
+            });
+          }
+        });
+      } catch (error) {
+        console.error("Error general parsing SOAP response:", error);
+        resolve({
+          mensaje: "Error al procesar la respuesta del servidor",
+          nombre: "",
+          codigo: -1,
+          success: false,
+          responseType: "error",
+        });
+      }
+    });
   }
 
   /**

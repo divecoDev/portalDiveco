@@ -1,154 +1,175 @@
-import { SAP_WEB_SERVICE_CONFIG } from "~/config/sap-web-service";
+import { defineEventHandler, readBody, createError } from "h3";
+import { unlockUserSAP } from "~/config/sap-web-service";
+
+// Interfaces para el desbloqueo de usuarios
+interface UnlockUserRequest {
+  sapUser: string;
+  email: string;
+}
+
+interface UnlockUserResponse {
+  mensaje: string;
+  nombre: string;
+  usuario: string;
+}
+
+interface UnlockUserError {
+  mensaje: string;
+  codigo: number;
+}
+
+interface ProcessLog {
+  timestamp: string;
+  level: string;
+  message: string;
+}
+
+// Función helper para agregar logs
+function addLog(
+  level: string,
+  message: string,
+  processLogs: ProcessLog[]
+): void {
+  const log = {
+    timestamp: new Date().toISOString(),
+    level,
+    message,
+  };
+  processLogs.push(log);
+  console.log(`${log.timestamp} ${level.toUpperCase()} ${message}`);
+}
 
 export default defineEventHandler(async (event) => {
-  try {
-    // Obtener el body de la petición
-    const body = await readBody(event);
-    const { sapUser, email } = body;
+  const processLogs: ProcessLog[] = [];
 
-    // Validar campos requeridos
-    if (!sapUser || !email) {
+  try {
+    addLog(
+      "info",
+      "🚀 ===== INICIO ENDPOINT DESBLOQUEO USUARIO =====",
+      processLogs
+    );
+
+    // Leer el body de la petición
+    const body = await readBody(event);
+    addLog("info", "📋 Body recibido:", processLogs);
+    addLog("info", JSON.stringify(body, null, 2), processLogs);
+
+    // Validar que el body contenga los campos requeridos
+    if (!body || typeof body !== "object") {
+      addLog("error", "❌ Body inválido o faltante", processLogs);
       throw createError({
         statusCode: 400,
-        statusMessage: "Bad Request",
-        data: {
-          message: "Usuario SAP y email son requeridos",
-        },
+        statusMessage: "Body de la petición inválido",
       });
     }
 
-    console.log("🚀 Procesando desbloqueo de usuario:", { sapUser, email });
+    const { sapUser, email } = body as UnlockUserRequest;
 
-    // Generar el body SOAP
-    const soapBody = generateUnlockUserSOAPBody(sapUser, email);
+    // Validar campos requeridos
+    if (!sapUser || !email) {
+      addLog("error", "❌ Campos requeridos faltantes", processLogs);
+      addLog("error", `Usuario SAP: ${sapUser ? "✅" : "❌"}`, processLogs);
+      addLog("error", `Email: ${email ? "✅" : "❌"}`, processLogs);
+      throw createError({
+        statusCode: 400,
+        statusMessage: "Usuario SAP y email son requeridos",
+      });
+    }
 
-    // Crear credenciales para Basic Auth
-    const credentials = btoa(
-      `${SAP_WEB_SERVICE_CONFIG.credentials.username}:${SAP_WEB_SERVICE_CONFIG.credentials.password}`
+    addLog("info", "✅ Validación de campos exitosa", processLogs);
+    addLog("info", `👤 Usuario SAP: ${sapUser}`, processLogs);
+    addLog("info", `📧 Email: ${email}`, processLogs);
+
+    // Llamar al servicio SAP para desbloquear el usuario
+    addLog(
+      "info",
+      "🌐 Llamando al servicio SAP para desbloqueo de usuario...",
+      processLogs
     );
 
-    console.log("📤 Enviando petición SOAP a SAP...");
-    console.log("📍 URL:", SAP_WEB_SERVICE_CONFIG.url);
+    const sapResponse = await unlockUserSAP(sapUser, email);
+    addLog("info", "📡 Respuesta del servicio SAP recibida", processLogs);
+    addLog("info", JSON.stringify(sapResponse, null, 2), processLogs);
 
-    // Realizar la llamada al web service SAP
-    const response = await $fetch(SAP_WEB_SERVICE_CONFIG.url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/xml;charset=UTF-8",
-        Authorization: `Basic ${credentials}`,
-      },
-      body: soapBody,
-    });
+    // Procesar la respuesta del servicio SAP
+    if (sapResponse.success && sapResponse.data) {
+      addLog("info", "✅ ===== DESBLOQUEO EXITOSO =====", processLogs);
+      addLog("info", `🎯 Usuario: ${sapResponse.data.usuario}`, processLogs);
+      addLog("info", `📝 Mensaje: ${sapResponse.data.mensaje}`, processLogs);
+      addLog("info", `👤 Nombre: ${sapResponse.data.nombre}`, processLogs);
 
-    console.log("✅ Respuesta recibida de SAP");
-
-    // Parsear la respuesta SOAP
-    const parsedResponse = parseSOAPResponse(response);
-
-    if (parsedResponse.success) {
-      console.log("✅ Usuario desbloqueado exitosamente:", parsedResponse);
+      // Retornar respuesta exitosa
       return {
         success: true,
         data: {
-          mensaje: parsedResponse.mensaje,
-          nombre: parsedResponse.nombre,
-          usuario: sapUser,
+          mensaje: sapResponse.data.mensaje,
+          nombre: sapResponse.data.nombre,
+          usuario: sapResponse.data.usuario,
         },
+        logs: processLogs,
       };
-    } else {
-      console.log("⚠️ Error del servicio SAP:", parsedResponse);
+    } else if (sapResponse.error) {
+      addLog("error", "⚠️ ===== ERROR DEL SERVICIO SAP =====", processLogs);
+      addLog("error", `🚨 Código: ${sapResponse.error.codigo}`, processLogs);
+      addLog("error", `💬 Mensaje: ${sapResponse.error.mensaje}`, processLogs);
+
+      // Retornar error del servicio SAP
       return {
         success: false,
         error: {
-          mensaje: parsedResponse.mensaje || "Error en el servicio SAP",
-          codigo: parsedResponse.codigo,
+          codigo: sapResponse.error.codigo,
+          mensaje: sapResponse.error.mensaje,
         },
+        logs: processLogs,
+      };
+    } else {
+      addLog("error", "❌ Respuesta inválida del servicio SAP", processLogs);
+      throw createError({
+        statusCode: 500,
+        statusMessage: "Respuesta inválida del servicio SAP",
+      });
+    }
+  } catch (error) {
+    addLog("error", "💥 ===== ERROR CRÍTICO EN EL ENDPOINT =====", processLogs);
+
+    if (error && typeof error === "object" && "statusCode" in error) {
+      const statusError = error as {
+        statusCode: number;
+        statusMessage: string;
+      };
+      addLog(
+        "error",
+        `🌐 Código de estado: ${statusError.statusCode}`,
+        processLogs
+      );
+      addLog("error", `💬 Mensaje: ${statusError.statusMessage}`, processLogs);
+
+      // Retornar error con el código de estado apropiado
+      return {
+        success: false,
+        error: {
+          codigo: statusError.statusCode,
+          mensaje: statusError.statusMessage,
+        },
+        logs: processLogs,
+      };
+    } else {
+      addLog("error", "🚨 Error inesperado:", processLogs);
+      addLog(
+        "error",
+        error instanceof Error ? error.message : String(error),
+        processLogs
+      );
+
+      // Retornar error genérico
+      return {
+        success: false,
+        error: {
+          codigo: 500,
+          mensaje: "Error interno del servidor",
+        },
+        logs: processLogs,
       };
     }
-  } catch (error) {
-    console.error("💥 Error en el endpoint de desbloqueo:", error);
-
-    // Si es un error de validación, devolver 400
-    if (error.statusCode === 400) {
-      throw error;
-    }
-
-    // Si es un error de red o del servidor SAP
-    let errorMessage = "Error interno del servidor";
-    let statusCode = 500;
-
-    if (error.message) {
-      if (error.message.includes("Failed to fetch")) {
-        errorMessage = "No se pudo conectar al servicio SAP";
-        statusCode = 503; // Service Unavailable
-      } else if (error.message.includes("HTTP error")) {
-        errorMessage = `Error del servidor SAP: ${error.message}`;
-        statusCode = 502; // Bad Gateway
-      }
-    }
-
-    throw createError({
-      statusCode,
-      statusMessage: errorMessage,
-      data: {
-        message: errorMessage,
-        originalError: error.message,
-      },
-    });
   }
 });
-
-/**
- * Genera el body SOAP para desbloquear un usuario
- */
-function generateUnlockUserSOAPBody(sapUser: string, email: string): string {
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:urn="urn:sap-com:document:sap:rfc:functions">
-  <soapenv:Header/>
-  <soapenv:Body>
-    <urn:ZGLFU_WS_SRVUSERSAP>
-      <PC_ACCION>${SAP_WEB_SERVICE_CONFIG.actions.UNLOCK_USER}</PC_ACCION>
-      <PC_EMAIL>${email}</PC_EMAIL>
-      <PC_USER>${sapUser}</PC_USER>
-    </urn:ZGLFU_WS_SRVUSERSAP>
-  </soapenv:Body>
-</soapenv:Envelope>`;
-}
-
-/**
- * Parsea la respuesta SOAP del web service
- */
-function parseSOAPResponse(xmlString: string): {
-  mensaje: string;
-  nombre: string;
-  codigo: number;
-  success: boolean;
-} {
-  try {
-    // En el servidor, usar una librería XML o regex simple
-    // Por simplicidad, usaremos regex para extraer la información
-
-    const mensajeMatch = xmlString.match(/<PC_MENSAJE>(.*?)<\/PC_MENSAJE>/);
-    const nombreMatch = xmlString.match(/<PC_NOMBRE>(.*?)<\/PC_NOMBRE>/);
-    const codigoMatch = xmlString.match(/<PN_CODIGO>(.*?)<\/PN_CODIGO>/);
-
-    const mensaje = mensajeMatch ? mensajeMatch[1] : "";
-    const nombre = nombreMatch ? nombreMatch[1] : "";
-    const codigo = codigoMatch ? parseInt(codigoMatch[1]) : -1;
-
-    return {
-      mensaje,
-      nombre,
-      codigo,
-      success: codigo === 0,
-    };
-  } catch (error) {
-    console.error("Error parsing SOAP response:", error);
-    return {
-      mensaje: "Error al procesar la respuesta del servidor",
-      nombre: "",
-      codigo: -1,
-      success: false,
-    };
-  }
-}
