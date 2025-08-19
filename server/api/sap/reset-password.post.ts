@@ -409,3 +409,4 @@ function parseSOAPResponse(xmlString: string): {
     };
   }
 }
+
