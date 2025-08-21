@@ -64,8 +64,6 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
-
 // Meta
 definePageMeta({
   layout: "default",

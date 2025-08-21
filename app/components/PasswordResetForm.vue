@@ -35,13 +35,13 @@
       class="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg"
     >
       <div class="flex items-center space-x-3">
-        <div class="flex-shrink-0">
+        <div class="flex">
           <UIcon
             name="i-heroicons-arrow-path"
             class="w-6 h-6 text-amber-600 dark:text-amber-400 animate-spin"
           />
         </div>
-        <div class="flex-1">
+        <div class="">
           <h4 class="text-sm font-medium text-amber-800 dark:text-amber-200">
             Reintentando conexión con SAP...
           </h4>
@@ -56,34 +56,56 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div class="space-y-2">
+    <div class="flex space-x-4 gap-6">
+      <div class="w-1/3 space-y-2">
         <label
           for="sapUser"
           class="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
           Usuario SAP
         </label>
-        <UInput
-          id="sapUser"
+
+        <USelectMenu
           v-model="form.sapUser"
-          placeholder="Ej: JRODAS"
+          :items="sapUsers"
+          placeholder="Selecciona un usuario"
           icon="i-heroicons-user"
           size="xl"
           color="cyan"
-          variant="outline"
           :disabled="isProcessing"
-          class="focus:ring-cyan-500 focus:border-cyan-500"
+          @change="changeSapUserSelected"
+          class="w-full"
         />
       </div>
 
-      <div class="space-y-2">
+      <div class="flex-1 space-y-2">
+        <label
+          for="email"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Codigo Empleado
+        </label>
+        <UInput
+          id="cod_personal"
+          v-model="sapUserSelected.cod_personal"
+          placeholder="0000000000"
+          icon="i-heroicons-identification"
+          size="xl"
+          color="cyan"
+          variant="outline"
+          disabled
+          class="focus:ring-cyan-500 focus:border-cyan-500 w-full"
+        />
+      </div>
+
+      <div class="flex-1 space-y-2">
         <label
           for="email"
           class="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
           Email Corporativo
         </label>
+
         <UInput
           id="email"
           v-model="form.email"
@@ -93,8 +115,8 @@
           size="xl"
           color="cyan"
           variant="outline"
-          :disabled="isProcessing"
-          class="focus:ring-cyan-500 focus:border-cyan-500"
+          disabled
+          class="focus:ring-cyan-500 focus:border-cyan-500 w-full"
         />
       </div>
     </div>
@@ -164,6 +186,10 @@ const props = defineProps({
   },
 });
 
+const users = ref([]);
+const sapUsers = ref([]);
+const sapUserSelected = ref([]);
+
 // Estado interno de carga
 const isSubmitting = ref(false);
 
@@ -175,6 +201,24 @@ const form = ref({
   sapUser: "",
   email: "",
 });
+
+const getUsers = async () => {
+  const response = await $fetch("/api/sap/users");
+  users.value = response.data;
+  sapUsers.value = users.value.map((user) => user.usuario);
+};
+
+onMounted(() => {
+  getUsers();
+});
+
+const changeSapUserSelected = () => {
+  const searchUser = users.value.find(
+    (user) => user.usuario === form.value.sapUser
+  );
+  sapUserSelected.value = searchUser;
+  form.value.email = searchUser.correo;
+};
 
 // Computed properties
 const isFormValid = computed(() => {
@@ -370,7 +414,9 @@ const clearForm = () => {
   form.value = {
     sapUser: "",
     email: "",
+    cod_personal: "",
   };
+  sapUserSelected.value = [];
   closeStatusMessage();
 };
 </script>
