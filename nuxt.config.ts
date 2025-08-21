@@ -3,11 +3,18 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
 
-  modules: ["@nuxt/ui"],
+  modules: ["@nuxt/ui", "nuxt-mongoose"],
 
   css: ["@/assets/css/main.css"],
 
   typescript: {
     typeCheck: false, // Desactivamos temporalmente para debug
+  },
+
+  mongoose: {
+    uri: process.env.MONGODB_URI,
+    options: {},
+    modelsDir: "models",
+    devtools: true,
   },
 });

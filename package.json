@@ -16,8 +16,10 @@
     "@nuxt/ui": "^3.3.0",
     "@types/xml2js": "^0.4.14",
     "aws-amplify": "^6.15.5",
+    "mongodb": "^6.18.0",
     "mssql": "^11.0.1",
     "nuxt": "^4.0.1",
+    "nuxt-mongoose": "^1.0.6",
     "vue": "^3.5.18",
     "vue-router": "^4.5.1",
     "xml2js": "^0.6.2"
