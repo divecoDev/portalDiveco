@@ -417,6 +417,7 @@ const clearForm = () => {
     cod_personal: "",
   };
   sapUserSelected.value = [];
+
   closeStatusMessage();
 };
 </script>
