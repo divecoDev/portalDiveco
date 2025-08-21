@@ -15,6 +15,7 @@
     "@aws-amplify/ui-vue": "^4.3.3",
     "@nuxt/ui": "^3.3.0",
     "@types/xml2js": "^0.4.14",
+    "@vueuse/core": "^13.7.0",
     "aws-amplify": "^6.15.5",
     "mongodb": "^6.18.0",
     "mssql": "^11.0.1",
