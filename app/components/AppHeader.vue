@@ -39,7 +39,8 @@
             <div
               class="absolute inset-0 rounded-md opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"
               style="
-                box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3),
+                box-shadow:
+                  0 0 0 1px rgba(34, 211, 238, 0.3),
                   0 0 10px rgba(34, 211, 238, 0.1);
               "
             ></div>
@@ -67,10 +68,7 @@
           />
 
           <!-- Notificaciones -->
-          <UDropdown
-            :items="notificationMenuItems"
-            :popper="{ placement: 'bottom-end' }"
-          >
+          <div class="relative">
             <UButton
               icon="i-heroicons-bell"
               color="cyan"
@@ -78,13 +76,62 @@
               size="sm"
               :class="{ relative: hasUnreadNotifications }"
               class="hover:bg-cyan-50 dark:hover:bg-cyan-900/20 transition-all duration-200"
+              @click="toggleNotifications"
             >
               <span
                 v-if="hasUnreadNotifications"
                 class="absolute -top-1 -right-1 h-2.5 w-2.5 bg-cyan-400 rounded-full animate-pulse-soft"
               ></span>
             </UButton>
-          </UDropdown>
+
+            <!-- Dropdown manual -->
+            <div
+              v-if="showNotifications"
+              class="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
+              @click.stop
+            >
+              <div class="p-4">
+                <h3
+                  class="text-sm font-semibold text-gray-900 dark:text-white mb-3"
+                >
+                  Notificaciones
+                </h3>
+                <div
+                  v-if="notifications.length === 0"
+                  class="text-sm text-gray-500 dark:text-gray-400"
+                >
+                  No hay notificaciones
+                </div>
+                <div v-else class="space-y-2">
+                  <div
+                    v-for="notification in notifications"
+                    :key="notification.id"
+                    class="p-3 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    <div class="flex justify-between items-start">
+                      <div class="flex-1">
+                        <p
+                          class="text-sm font-medium text-gray-900 dark:text-white"
+                        >
+                          {{ notification.title }}
+                        </p>
+                        <p
+                          class="text-xs text-gray-500 dark:text-gray-400 mt-1"
+                        >
+                          {{ notification.message }}
+                        </p>
+                      </div>
+                      <span
+                        class="text-xs text-gray-400 dark:text-gray-500 ml-2"
+                      >
+                        {{ notification.time }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -108,7 +155,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 
 // Props y emits
 const emit = defineEmits(["toggle-sidebar"]);
@@ -119,6 +166,7 @@ const { isDark, sidebarCompact, toggleDark } = useLayoutState();
 // Estado reactivo
 const searchQuery = ref("");
 const mobileSearchOpen = ref(false);
+const showNotifications = ref(false);
 
 // Notificaciones
 const notifications = ref([
@@ -193,6 +241,10 @@ const toggleMobileSearch = () => {
   mobileSearchOpen.value = !mobileSearchOpen.value;
 };
 
+const toggleNotifications = () => {
+  showNotifications.value = !showNotifications.value;
+};
+
 const performSearch = () => {
   if (searchQuery.value.trim()) {
     navigateTo(`/buscar?q=${encodeURIComponent(searchQuery.value)}`);
@@ -229,6 +281,21 @@ const handleNotificationClick = (notificationId) => {
   // Navegar a la notificación específica
   navigateTo(`/notificaciones/${notificationId}`);
 };
+
+// Event listener para cerrar dropdown al hacer clic fuera
+const handleClickOutside = (event) => {
+  if (showNotifications.value) {
+    showNotifications.value = false;
+  }
+};
+
+onMounted(() => {
+  document.addEventListener("click", handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener("click", handleClickOutside);
+});
 </script>
 
 <style scoped>

@@ -67,6 +67,8 @@
 // Meta
 definePageMeta({
   layout: "default",
+  middleware: ["require-role"],
+  requiredRole: "ADMIN",
 });
 
 useSeoMeta({

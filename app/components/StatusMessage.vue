@@ -13,14 +13,6 @@
         class="fixed top-20 right-4 z-[9999] w-96"
         style="z-index: 9999 !important"
       >
-        <!-- Debug info -->
-        <div
-          v-if="show"
-          class="absolute -top-8 left-0 text-xs text-red-500 bg-white px-2 py-1 rounded border"
-        >
-          DEBUG: show={{ show }}, type={{ type }}, message={{ message }}
-        </div>
-
         <!-- Notificación principal con glassmorphism -->
         <div
           class="relative p-6 rounded-2xl border border-white/20 shadow-2xl backdrop-blur-xl overflow-hidden"
