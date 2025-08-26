@@ -58,6 +58,11 @@
             @unlock-error="handleUnlockError"
           />
         </div>
+
+        <!-- History Tab -->
+        <div v-if="activeTab === 'history'" class="space-y-6">
+          <PasswordResetHistory />
+        </div>
       </div>
     </div>
   </div>
@@ -88,6 +93,11 @@ const tabs = ref([
     id: "unlock",
     name: "Desbloqueo de Usuario",
     icon: "i-heroicons-lock-open",
+  },
+  {
+    id: "history",
+    name: "Historial",
+    icon: "i-heroicons-clock",
   },
 ]);
 

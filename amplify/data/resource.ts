@@ -31,6 +31,19 @@ const schema = a.schema({
     .returns(a.string())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(resetPassword)),
+
+  SapUserActionHistory: a
+    .model({
+      sapUser: a.string(),
+      emailOwner: a.string(),
+      accion: a.string(), // "RESET_PASSWORD" o "UNLOCK_USER"
+      status: a.string(),
+      logs: a.string(),
+      date: a.string(),
+    })
+    .authorization((allow) => [allow.publicApiKey()]),
+
+  // Modelo para la bitacora de usarios que se les resetea la contraseña o se desbloqueo el usuario.
 });
 
 export type Schema = ClientSchema<typeof schema>;

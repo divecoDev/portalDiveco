@@ -176,6 +176,7 @@
 <script setup>
 import { ref, computed, nextTick } from "vue";
 import { generateClient } from "aws-amplify/api";
+import { getCurrentUser } from "aws-amplify/auth";
 import { useToast } from "#imports";
 
 // Importar el componente StatusMessage
@@ -277,6 +278,53 @@ const closeStatusMessage = () => {
   statusMessage.value.show = false;
 };
 
+// Función para guardar el historial de desbloqueo
+const saveUnlockUserHistory = async (sapUser, unlockResponse) => {
+  try {
+    console.log("📝 ===== GUARDANDO HISTORIAL DE DESBLOQUEO =====");
+
+    // Obtener el usuario logueado
+    const currentUser = await getCurrentUser();
+    const loggedUserEmail =
+      currentUser?.signInDetails?.loginId ||
+      currentUser?.username ||
+      "usuario-desconocido";
+
+    console.log("👤 Usuario logueado:", loggedUserEmail);
+    console.log("🎯 Usuario SAP desbloqueado:", sapUser);
+    console.log("📊 Respuesta a guardar:", unlockResponse);
+
+    // Preparar los datos del historial
+    const historyData = {
+      sapUser: sapUser,
+      emailOwner: loggedUserEmail,
+      accion: "UNLOCK_USER",
+      status: "Completado",
+      logs: JSON.stringify(unlockResponse),
+      date: new Date().toISOString(),
+    };
+
+    console.log("💾 Datos del historial:", historyData);
+
+    // Guardar en la base de datos usando Amplify
+    const { errors, data: historyResponse } =
+      await client.models.SapUserActionHistory.create(historyData);
+
+    if (errors) {
+      console.error("❌ Errores al guardar historial:", errors);
+      return null;
+    }
+
+    console.log("✅ Historial guardado exitosamente:", historyResponse);
+
+    return historyResponse;
+  } catch (error) {
+    console.error("❌ Error al guardar historial:", error);
+    // No lanzamos el error para que no afecte el flujo principal
+    return null;
+  }
+};
+
 const submitUserUnlock = async () => {
   if (!isFormValid.value) return;
 
@@ -351,6 +399,10 @@ const submitUserUnlock = async () => {
         timeout: 8000,
       });
 
+      // Guardar historial de desbloqueo exitoso
+      console.log("💾 Guardando historial de desbloqueo...");
+      await saveUnlockUserHistory(form.value.sapUser, unlockData);
+
       // Éxito - emitir los datos correctos
       emit("unlock-success", {
         codigo: 0,
@@ -361,7 +413,11 @@ const submitUserUnlock = async () => {
         accion: unlockData.accion,
         tipoOperacion: unlockData.tipoOperacion,
       });
-      clearForm();
+
+      // Limpiar formulario después de un delay para que se vea el mensaje
+      setTimeout(() => {
+        clearForm();
+      }, 5000); // 5 segundos para ver el mensaje de éxito
     } else if (parsedData && !parsedData.success) {
       // Manejar errores del servicio SAP
       console.log("⚠️ ===== ERROR DEL SERVICIO SAP =====");

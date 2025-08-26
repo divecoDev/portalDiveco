@@ -173,6 +173,7 @@
 <script setup>
 import { ref, computed, nextTick } from "vue";
 import { generateClient } from "aws-amplify/api";
+import { getCurrentUser } from "aws-amplify/auth";
 import { useToast } from "#imports";
 
 // Importar el componente StatusMessage
@@ -274,6 +275,53 @@ const closeStatusMessage = () => {
   statusMessage.value.show = false;
 };
 
+// Función para guardar el historial de reinicio
+const saveResetPasswordHistory = async (sapUser, resetResponse) => {
+  try {
+    console.log("📝 ===== GUARDANDO HISTORIAL DE REINICIO =====");
+
+    // Obtener el usuario logueado
+    const currentUser = await getCurrentUser();
+    const loggedUserEmail =
+      currentUser?.signInDetails?.loginId ||
+      currentUser?.username ||
+      "usuario-desconocido";
+
+    console.log("👤 Usuario logueado:", loggedUserEmail);
+    console.log("🎯 Usuario SAP reiniciado:", sapUser);
+    console.log("📊 Respuesta a guardar:", resetResponse);
+
+    // Preparar los datos del historial
+    const historyData = {
+      sapUser: sapUser,
+      emailOwner: loggedUserEmail,
+      accion: "RESET_PASSWORD",
+      status: "Completado",
+      logs: JSON.stringify(resetResponse),
+      date: new Date().toISOString(),
+    };
+
+    console.log("💾 Datos del historial:", historyData);
+
+    // Guardar en la base de datos usando Amplify
+    const { errors, data: historyResponse } =
+      await client.models.SapUserActionHistory.create(historyData);
+
+    if (errors) {
+      console.error("❌ Errores al guardar historial:", errors);
+      return null;
+    }
+
+    console.log("✅ Historial guardado exitosamente:", historyResponse);
+
+    return historyResponse;
+  } catch (error) {
+    console.error("❌ Error al guardar historial:", error);
+    // No lanzamos el error para que no afecte el flujo principal
+    return null;
+  }
+};
+
 const submitPasswordReset = async () => {
   if (!isFormValid.value) return;
 
@@ -346,6 +394,10 @@ const submitPasswordReset = async () => {
         timeout: 8000,
       });
 
+      // Guardar historial de reinicio exitoso
+      console.log("💾 Guardando historial de reinicio...");
+      await saveResetPasswordHistory(form.value.sapUser, resetData);
+
       // Éxito - emitir los datos correctos
       emit("reset-success", {
         codigo: 0,
@@ -354,7 +406,11 @@ const submitPasswordReset = async () => {
         nombre: resetData.nombre,
         emailEnviado: resetData.emailEnviado,
       });
-      clearForm();
+
+      // Limpiar formulario después de un delay para que se vea el mensaje
+      setTimeout(() => {
+        clearForm(true); // Mantener mensaje de éxito visible
+      }, 5000); // 5 segundos para ver el mensaje de éxito
     } else if (parsedData && !parsedData.success) {
       // Manejar errores del servicio SAP
       console.log("⚠️ ===== ERROR DEL SERVICIO SAP =====");
@@ -446,7 +502,7 @@ const submitPasswordReset = async () => {
   }
 };
 
-const clearForm = () => {
+const clearForm = (keepSuccessMessage = false) => {
   form.value = {
     sapUser: "",
     email: "",
@@ -454,7 +510,10 @@ const clearForm = () => {
   };
   sapUserSelected.value = [];
 
-  closeStatusMessage();
+  // Solo cerrar mensaje si no es de éxito o si explícitamente se pide cerrar
+  if (!keepSuccessMessage || statusMessage.value.type !== "success") {
+    closeStatusMessage();
+  }
 };
 </script>
 
