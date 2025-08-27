@@ -64,6 +64,16 @@
       >
         <!-- Navegación principal -->
         <nav class="flex-1 px-3 py-4 space-y-2 overflow-y-auto min-h-0">
+          <!-- Indicador de carga para permisos -->
+          <div v-if="isLoadingGroups" class="mb-6 px-3">
+            <div class="flex items-center space-x-3 text-cyan-200">
+              <div
+                class="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"
+              ></div>
+              <span class="text-xs">Verificando permisos...</span>
+            </div>
+          </div>
+
           <!-- Secciones de navegación -->
           <div
             v-for="section in navigationSections"
@@ -215,13 +225,22 @@
                 :src="userProfile.avatar"
                 :alt="userProfile.name"
                 size="sm"
+                :class="{ 'opacity-50': isLoadingGroups }"
               />
+              <!-- Indicador de carga -->
+              <div
+                v-if="isLoadingGroups"
+                class="absolute -top-1 -right-1 w-3 h-3 bg-cyan-400 rounded-full animate-pulse"
+              ></div>
               <div v-if="!isCompact" class="flex-1 min-w-0">
                 <p class="text-sm font-medium text-white truncate">
                   {{ userProfile.name }}
                 </p>
                 <p class="text-xs text-cyan-200 truncate">
-                  {{ userProfile.role }}
+                  <span v-if="isLoadingGroups" class="animate-pulse"
+                    >Cargando...</span
+                  >
+                  <span v-else>{{ userRole || "Ciudadano DIVECO" }}</span>
                 </p>
               </div>
               <UIcon
@@ -336,6 +355,40 @@
             :title="isCompact ? 'Configuración' : ''"
             @click="navigateTo('/configuracion')"
           />
+
+          <!-- Debug: Estado de grupos (solo en desarrollo) -->
+          <!-- Comentado temporalmente para evitar errores de variables de entorno -->
+          <!--
+          <div
+            v-if="!isCompact && isDevelopment"
+            class="mt-2 p-2 bg-gray-800/50 rounded text-xs text-gray-300"
+          >
+            <div class="space-y-1">
+              <div class="flex justify-between">
+                <span>Estado:</span>
+                <span
+                  :class="
+                    isLoadingGroups ? 'text-yellow-400' : 'text-green-400'
+                  "
+                >
+                  {{ isLoadingGroups ? "Cargando..." : "Listo" }}
+                </span>
+              </div>
+              <div class="flex justify-between">
+                <span>Es Admin:</span>
+                <span
+                  :class="hasGroup('ADMIN') ? 'text-green-400' : 'text-red-400'"
+                >
+                  {{ hasGroup("ADMIN") ? "Sí" : "No" }}
+                </span>
+              </div>
+              <div class="flex justify-between">
+                <span>Grupos:</span>
+                <span class="text-cyan-400">{{ userGroups.length }}</span>
+              </div>
+            </div>
+          </div>
+          -->
         </div>
       </div>
 
@@ -374,9 +427,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { signOut } from "aws-amplify/auth";
-import { getCurrentUser } from "aws-amplify/auth";
 import { fetchUserAttributes } from "aws-amplify/auth";
 
 const userAttributes = await fetchUserAttributes();
@@ -398,6 +450,37 @@ const emit = defineEmits(["close", "toggle-compact"]);
 // Composables
 const route = useRoute();
 const { toggleSidebarCompact } = useLayoutState();
+const {
+  userGroups,
+  getUserRole,
+  isLoading: isLoadingGroups,
+  hasGroup,
+} = useUserGroups();
+
+// Detectar si estamos en modo desarrollo
+const isDevelopment = computed(() => {
+  // Opción 1: Usar configuración de Nuxt si está disponible
+  try {
+    const config = useRuntimeConfig();
+    if (config.public.environment) {
+      return config.public.environment === "development";
+    }
+  } catch (e) {
+    // Si no está disponible, usar detección por hostname
+  }
+
+  // Opción 2: Detectar por hostname (fallback)
+  if (typeof window !== "undefined") {
+    return (
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1" ||
+      window.location.hostname.includes("dev") ||
+      window.location.hostname.includes("staging")
+    );
+  }
+
+  return false;
+});
 
 // Estado reactivo
 const openSubmenus = ref([]); // Sin submenús abiertos por defecto
@@ -407,35 +490,51 @@ const isUserMenuOpen = ref(false); // Control del menú de usuario
 // Datos del usuario
 const userProfile = ref({
   name: userAttributes.email,
-  role: "Administrador",
+  role: "",
   avatar: "/api/placeholder/32/32",
 });
 
+// Computed para el rol del usuario que se actualiza automáticamente
+const userRole = computed(() => getUserRole());
+
+// Watcher para mantener sincronizado el rol en el perfil
+watch(userRole, (newRole) => {
+  userProfile.value.role = newRole;
+});
+
 // Secciones de navegación
-const navigationSections = ref([
-  {
-    title: "Principal",
-    items: [
-      {
-        name: "Inicio",
-        href: "/",
-        icon: "i-heroicons-home",
-      },
-    ],
-  },
-  {
-    title: "Herramientas",
-    items: [
-      {
-        name: "Contraseñas SAP",
-        href: "/tools/contrasenias-sap",
-        icon: "i-heroicons-key",
-        badge: "Nuevo",
-        badgeColor: "green",
-      },
-    ],
-  },
-]);
+const navigationSections = computed(() => {
+  const sections = [
+    {
+      title: "Principal",
+      items: [
+        {
+          name: "Inicio",
+          href: "/",
+          icon: "i-heroicons-home",
+        },
+      ],
+    },
+  ];
+
+  // Solo mostrar la sección de herramientas si el usuario es ADMIN
+  if (hasGroup("ADMIN")) {
+    sections.push({
+      title: "Herramientas",
+      items: [
+        {
+          name: "Contraseñas SAP",
+          href: "/tools/contrasenias-sap",
+          icon: "i-heroicons-key",
+          badge: "Nuevo",
+          badgeColor: "green",
+        },
+      ],
+    });
+  }
+
+  return sections;
+});
 
 // Menú de usuario
 const userMenuItems = ref([
@@ -552,7 +651,7 @@ const logout = async () => {
 };
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
   checkIsMobile();
   window.addEventListener("resize", checkIsMobile);
 

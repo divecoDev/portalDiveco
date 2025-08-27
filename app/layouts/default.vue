@@ -89,7 +89,7 @@
           </div>
 
           <!-- Slot para el contenido de la página -->
-          <NuxtPage />
+          <slot />
         </div>
       </main>
     </div>
