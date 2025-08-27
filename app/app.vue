@@ -82,7 +82,7 @@ const handleNovaFinanzasSignIn = async () => {
 
           <button
             @click="handleNovaFinanzasSignIn"
-            class="group relative w-full px-8 py-4 bg-gradient-to-r from-cyan-400 to-cyan-600 text-white hover:from-cyan-500 hover:to-cyan-700 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 shadow-lg hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-cyan-300/50 overflow-hidden"
+            class="hidden group relative w-full px-8 py-4 bg-gradient-to-r from-cyan-400 to-cyan-600 text-white hover:from-cyan-500 hover:to-cyan-700 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 shadow-lg hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-cyan-300/50 overflow-hidden"
           >
             <!-- Efecto de brillo en hover -->
             <div

@@ -160,11 +160,7 @@
               name="i-heroicons-lock-open"
               class="w-5 h-5 mr-2"
             />
-            <UIcon
-              v-else
-              name="i-heroicons-arrow-path"
-              class="w-5 h-5 mr-2 animate-spin"
-            />
+
             {{ isSubmitting ? "Procesando..." : "Solicitar Desbloqueo" }}
           </UButton>
         </div>
