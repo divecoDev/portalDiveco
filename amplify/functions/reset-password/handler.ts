@@ -3,7 +3,7 @@ import * as xml2js from "xml2js";
 
 // Configuración SAP hardcodeada para la función Lambda
 const SAP_WEB_SERVICE_CONFIG = {
-  url: "http://10.238.1.104:8000/sap/bc/srt/rfc/sap/zsdsrv_webservice_srvusrsap/410/zws_srvusrsap/zbn_srvusrsap",
+  url: process.env.SAP_URL || "",
   credentials: {
     username: "JOB_USER",
     password: "Sapdiv+2024",
