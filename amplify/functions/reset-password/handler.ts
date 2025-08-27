@@ -6,7 +6,7 @@ const SAP_WEB_SERVICE_CONFIG = {
   url: process.env.SAP_URL || "",
   credentials: {
     username: "JOB_USER",
-    password: "Sapdiv+2024",
+    password: process.env.SAP_PASSWORD || "",
   },
   actions: {
     RESET_PASSWORD: "R",
