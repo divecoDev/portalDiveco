@@ -280,19 +280,6 @@
                   <span>Mi Perfil</span>
                 </button>
 
-                <!-- Configuración -->
-                <button
-                  @click="navigateTo('/configuracion')"
-                  class="w-full px-3 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors duration-150"
-                >
-                  <UIcon
-                    name="i-heroicons-cog-6-tooth"
-                    class="h-4 w-4 flex-shrink-0"
-                  />
-                  <span>Configuración</span>
-                </button>
-
-                <!-- Preferencias -->
                 <button
                   @click="navigateTo('/preferencias')"
                   class="w-full px-3 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors duration-150"
@@ -340,21 +327,6 @@
               </div>
             </Transition>
           </div>
-
-          <!-- Acceso rápido a configuración -->
-          <UButton
-            icon="i-heroicons-cog-6-tooth"
-            :label="isCompact ? '' : 'Configuración'"
-            color="white"
-            variant="outline"
-            size="sm"
-            :block="!isCompact"
-            :square="isCompact"
-            class="text-white border-cyan-400/50 hover:bg-cyan-400/20 hover:border-cyan-300"
-            :class="{ 'w-full': !isCompact, 'mx-auto': isCompact }"
-            :title="isCompact ? 'Configuración' : ''"
-            @click="navigateTo('/configuracion')"
-          />
 
           <!-- Debug: Estado de grupos (solo en desarrollo) -->
           <!-- Comentado temporalmente para evitar errores de variables de entorno -->
@@ -545,25 +517,7 @@ const userMenuItems = ref([
       click: () => navigateTo("/perfil"),
     },
   ],
-  [
-    {
-      label: "Configuración",
-      icon: "i-heroicons-cog-6-tooth",
-      click: () => navigateTo("/configuracion"),
-    },
-    {
-      label: "Preferencias",
-      icon: "i-heroicons-adjustments-horizontal",
-      click: () => navigateTo("/preferencias"),
-    },
-  ],
-  [
-    {
-      label: "Ayuda y Soporte",
-      icon: "i-heroicons-question-mark-circle",
-      click: () => navigateTo("/ayuda"),
-    },
-  ],
+
   [
     {
       label: "Cerrar Sesión",

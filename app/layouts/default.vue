@@ -92,6 +92,8 @@
           <slot />
         </div>
       </main>
+
+      <AppFooter />
     </div>
   </div>
 </template>
