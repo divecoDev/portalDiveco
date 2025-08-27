@@ -31,45 +31,94 @@
       @close="closeStatusMessage"
     />
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div class="space-y-2">
+    <!-- Indicador de Reintentos -->
+    <div
+      v-if="retryState.isRetrying"
+      class="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg"
+    >
+      <div class="flex items-center space-x-3">
+        <div class="flex">
+          <UIcon
+            name="i-heroicons-arrow-path"
+            class="w-6 h-6 text-amber-600 dark:text-amber-400 animate-spin"
+          />
+        </div>
+        <div class="">
+          <h4 class="text-sm font-medium text-amber-800 dark:text-amber-200">
+            Reintentando conexión con SAP...
+          </h4>
+          <p class="text-sm text-amber-700 dark:text-amber-300 mt-1">
+            Intento {{ retryState.currentAttempt }} de
+            {{ retryState.maxAttempts }}
+          </p>
+          <p class="text-xs text-amber-600 dark:text-amber-400 mt-1">
+            {{ retryState.message }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex space-x-4 gap-6">
+      <div class="w-1/3 space-y-2">
         <label
           for="sapUser"
           class="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
           Usuario SAP
         </label>
-        <UInput
-          id="sapUser"
+
+        <USelectMenu
           v-model="form.sapUser"
-          placeholder="Ej: JRODAS"
+          :items="sapUsers"
+          placeholder="Selecciona un usuario"
           icon="i-heroicons-user"
           size="xl"
           color="green"
-          variant="outline"
           :disabled="isProcessing"
-          class="focus:ring-green-500 focus:border-green-500"
+          @change="changeSapUserSelected"
+          class="w-full"
         />
       </div>
 
-      <div class="space-y-2">
+      <div class="flex-1 space-y-2">
+        <label
+          for="cod_personal"
+          class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Codigo Empleado
+        </label>
+        <UInput
+          id="cod_personal"
+          v-model="sapUserSelected.cod_personal"
+          placeholder="0000000000"
+          icon="i-heroicons-identification"
+          size="xl"
+          color="green"
+          variant="outline"
+          disabled
+          class="focus:ring-green-500 focus:border-green-500 w-full"
+        />
+      </div>
+
+      <div class="flex-1 space-y-2">
         <label
           for="email"
           class="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
           Email Corporativo
         </label>
+
         <UInput
           id="email"
           v-model="form.email"
           placeholder="usuario@diveco.com"
-          icon="i-heroicons-envelope"
           type="email"
+          icon="i-heroicons-envelope"
           size="xl"
           color="green"
           variant="outline"
-          :disabled="isProcessing"
-          class="focus:ring-green-500 focus:border-green-500"
+          disabled
+          class="focus:ring-green-500 focus:border-green-500 w-full"
         />
       </div>
     </div>
@@ -99,15 +148,24 @@
             Limpiar
           </UButton>
           <UButton
-            color="cyan"
+            color="green"
             @click="submitUserUnlock"
             :loading="isSubmitting"
             :disabled="!isFormValid || isSubmitting"
             size="lg"
-            class="shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
+            class="shadow-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
           >
-            <UIcon name="i-heroicons-lock-open" class="w-5 h-5 mr-2" />
-            Solicitar Desbloqueo
+            <UIcon
+              v-if="!isSubmitting"
+              name="i-heroicons-lock-open"
+              class="w-5 h-5 mr-2"
+            />
+            <UIcon
+              v-else
+              name="i-heroicons-arrow-path"
+              class="w-5 h-5 mr-2 animate-spin"
+            />
+            {{ isSubmitting ? "Procesando..." : "Solicitar Desbloqueo" }}
           </UButton>
         </div>
       </div>
@@ -116,14 +174,16 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
-import {
-  unlockUser,
-  validateUnlockUserRequest,
-} from "~/services/sap-user-service";
+import { ref, computed, nextTick } from "vue";
+import { generateClient } from "aws-amplify/api";
+import { getCurrentUser } from "aws-amplify/auth";
+import { useToast } from "#imports";
 
 // Importar el componente StatusMessage
 import StatusMessage from "./StatusMessage.vue";
+
+// Generar cliente de Amplify
+const client = generateClient();
 
 // Props
 const props = defineProps({
@@ -132,6 +192,10 @@ const props = defineProps({
     default: false,
   },
 });
+
+const users = ref([]);
+const sapUsers = ref([]);
+const sapUserSelected = ref([]);
 
 // Estado interno de carga
 const isSubmitting = ref(false);
@@ -145,53 +209,134 @@ const form = ref({
   email: "",
 });
 
+const getUsers = async () => {
+  const response = await $fetch("/api/sap/users");
+  users.value = response.data;
+  sapUsers.value = users.value.map((user) => user.usuario);
+};
+
+onMounted(() => {
+  getUsers();
+});
+
+const changeSapUserSelected = () => {
+  const searchUser = users.value.find(
+    (user) => user.usuario === form.value.sapUser
+  );
+  sapUserSelected.value = searchUser;
+  form.value.email = searchUser.correo;
+};
+
 // Computed properties
 const isFormValid = computed(() => {
   return form.value.sapUser && form.value.email;
 });
 
-// Logs
+// Estado del mensaje de status
 const statusMessage = ref({
   show: false,
   message: "",
   type: "info",
 });
 
+// Estado para reintentos
+const retryState = ref({
+  isRetrying: false,
+  currentAttempt: 0,
+  maxAttempts: 5,
+  message: "",
+});
+
 // Methods
 const showStatusMessage = (message, type = "info") => {
-  statusMessage.value = {
-    show: true,
-    message,
-    type,
-  };
+  console.log("🔔 ===== SHOW STATUS MESSAGE =====");
+  console.log("📝 Mensaje:", message);
+  console.log("🎨 Tipo:", type);
+  console.log("📊 Estado anterior:", JSON.stringify(statusMessage.value));
+
+  // Cerrar notificación anterior si existe
+  statusMessage.value.show = false;
+
+  // Pequeño delay para asegurar que se cierre antes de mostrar la nueva
+  setTimeout(() => {
+    statusMessage.value = {
+      show: true,
+      message,
+      type,
+    };
+
+    console.log("✅ Estado actualizado:", JSON.stringify(statusMessage.value));
+
+    // Forzar re-render del componente
+    nextTick(() => {
+      console.log("🔄 Componente re-renderizado");
+    });
+  }, 100);
 };
 
 const closeStatusMessage = () => {
   statusMessage.value.show = false;
 };
 
+// Función para guardar el historial de desbloqueo
+const saveUnlockUserHistory = async (sapUser, unlockResponse) => {
+  try {
+    console.log("📝 ===== GUARDANDO HISTORIAL DE DESBLOQUEO =====");
+
+    // Obtener el usuario logueado
+    const currentUser = await getCurrentUser();
+    const loggedUserEmail =
+      currentUser?.signInDetails?.loginId ||
+      currentUser?.username ||
+      "usuario-desconocido";
+
+    console.log("👤 Usuario logueado:", loggedUserEmail);
+    console.log("🎯 Usuario SAP desbloqueado:", sapUser);
+    console.log("📊 Respuesta a guardar:", unlockResponse);
+
+    // Preparar los datos del historial
+    const historyData = {
+      sapUser: sapUser,
+      emailOwner: loggedUserEmail,
+      accion: "UNLOCK_USER",
+      status: "Completado",
+      logs: JSON.stringify(unlockResponse),
+      date: new Date().toISOString(),
+    };
+
+    console.log("💾 Datos del historial:", historyData);
+
+    // Guardar en la base de datos usando Amplify
+    const { errors, data: historyResponse } =
+      await client.models.SapUserActionHistory.create(historyData);
+
+    if (errors) {
+      console.error("❌ Errores al guardar historial:", errors);
+      return null;
+    }
+
+    console.log("✅ Historial guardado exitosamente:", historyResponse);
+
+    return historyResponse;
+  } catch (error) {
+    console.error("❌ Error al guardar historial:", error);
+    // No lanzamos el error para que no afecte el flujo principal
+    return null;
+  }
+};
+
 const submitUserUnlock = async () => {
   if (!isFormValid.value) return;
 
   isSubmitting.value = true;
-
-  // Limpiar logs anteriores
-  // clearLogs(); // Eliminado
+  retryState.value.isRetrying = false;
+  retryState.value.currentAttempt = 0;
 
   // Logs más visibles y detallados
   console.log("🚀 ===== INICIO DEL PROCESO DE DESBLOQUEO =====");
   console.log("👤 Usuario SAP:", form.value.sapUser);
   console.log("📧 Email:", form.value.email);
   console.log("⏰ Timestamp:", new Date().toISOString());
-  console.log("🔍 Validando formulario...");
-
-  // Logs visuales
-  // addLog( // Eliminado
-  //   `🚀 Iniciando proceso de desbloqueo para usuario ${form.value.sapUser}`,
-  //   "info"
-  // );
-  // addLog(`📧 Email: ${form.value.email}`, "info");
-  // addLog(`⏰ Timestamp: ${new Date().toISOString()}`, "info");
 
   // Mostrar mensaje de inicio
   showStatusMessage(
@@ -200,83 +345,130 @@ const submitUserUnlock = async () => {
   );
 
   try {
-    // Validar campos antes de enviar
-    console.log("🔍 Validando campos del formulario...");
-    // addLog("🔍 Validando campos del formulario...", "info"); // Eliminado
+    console.log("📤 Enviando petición a través de Amplify...");
+    console.log(
+      "📍 Usando cliente de Amplify para ResetPassword con acción 'D'"
+    );
 
-    const validation = validateUnlockUserRequest(form.value);
-    if (!validation.isValid) {
-      console.error("❌ Validación fallida:", validation.errors);
-      // addLog(`❌ Validación fallida: ${validation.errors.join(", ")}`, "error"); // Eliminado
-      throw new Error(`Errores de validación: ${validation.errors.join(", ")}`);
-    }
-    console.log("✅ Validación exitosa");
-    // addLog("✅ Validación exitosa", "success"); // Eliminado
-
-    console.log("📤 Enviando petición al endpoint de Nuxt...");
-    console.log(" Endpoint: /api/sap/unlock-user");
-    // addLog("📤 Enviando petición al endpoint de Nuxt...", "info"); // Eliminado
-    // addLog("📍 Endpoint: /api/sap/unlock-user", "info"); // Eliminado
-
-    const response = await unlockUser({
+    const response = await client.queries.ResetPassword({
       sapUser: form.value.sapUser,
       email: form.value.email,
+      accion: "D", // Acción de desbloqueo
     });
 
     console.log("📡 Respuesta recibida:", response);
-    // addLog("📡 Respuesta recibida del servicio", "info"); // Eliminado
 
-    if (response.success && response.data) {
+    // Parsear la respuesta JSON que viene como string en response.data
+    let parsedData = null;
+    try {
+      if (response.data && typeof response.data === "string") {
+        parsedData = JSON.parse(response.data);
+        console.log("🔍 Datos parseados:", parsedData);
+      }
+    } catch (parseError) {
+      console.error("❌ Error al parsear JSON:", parseError);
+      throw new Error("Respuesta inválida del servicio - JSON malformado");
+    }
+
+    if (parsedData && parsedData.success && parsedData.data) {
+      const unlockData = parsedData.data;
       console.log("✅ ===== DESBLOQUEO EXITOSO =====");
-      console.log("📊 Datos de respuesta:", response.data);
-      console.log("🎯 Usuario desbloqueado:", response.data.usuario);
-      console.log("📝 Mensaje:", response.data.mensaje);
-      console.log("👤 Nombre:", response.data.nombre);
+      console.log("📊 Datos de respuesta:", unlockData);
 
       // Mostrar mensaje de éxito
       const successMessage =
-        response.data.mensaje || "Usuario desbloqueado exitosamente";
+        unlockData.mensaje || "Usuario desbloqueado exitosamente";
+
+      console.log("🔔 ===== MOSTRANDO NOTIFICACIÓN =====");
+      console.log("📝 Mensaje a mostrar:", successMessage);
+      console.log("🎨 Tipo de notificación: success");
+
       showStatusMessage(successMessage, "success");
 
-      // Éxito
-      emit("unlock-success", response.data);
-      clearForm();
-    } else if (response.error) {
-      console.log("⚠️ ===== ERROR DEL SERVICIO =====");
-      console.log("🚨 Código de error:", response.error.codigo);
-      console.log("💬 Mensaje de error:", response.error.mensaje);
+      console.log(
+        "✅ Notificación mostrada, verificando estado:",
+        statusMessage.value
+      );
 
-      // Determinar el tipo de mensaje basado en el código de error
-      let messageType = "error";
-      if (response.error.codigo === 1) {
-        // Código 1: Usuario inexistente - mostrar como warning
-        messageType = "warning";
-        console.log(
-          "🔍 Usuario inexistente detectado - mostrando como warning"
-        );
-        console.log("🎯 Cambiando tipo de mensaje a 'warning' para mejor UX");
-      } else if (response.error.codigo === 0) {
-        // Código 0: Éxito (no debería llegar aquí)
-        messageType = "success";
-        console.log("🔍 Código 0 detectado - mostrando como success");
-      } else {
-        // Otros códigos de error
-        messageType = "error";
-        console.log(
-          `🔍 Código ${response.error.codigo} - mostrando como error`
-        );
-      }
+      // Fallback con useToast para verificar que funciona
+      const toast = useToast();
+      toast.add({
+        title: "🔓 Usuario Desbloqueado",
+        description: successMessage,
+        color: "green",
+        timeout: 8000,
+      });
 
-      // Mostrar mensaje de error con el tipo apropiado
-      const errorMessage = response.error.mensaje || "Error en el servicio SAP";
-      console.log(`📤 Mostrando mensaje como ${messageType}:`, errorMessage);
-      showStatusMessage(errorMessage, messageType);
+      // Guardar historial de desbloqueo exitoso
+      console.log("💾 Guardando historial de desbloqueo...");
+      await saveUnlockUserHistory(form.value.sapUser, unlockData);
+
+      // Éxito - emitir los datos correctos
+      emit("unlock-success", {
+        codigo: 0,
+        mensaje: unlockData.mensaje,
+        usuario: unlockData.usuario,
+        nombre: unlockData.nombre,
+        emailEnviado: unlockData.emailEnviado,
+        accion: unlockData.accion,
+        tipoOperacion: unlockData.tipoOperacion,
+      });
+
+      // Limpiar formulario después de un delay para que se vea el mensaje
+      setTimeout(() => {
+        clearForm();
+      }, 5000); // 5 segundos para ver el mensaje de éxito
+    } else if (parsedData && !parsedData.success) {
+      // Manejar errores del servicio SAP
+      console.log("⚠️ ===== ERROR DEL SERVICIO SAP =====");
+      console.log("🚨 Respuesta de error:", parsedData);
+
+      const errorMessage =
+        parsedData.mensaje || "Error en el servicio de desbloqueo de usuario";
+
+      showStatusMessage(errorMessage, "error");
+
+      // Fallback con useToast
+      const toast = useToast();
+      toast.add({
+        title: "❌ Error en el Servicio SAP",
+        description: errorMessage,
+        color: "red",
+        timeout: 8000,
+      });
 
       // Error del servicio
-      emit("unlock-error", response.error);
+      emit("unlock-error", {
+        codigo: parsedData.codigo || -1,
+        mensaje: errorMessage,
+      });
+    } else if (response.errors && response.errors.length > 0) {
+      console.log("⚠️ ===== ERROR DE AMPLIFY =====");
+      console.log("🚨 Errores:", response.errors);
+
+      const error = response.errors[0];
+      const errorMessage =
+        error.message || "Error en el servicio de desbloqueo de usuario";
+
+      showStatusMessage(errorMessage, "error");
+
+      // Fallback con useToast para verificar que funciona
+      const toast = useToast();
+      toast.add({
+        title: "❌ Error en el Servicio",
+        description: errorMessage,
+        color: "red",
+        timeout: 8000,
+      });
+
+      // Error del servicio
+      emit("unlock-error", {
+        codigo: -1,
+        mensaje: errorMessage,
+      });
     } else {
-      console.error("❌ Respuesta inválida del servidor:", response);
-      throw new Error("Respuesta inválida del servidor");
+      console.error("❌ Respuesta inválida de Amplify:", response);
+      throw new Error("Respuesta inválida del servicio");
     }
   } catch (error) {
     console.error("💥 ===== ERROR CRÍTICO =====");
@@ -285,54 +477,35 @@ const submitUserUnlock = async () => {
     console.error("📚 Stack trace:", error.stack);
     console.error("🔍 Error completo:", error);
 
-    // Logs visuales de error crítico
-    // addLog("💥 ===== ERROR CRÍTICO =====", "error"); // Eliminado
-    // addLog(`🚨 Tipo: ${error.constructor.name}`, "error"); // Eliminado
-    // addLog(`💬 Mensaje: ${error.message}`, "error"); // Eliminado
-
     let errorMessage = "Error interno del servidor";
     let codigo = -1;
-    let messageType = "error";
 
     if (error.message) {
-      if (error.message.includes("Errores de validación")) {
-        errorMessage =
-          "Por favor, verifica que todos los campos estén completos y sean válidos";
-        codigo = 400;
-        messageType = "warning";
-        console.log("🔍 Error de validación detectado");
-      } else if (error.message.includes("Failed to fetch")) {
-        errorMessage =
-          "No se pudo conectar al servidor. Verifica tu conexión a internet e inténtalo nuevamente";
-        codigo = 503;
-        messageType = "error";
-        console.log("🔍 Error de conectividad detectado");
-      } else if (error.message.includes("Usuario inexistente")) {
-        errorMessage = "El usuario SAP ingresado no existe en el sistema";
-        codigo = 404;
-        messageType = "warning";
-        console.log("🔍 Usuario inexistente detectado");
+      if (error.message.includes("Respuesta inválida")) {
+        errorMessage = "Error en la comunicación con el servicio";
+        codigo = 500;
       } else {
-        errorMessage =
-          "Ha ocurrido un error inesperado. Por favor, inténtalo nuevamente";
-        messageType = "error";
-        console.log("🔍 Error genérico detectado");
+        errorMessage = error.message;
+        codigo = -1;
       }
     }
 
-    // Mostrar mensaje de error claro para el usuario
-    showStatusMessage(errorMessage, messageType);
+    console.log("🎯 ===== RESUMEN DEL ERROR =====");
+    console.log("💬 Mensaje final:", errorMessage);
+    console.log("🚨 Código final:", codigo);
 
+    // Mostrar mensaje de error
+    showStatusMessage(errorMessage, "error");
+
+    // Emitir error
     emit("unlock-error", {
-      mensaje: errorMessage,
       codigo,
+      mensaje: errorMessage,
     });
   } finally {
     isSubmitting.value = false;
-    console.log("🏁 ===== FIN DEL PROCESO =====");
-    console.log("⏰ Timestamp final:", new Date().toISOString());
-    // addLog("🏁 ===== FIN DEL PROCESO =====", "info"); // Eliminado
-    // addLog(`⏰ Timestamp final: ${new Date().toISOString()}`, "info"); // Eliminado
+    retryState.value.isRetrying = false;
+    retryState.value.currentAttempt = 0;
   }
 };
 
@@ -340,7 +513,11 @@ const clearForm = () => {
   form.value = {
     sapUser: "",
     email: "",
+    cod_personal: "",
   };
+  sapUserSelected.value = [];
+
+  closeStatusMessage();
 };
 </script>
 
@@ -400,18 +577,18 @@ button {
 }
 
 /* Efectos especiales para el botón de desbloqueo */
-button[color="cyan"] {
-  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-  box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+button[color="green"] {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
 }
 
-button[color="cyan"]:hover {
-  background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
-  box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
+button[color="green"]:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
   transform: translateY(-2px);
 }
 
-button[color="cyan"]:active {
+button[color="green"]:active {
   transform: translateY(0) scale(0.98);
 }
 
@@ -439,13 +616,13 @@ button:disabled {
 /* Animaciones de entrada para botones */
 @keyframes button-pulse {
   0% {
-    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
   }
-  50% {
-    transform: scale(1.05);
+  70% {
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
   }
   100% {
-    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
   }
 }
 

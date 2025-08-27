@@ -52,7 +52,21 @@
         </NuxtLink>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Indicador de carga -->
+      <div v-if="isLoadingGroups" class="flex justify-center py-12">
+        <div class="flex items-center space-x-3 text-gray-500">
+          <div
+            class="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"
+          ></div>
+          <span class="text-lg">Verificando permisos...</span>
+        </div>
+      </div>
+
+      <!-- Herramientas disponibles -->
+      <div
+        v-else-if="mainTools.length > 0"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      >
         <div
           v-for="(tool, index) in mainTools"
           :key="tool.id"
@@ -89,17 +103,39 @@
           </div>
         </div>
       </div>
+
+      <!-- Mensaje cuando no hay herramientas disponibles -->
+      <div v-else class="text-center py-12">
+        <div
+          class="bg-gray-50 dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700"
+        >
+          <UIcon
+            name="i-heroicons-information-circle"
+            class="h-16 w-16 text-gray-400 mx-auto mb-4"
+          />
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            No hay herramientas disponibles
+          </h3>
+          <p class="text-gray-500 dark:text-gray-400">
+            Contacta a tu administrador para obtener acceso a las herramientas
+            del sistema.
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 
 // Definir el layout
 definePageMeta({
   layout: "default",
 });
+
+// Composables
+const { hasGroup, isLoading: isLoadingGroups } = useUserGroups();
 
 // Datos reactivos
 const stats = ref({
@@ -109,20 +145,28 @@ const stats = ref({
   averageTime: "2.3m",
 });
 
-const mainTools = ref([
-  {
-    id: 1,
-    name: "Gestión de Contraseñas SAP",
-    category: "Auto Gestión",
-    description:
-      "Reinicia contraseñas y desbloquea usuarios SAP de forma autogestionada.",
-    icon: "i-heroicons-key",
-    iconColor: "text-cyan-600",
-    route: "/tools/contrasenias-sap",
-    lastUpdate: "Hoy",
-    status: "active",
-  },
-]);
+// Herramientas principales con control de acceso
+const mainTools = computed(() => {
+  const tools = [];
+
+  // Solo mostrar la herramienta de contraseñas SAP si el usuario es ADMIN
+  if (hasGroup("ADMIN")) {
+    tools.push({
+      id: 1,
+      name: "Gestión de Contraseñas SAP",
+      category: "Auto Gestión",
+      description:
+        "Reinicia contraseñas y desbloquea usuarios SAP de forma autogestionada.",
+      icon: "i-heroicons-key",
+      iconColor: "text-cyan-600",
+      route: "/tools/contrasenias-sap",
+      lastUpdate: "Hoy",
+      status: "active",
+    });
+  }
+
+  return tools;
+});
 
 // Métodos
 const navigateToTool = (route) => {

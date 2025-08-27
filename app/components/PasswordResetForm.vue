@@ -172,11 +172,15 @@
 
 <script setup>
 import { ref, computed, nextTick } from "vue";
-import { resetPassword } from "~/services/sap-password-service";
+import { generateClient } from "aws-amplify/api";
+import { getCurrentUser } from "aws-amplify/auth";
 import { useToast } from "#imports";
 
 // Importar el componente StatusMessage
 import StatusMessage from "./StatusMessage.vue";
+
+// Generar cliente de Amplify
+const client = generateClient();
 
 // Props
 const props = defineProps({
@@ -271,6 +275,53 @@ const closeStatusMessage = () => {
   statusMessage.value.show = false;
 };
 
+// Función para guardar el historial de reinicio
+const saveResetPasswordHistory = async (sapUser, resetResponse) => {
+  try {
+    console.log("📝 ===== GUARDANDO HISTORIAL DE REINICIO =====");
+
+    // Obtener el usuario logueado
+    const currentUser = await getCurrentUser();
+    const loggedUserEmail =
+      currentUser?.signInDetails?.loginId ||
+      currentUser?.username ||
+      "usuario-desconocido";
+
+    console.log("👤 Usuario logueado:", loggedUserEmail);
+    console.log("🎯 Usuario SAP reiniciado:", sapUser);
+    console.log("📊 Respuesta a guardar:", resetResponse);
+
+    // Preparar los datos del historial
+    const historyData = {
+      sapUser: sapUser,
+      emailOwner: loggedUserEmail,
+      accion: "RESET_PASSWORD",
+      status: "Completado",
+      logs: JSON.stringify(resetResponse),
+      date: new Date().toISOString(),
+    };
+
+    console.log("💾 Datos del historial:", historyData);
+
+    // Guardar en la base de datos usando Amplify
+    const { errors, data: historyResponse } =
+      await client.models.SapUserActionHistory.create(historyData);
+
+    if (errors) {
+      console.error("❌ Errores al guardar historial:", errors);
+      return null;
+    }
+
+    console.log("✅ Historial guardado exitosamente:", historyResponse);
+
+    return historyResponse;
+  } catch (error) {
+    console.error("❌ Error al guardar historial:", error);
+    // No lanzamos el error para que no afecte el flujo principal
+    return null;
+  }
+};
+
 const submitPasswordReset = async () => {
   if (!isFormValid.value) return;
 
@@ -291,31 +342,37 @@ const submitPasswordReset = async () => {
   );
 
   try {
-    console.log("📤 Enviando petición al endpoint de Nuxt...");
-    console.log("📍 Endpoint: /api/sap/reset-password");
+    console.log("📤 Enviando petición a través de Amplify...");
+    console.log("📍 Usando cliente de Amplify para ResetPassword");
 
-    const response = await resetPassword({
+    const response = await client.queries.ResetPassword({
       sapUser: form.value.sapUser,
       email: form.value.email,
+      accion: "R",
     });
 
     console.log("📡 Respuesta recibida:", response);
 
-    if (response.success && response.data) {
-      console.log("✅ ===== REINICIO EXITOSO =====");
-      console.log("📊 Datos de respuesta:", response.data);
-      console.log("🎯 Usuario:", response.data.usuario);
-      console.log("📝 Mensaje:", response.data.mensaje);
-      console.log("👤 Nombre:", response.data.nombre);
-      console.log("📧 Email enviado:", response.data.emailEnviado);
-
-      // Mostrar mensaje de éxito con información de reintentos si aplica
-      let successMessage =
-        response.data.mensaje || "Contraseña reiniciada exitosamente";
-
-      if (response.attempts && response.attempts > 1) {
-        successMessage += ` (Completado en ${response.attempts} intentos)`;
+    // Parsear la respuesta JSON que viene como string en response.data
+    let parsedData = null;
+    try {
+      if (response.data && typeof response.data === "string") {
+        parsedData = JSON.parse(response.data);
+        console.log("🔍 Datos parseados:", parsedData);
       }
+    } catch (parseError) {
+      console.error("❌ Error al parsear JSON:", parseError);
+      throw new Error("Respuesta inválida del servicio - JSON malformado");
+    }
+
+    if (parsedData && parsedData.success && parsedData.data) {
+      const resetData = parsedData.data;
+      console.log("✅ ===== REINICIO EXITOSO =====");
+      console.log("📊 Datos de respuesta:", resetData);
+
+      // Mostrar mensaje de éxito
+      const successMessage =
+        resetData.mensaje || "Contraseña reiniciada exitosamente";
 
       console.log("🔔 ===== MOSTRANDO NOTIFICACIÓN =====");
       console.log("📝 Mensaje a mostrar:", successMessage);
@@ -337,22 +394,54 @@ const submitPasswordReset = async () => {
         timeout: 8000,
       });
 
-      // Éxito
-      emit("reset-success", response.data);
-      clearForm();
-    } else if (response.error) {
-      console.log("⚠️ ===== ERROR DEL SERVICIO =====");
-      console.log("🚨 Código de error:", response.error.codigo);
-      console.log("💬 Mensaje de error:", response.error.mensaje);
+      // Guardar historial de reinicio exitoso
+      console.log("💾 Guardando historial de reinicio...");
+      await saveResetPasswordHistory(form.value.sapUser, resetData);
 
-      // Mostrar mensaje de error con información de reintentos si aplica
-      let errorMessage = response.error.mensaje || "Error en el servicio SAP";
+      // Éxito - emitir los datos correctos
+      emit("reset-success", {
+        codigo: 0,
+        mensaje: resetData.mensaje,
+        usuario: resetData.usuario,
+        nombre: resetData.nombre,
+        emailEnviado: resetData.emailEnviado,
+      });
 
-      if (response.exhausted) {
-        errorMessage = `Servicio SAP no disponible después de ${response.attempts} intentos. Por favor, intente más tarde.`;
-      } else if (response.attempts && response.attempts > 1) {
-        errorMessage += ` (Se realizaron ${response.attempts} intentos)`;
-      }
+      // Limpiar formulario después de un delay para que se vea el mensaje
+      setTimeout(() => {
+        clearForm(true); // Mantener mensaje de éxito visible
+      }, 5000); // 5 segundos para ver el mensaje de éxito
+    } else if (parsedData && !parsedData.success) {
+      // Manejar errores del servicio SAP
+      console.log("⚠️ ===== ERROR DEL SERVICIO SAP =====");
+      console.log("🚨 Respuesta de error:", parsedData);
+
+      const errorMessage =
+        parsedData.mensaje || "Error en el servicio de reinicio de contraseña";
+
+      showStatusMessage(errorMessage, "error");
+
+      // Fallback con useToast
+      const toast = useToast();
+      toast.add({
+        title: "❌ Error en el Servicio SAP",
+        description: errorMessage,
+        color: "red",
+        timeout: 8000,
+      });
+
+      // Error del servicio
+      emit("reset-error", {
+        codigo: parsedData.codigo || -1,
+        mensaje: errorMessage,
+      });
+    } else if (response.errors && response.errors.length > 0) {
+      console.log("⚠️ ===== ERROR DE AMPLIFY =====");
+      console.log("🚨 Errores:", response.errors);
+
+      const error = response.errors[0];
+      const errorMessage =
+        error.message || "Error en el servicio de reinicio de contraseña";
 
       showStatusMessage(errorMessage, "error");
 
@@ -366,10 +455,13 @@ const submitPasswordReset = async () => {
       });
 
       // Error del servicio
-      emit("reset-error", response.error);
+      emit("reset-error", {
+        codigo: -1,
+        mensaje: errorMessage,
+      });
     } else {
-      console.error("❌ Respuesta inválida del servidor:", response);
-      throw new Error("Respuesta inválida del servidor");
+      console.error("❌ Respuesta inválida de Amplify:", response);
+      throw new Error("Respuesta inválida del servicio");
     }
   } catch (error) {
     console.error("💥 ===== ERROR CRÍTICO =====");
@@ -383,7 +475,7 @@ const submitPasswordReset = async () => {
 
     if (error.message) {
       if (error.message.includes("Respuesta inválida")) {
-        errorMessage = "Error en la comunicación con el servidor";
+        errorMessage = "Error en la comunicación con el servicio";
         codigo = 500;
       } else {
         errorMessage = error.message;
@@ -410,7 +502,7 @@ const submitPasswordReset = async () => {
   }
 };
 
-const clearForm = () => {
+const clearForm = (keepSuccessMessage = false) => {
   form.value = {
     sapUser: "",
     email: "",
@@ -418,7 +510,10 @@ const clearForm = () => {
   };
   sapUserSelected.value = [];
 
-  closeStatusMessage();
+  // Solo cerrar mensaje si no es de éxito o si explícitamente se pide cerrar
+  if (!keepSuccessMessage || statusMessage.value.type !== "success") {
+    closeStatusMessage();
+  }
 };
 </script>
 
