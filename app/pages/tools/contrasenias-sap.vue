@@ -16,6 +16,12 @@
         </div>
       </div>
 
+      <!-- Subordinates Display -->
+      <!-- <SubordinatesDisplay
+        :subordinates="subordinatesData"
+        @employee-selected="handleEmployeeSelected"
+      /> -->
+
       <!-- Tabs Navigation -->
       <div class="mb-8">
         <div class="border-b border-gray-200 dark:border-gray-700">
@@ -86,6 +92,100 @@ useSeoMeta({
 const activeTab = ref("reset");
 const isProcessing = ref(false);
 
+// Mock data for subordinates (Microsoft Graph API format)
+const subordinatesData = ref([
+  {
+    "@odata.type": "#microsoft.graph.user",
+    id: "328a9ead-5e24-4bab-a077-460869365232",
+    businessPhones: [],
+    displayName: "Ismael Pinzon Garcia",
+    givenName: "Ismael",
+    jobTitle: "Desarollador RPA",
+    mail: "ismael.pinzon.gt@camasolympia.com",
+    mobilePhone: null,
+    officeLocation: "Guatemala UTS",
+    preferredLanguage: null,
+    surname: "Pinzon Garcia",
+    userPrincipalName: "ismael.pinzon.gt@camasolympia.com",
+    hasSapUser: true, // Usuario con acceso SAP
+  },
+  {
+    "@odata.type": "#microsoft.graph.user",
+    id: "0b65a3c0-b48c-4762-940b-5bd62d6462fd",
+    businessPhones: [],
+    displayName: "Practicante",
+    givenName: "Practicante",
+    jobTitle: "Temporal Practicante",
+    mail: "practicante@camasolympia.com",
+    mobilePhone: null,
+    officeLocation: "UTS",
+    preferredLanguage: null,
+    surname: null,
+    userPrincipalName: "practicante@camasolympia.com",
+    hasSapUser: false, // Usuario SIN acceso SAP
+  },
+  {
+    "@odata.type": "#microsoft.graph.user",
+    id: "f190cd4a-7198-42be-9d69-7ceca0324785",
+    businessPhones: [],
+    displayName: "Proveedor Externo",
+    givenName: "Proveedor",
+    jobTitle: "Arquitectura de Aplicaciones",
+    mail: "proveedor.externo.gt@camasolympia.com",
+    mobilePhone: null,
+    officeLocation: "Hector Merida",
+    preferredLanguage: null,
+    surname: "Externo",
+    userPrincipalName: "proveedor.externo.gt@camasolympia.com",
+    hasSapUser: false, // Usuario SIN acceso SAP
+  },
+  {
+    "@odata.type": "#microsoft.graph.user",
+    id: "6aefa98e-77f1-45d6-9b2b-393f407b31ab",
+    businessPhones: [],
+    displayName: "Dorian Gladiador",
+    givenName: "Dorian",
+    jobTitle: "Gladiador IA",
+    mail: "dorian@camasolympia.com",
+    mobilePhone: null,
+    officeLocation: "Diveco Guatemala",
+    preferredLanguage: null,
+    surname: "Gladiador",
+    userPrincipalName: "dorian@camasolympia.com",
+    hasSapUser: true, // Usuario con acceso SAP
+  },
+  {
+    "@odata.type": "#microsoft.graph.user",
+    id: "d0d2b870-465b-489f-8a3e-ff84389a3ec1",
+    businessPhones: [],
+    displayName: "Gerson Ortiz",
+    givenName: "Gerson",
+    jobTitle: "Especialista en Desarrollo de Software y Business Intelligence",
+    mail: "gerson.ortiz.gt@camasolympia.com",
+    mobilePhone: null,
+    officeLocation: "Diveco",
+    preferredLanguage: null,
+    surname: "Ortiz",
+    userPrincipalName: "gerson.ortiz.gt@camasolympia.com",
+    hasSapUser: true, // Usuario con acceso SAP
+  },
+  {
+    "@odata.type": "#microsoft.graph.user",
+    id: "07c38237-9901-448d-b297-95d6f2385b72",
+    businessPhones: [],
+    displayName: "Jonhathan Rolando Rodas Lopez",
+    givenName: "Jonhathan Rolando",
+    jobTitle: "Desarrollador de Soluciones Digitales",
+    mail: "jonhathan.rodas.gt@camasolympia.com",
+    mobilePhone: null,
+    officeLocation: "Diveco Guatemala",
+    preferredLanguage: null,
+    surname: "Rodas Lopez",
+    userPrincipalName: "jonhathan.rodas.gt@camasolympia.com",
+    hasSapUser: false, // Usuario SIN acceso SAP
+  },
+]);
+
 // Tabs configuration
 const tabs = ref([
   { id: "reset", name: "Reinicio de Contraseña", icon: "i-heroicons-key" },
@@ -141,6 +241,45 @@ const handleUnlockError = (data) => {
     color: "red",
     timeout: 8000,
   });
+};
+
+// Handler for employee selection from SubordinatesDisplay component
+const handleEmployeeSelected = ({ employee, action }) => {
+  const toast = useToast();
+
+  // Check if employee has SAP access
+  if (!employee.hasSapUser) {
+    toast.add({
+      title: "Acción no disponible",
+      description: `${employee.displayName} no tiene acceso a SAP`,
+      color: "red",
+      timeout: 5000,
+    });
+    return;
+  }
+
+  // Switch to the appropriate tab
+  if (action === "reset") {
+    activeTab.value = "reset";
+    toast.add({
+      title: "Empleado seleccionado para reinicio",
+      description: `${employee.displayName} - ${employee.mail}`,
+      color: "blue",
+      timeout: 5000,
+    });
+  } else if (action === "unlock") {
+    activeTab.value = "unlock";
+    toast.add({
+      title: "Empleado seleccionado para desbloqueo",
+      description: `${employee.displayName} - ${employee.mail}`,
+      color: "orange",
+      timeout: 5000,
+    });
+  }
+
+  // TODO: Pre-fill the form with employee data
+  // This could be implemented by emitting events to the form components
+  // or by using a shared state/store
 };
 </script>
 
