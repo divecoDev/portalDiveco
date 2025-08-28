@@ -16,11 +16,12 @@
         </div>
       </div>
 
-      <!-- Subordinates Display -->
-      <!-- <SubordinatesDisplay
+      <!-- Subordinates Display
+      <SubordinatesDisplay
         :subordinates="subordinatesData"
         @employee-selected="handleEmployeeSelected"
-      /> -->
+      />
+      -->
 
       <!-- Tabs Navigation -->
       <div class="mb-8">
