@@ -236,7 +236,7 @@ const statusMessage = ref({
 const retryState = ref({
   isRetrying: false,
   currentAttempt: 0,
-  maxAttempts: 5,
+  maxAttempts: 15,
   message: "",
 });
 
@@ -387,7 +387,7 @@ const submitPasswordReset = async () => {
         title: "✅ Contraseña Reiniciada",
         description: successMessage,
         color: "green",
-        timeout: 8000,
+        timeout: 20000,
       });
 
       // Guardar historial de reinicio exitoso
