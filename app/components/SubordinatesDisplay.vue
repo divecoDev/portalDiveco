@@ -302,7 +302,7 @@
       </div>
 
       <!-- Hierarchical Citizens Display -->
-      <div v-else class="space-y-4">
+      <div v-else class="space-y-3">
         <CitizenHierarchyItem
           v-for="citizen in directReports"
           :key="citizen.id"
