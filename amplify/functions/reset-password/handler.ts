@@ -368,7 +368,7 @@ async function callSOAPService(soapBody: string): Promise<any> {
 
 export const handler: Handler = async (event) => {
   const processLogs: ProcessLog[] = [];
-  const MAX_RETRIES = 5;
+  const MAX_RETRIES = 15;
   const BASE_DELAY = 1000; // 1 segundo base
 
   try {

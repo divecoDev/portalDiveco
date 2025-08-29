@@ -3,39 +3,6 @@
     class="animate-fade-in-up border border-cyan-200 dark:border-cyan-700 shadow-lg"
     :style="'box-shadow: var(--diveco-shadow);'"
   >
-    <template #header>
-      <div
-        class="flex items-center justify-between bg-gradient-to-r from-cyan-50 to-cyan-100 dark:from-cyan-900/20 dark:to-cyan-800/20 -m-6 mb-6 p-6 rounded-t-lg"
-      >
-        <div class="flex items-center">
-          <div
-            class="flex-shrink-0 p-2 bg-cyan-600 dark:bg-cyan-500 rounded-lg"
-          >
-            <UIcon name="i-heroicons-clock" class="w-6 h-6 text-white" />
-          </div>
-          <div class="ml-4">
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-              Historial de Acciones SAP
-            </h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Registro de todas las operaciones de usuarios SAP (reinicio y
-              desbloqueo)
-            </p>
-          </div>
-        </div>
-        <UButton
-          @click="refreshHistory"
-          :loading="isLoading"
-          variant="outline"
-          color="cyan"
-          size="sm"
-        >
-          <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2" />
-          Actualizar
-        </UButton>
-      </div>
-    </template>
-
     <!-- Filtros -->
     <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">

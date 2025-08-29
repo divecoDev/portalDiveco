@@ -3,26 +3,6 @@
     class="animate-fade-in-up border border-green-200 dark:border-green-700 shadow-lg"
     :style="'box-shadow: var(--diveco-shadow);'"
   >
-    <template #header>
-      <div
-        class="flex items-center bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 -m-6 mb-6 p-6 rounded-t-lg"
-      >
-        <div
-          class="flex-shrink-0 p-2 bg-green-600 dark:bg-green-500 rounded-lg"
-        >
-          <UIcon name="i-heroicons-lock-open" class="w-6 h-6 text-white" />
-        </div>
-        <div class="ml-4">
-          <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-            Desbloqueo de Usuario SAP
-          </h3>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Solicita el desbloqueo de tu usuario SAP
-          </p>
-        </div>
-      </div>
-    </template>
-
     <!-- Mensaje de Status -->
     <StatusMessage
       :show="statusMessage.show"
@@ -58,8 +38,10 @@
       </div>
     </div>
 
-    <div class="flex space-x-4 gap-6">
-      <div class="w-1/3 space-y-2">
+    <div
+      class="flex flex-col sm:flex-row justify-center items-center space-x-4 gap-6"
+    >
+      <div class="w-full sm:w-1/3 space-y-2">
         <label
           for="sapUser"
           class="block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -80,12 +62,12 @@
         />
       </div>
 
-      <div class="flex-1 space-y-2">
+      <div class="w-full sm:w-1/3 space-y-2">
         <label
           for="cod_personal"
           class="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Codigo Empleado
+          Codigo Ciudadano
         </label>
         <UInput
           id="cod_personal"
@@ -100,7 +82,7 @@
         />
       </div>
 
-      <div class="flex-1 space-y-2">
+      <div class="w-full sm:w-1/3 space-y-2">
         <label
           for="email"
           class="block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -125,7 +107,7 @@
 
     <template #footer>
       <div
-        class="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0 sm:space-x-3 bg-gray-50 dark:bg-gray-800/50 -m-6 mt-6 p-6 rounded-b-lg"
+        class="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0 sm:space-x-3 bg-gray-50 dark:bg-gray-800/50 -m-6 p-6 rounded-b-lg"
       >
         <div class="text-sm text-gray-600 dark:text-gray-400">
           <UIcon
@@ -136,17 +118,6 @@
         </div>
 
         <div class="flex space-x-3">
-          <UButton
-            variant="outline"
-            color="gray"
-            @click="clearForm"
-            :disabled="isProcessing"
-            size="lg"
-            class="border-2 border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-800 bg-white hover:bg-gray-50 font-medium transition-all duration-300 transform hover:scale-105 cursor-pointer"
-          >
-            <UIcon name="i-heroicons-arrow-path" class="w-5 h-5 mr-2" />
-            Limpiar
-          </UButton>
           <UButton
             color="green"
             @click="submitUserUnlock"

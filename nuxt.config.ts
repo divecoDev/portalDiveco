@@ -17,4 +17,10 @@ export default defineNuxtConfig({
     modelsDir: "models",
     devtools: true,
   },
+
+  runtimeConfig: {
+    msTenantId: "",
+    msClientId: "",
+    msClientSecret: "",
+  },
 });
