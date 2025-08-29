@@ -371,7 +371,7 @@ const getAccessToken = async () => {
 
     if (data.success) {
       accessToken.value = data.access_token;
-      console.log("Token obtenido exitosamente desde el backend");
+
       return data.access_token;
     } else {
       throw new Error("Error en la respuesta del servidor");
@@ -405,8 +405,6 @@ const getUserPhoto = async (userId) => {
   loadingPhotos.value.add(userId);
 
   try {
-    console.log(`Obteniendo foto para usuario: ${userId}`);
-
     const data = await $fetch("/api/microsoft-graph/user-photo", {
       method: "POST",
       body: {
@@ -417,10 +415,7 @@ const getUserPhoto = async (userId) => {
     if (data.success) {
       const photoData = data.hasPhoto ? data.photoData : null;
       userPhotos.value.set(userId, photoData);
-      console.log(
-        `Foto obtenida para ${userId}:`,
-        data.hasPhoto ? "✅ Disponible" : "❌ No disponible"
-      );
+
       return photoData;
     } else {
       console.error("Error en la respuesta del servidor para foto");
@@ -456,8 +451,6 @@ const checkSapUser = async (email) => {
   loadingSapUsers.value.add(email);
 
   try {
-    console.log(`Verificando usuario SAP para email: ${email}`);
-
     const data = await $fetch("/api/sap/existUserAndIsActive", {
       query: {
         email: email,
@@ -467,10 +460,7 @@ const checkSapUser = async (email) => {
     if (data.status === 200) {
       const hasSapUser = data.sapUser !== false;
       sapUsersCache.value.set(email, hasSapUser);
-      console.log(
-        `Usuario SAP para ${email}:`,
-        hasSapUser ? "✅ Existe" : "❌ No existe"
-      );
+
       return hasSapUser;
     } else {
       console.error("Error en la respuesta del servidor para usuario SAP");
@@ -490,20 +480,14 @@ const checkSapUser = async (email) => {
 const loadAllUserPhotos = async (citizens) => {
   if (!citizens || citizens.length === 0) return;
 
-  console.log(`Cargando fotos para ${citizens.length} ciudadanos...`);
-
   // Cargar fotos en paralelo para mejor rendimiento
   const photoPromises = citizens.map((citizen) => getUserPhoto(citizen.id));
   await Promise.all(photoPromises);
-
-  console.log("Todas las fotos han sido procesadas");
 };
 
 // Función para verificar usuarios SAP de todos los ciudadanos
 const checkAllSapUsers = async (citizens) => {
   if (!citizens || citizens.length === 0) return;
-
-  console.log(`Verificando usuarios SAP para ${citizens.length} ciudadanos...`);
 
   // Verificar usuarios SAP en paralelo para mejor rendimiento
   const sapPromises = citizens.map((citizen) => checkSapUser(citizen.mail));
@@ -513,8 +497,6 @@ const checkAllSapUsers = async (citizens) => {
   citizens.forEach((citizen, index) => {
     citizen.hasSapUser = sapResults[index];
   });
-
-  console.log("Todas las verificaciones SAP han sido procesadas");
 };
 
 // Función para verificar si el usuario actual existe en SAP
@@ -534,12 +516,8 @@ const checkCurrentUserSap = async () => {
   loadingCurrentUserSap.value = true;
 
   try {
-    console.log(`Verificando usuario SAP actual para email: ${email}`);
-
     const hasSap = await checkSapUser(email);
     currentUserHasSap.value = hasSap;
-
-    console.log(`Usuario actual ${hasSap ? "TIENE" : "NO TIENE"} acceso SAP`);
   } catch (error) {
     console.error("Error verificando usuario SAP actual:", error);
     currentUserHasSap.value = false;
@@ -561,10 +539,6 @@ const getGraphUserData = async (userName) => {
   graphUserError.value = null;
 
   try {
-    console.log(
-      `Obteniendo datos de Microsoft Graph para usuario: ${userName}`
-    );
-
     const data = await $fetch("/api/microsoft-graph/user-info", {
       method: "POST",
       body: {
@@ -574,7 +548,7 @@ const getGraphUserData = async (userName) => {
 
     if (data.success) {
       graphUserData.value = data.userData;
-      console.log("Datos de Microsoft Graph obtenidos:", data.userData);
+
       return data.userData;
     } else {
       throw new Error("Error en la respuesta del servidor");
@@ -605,9 +579,6 @@ const loadCurrentUserPhoto = async () => {
   try {
     const photo = await getUserPhoto(userId);
     currentUserPhoto.value = photo;
-    console.log(
-      `Foto del usuario actual: ${photo ? "Cargada" : "No disponible"}`
-    );
   } catch (error) {
     console.error("Error cargando foto del usuario actual:", error);
     currentUserPhoto.value = null;
@@ -638,8 +609,6 @@ const getDirectReportsForUser = async (userName) => {
   }
 
   try {
-    console.log(`Consultando directReports para usuario: ${userName}`);
-
     const data = await $fetch("/api/microsoft-graph/direct-reports", {
       method: "POST",
       body: {
@@ -648,12 +617,8 @@ const getDirectReportsForUser = async (userName) => {
     });
 
     if (data.success && data.directReports.value) {
-      console.log(
-        `✅ ${userName}: ${data.directReports.value.length} subordinados encontrados`
-      );
       return data.directReports.value;
     } else {
-      console.log(`⚠️ ${userName}: Sin subordinados o respuesta vacía`);
       return [];
     }
   } catch (error) {
@@ -688,7 +653,6 @@ const getDirectReportsRecursive = async (
   currentDepth = 0
 ) => {
   if (currentDepth >= maxDepth) {
-    console.log(`Alcanzada profundidad máxima (${maxDepth}) para ${userName}`);
     return [];
   }
 
@@ -725,14 +689,6 @@ const getDirectReportsRecursive = async (
           subordinates.length +
           subordinates.reduce((total, sub) => total + sub.subordinatesCount, 0);
 
-        if (subordinates.length > 0) {
-          console.log(
-            `📊 ${report.displayName} tiene ${subordinates.length} subordinados directos y ${processedReport.subordinatesCount} en total`
-          );
-        } else {
-          console.log(`📊 ${report.displayName} no tiene subordinados`);
-        }
-
         return processedReport;
       })
     );
@@ -758,16 +714,10 @@ const getDirectReports = async (userName) => {
   reportsError.value = null;
 
   try {
-    console.log(`=== INICIANDO CONSULTA JERÁRQUICA PARA: ${userName} ===`);
-
     // Obtener toda la jerarquía de subordinados recursivamente
     const hierarchicalReports = await getDirectReportsRecursive(userName);
 
     if (hierarchicalReports.length > 0) {
-      console.log("=== JERARQUÍA OBTENIDA ===");
-      console.log(`Usuario principal: ${userName}`);
-      console.log(`Subordinados directos: ${hierarchicalReports.length}`);
-
       // Calcular totales correctamente
       const totalSubordinatesOnly = hierarchicalReports.reduce(
         (total, report) => total + report.subordinatesCount,
@@ -775,25 +725,8 @@ const getDirectReports = async (userName) => {
       );
       const totalPeopleInHierarchy =
         hierarchicalReports.length + totalSubordinatesOnly;
-      console.log(`Total de subordinados indirectos: ${totalSubordinatesOnly}`);
-      console.log(
-        `Total de personas en la jerarquía: ${totalPeopleInHierarchy}`
-      );
-
-      // Mostrar estructura jerárquica
-      hierarchicalReports.forEach((report, index) => {
-        console.log(
-          `${index + 1}. ${report.displayName} (${report.mail || report.userPrincipalName})`
-        );
-        if (report.hasSubordinates) {
-          console.log(
-            `   └── Tiene ${report.subordinatesCount} subordinados en total`
-          );
-        }
-      });
 
       directReports.value = hierarchicalReports;
-
       // Verificar usuarios SAP para todos los ciudadanos (incluyendo subordinados)
       const allCitizens = getAllCitizensFlat(hierarchicalReports);
       await checkAllSapUsers(allCitizens);
@@ -801,11 +734,8 @@ const getDirectReports = async (userName) => {
       // Cargar fotos de todos los ciudadanos (incluyendo subordinados)
       await loadAllUserPhotos(allCitizens);
     } else {
-      console.log("No se encontraron subordinados para este usuario");
       directReports.value = [];
     }
-
-    console.log("=== CONSULTA JERÁRQUICA COMPLETADA ===");
   } catch (error) {
     reportsError.value =
       error.message || "Error desconocido al consultar directReports";
@@ -838,7 +768,6 @@ onMounted(async () => {
   try {
     // Obtener información del usuario actual de Amplify
     user.value = await getCurrentUser();
-    console.log("Usuario actual obtenido:", user.value);
 
     // TEMPORAL: Usar email específico para pruebas
     const testEmail = "hector.merida.gt@camasolympia.com";
@@ -847,7 +776,6 @@ onMounted(async () => {
     await getAccessToken();
 
     // Obtener datos completos del usuario desde Microsoft Graph
-    console.log(`Obteniendo datos de Microsoft Graph para: ${testEmail}`);
     await getGraphUserData(testEmail);
 
     // Verificar si el usuario actual tiene acceso SAP (usando datos de Microsoft Graph)
@@ -857,7 +785,6 @@ onMounted(async () => {
     await loadCurrentUserPhoto();
 
     // Consultar directReports usando el email del usuario
-    console.log(`Realizando consulta de directReports para: ${testEmail}`);
     await getDirectReports(testEmail);
   } catch (error) {
     console.error("Error inicial obteniendo datos:", error);
