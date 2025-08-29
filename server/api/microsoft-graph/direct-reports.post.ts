@@ -1,6 +1,7 @@
 export default defineEventHandler(async (event) => {
+  let body: any;
   try {
-    const body = await readBody(event);
+    body = await readBody(event);
     const { userName } = body;
 
     if (!userName) {
@@ -10,36 +11,19 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    const { msTenantId, msClientId, msClientSecret } = useRuntimeConfig(event);
-
-    // Primero obtenemos el token
-    const accessTokenUrl = `https://login.microsoftonline.com/${msTenantId}/oauth2/v2.0/token`;
-    const scope = "https://graph.microsoft.com/.default";
-
-    const params = new URLSearchParams();
-    params.append("grant_type", "client_credentials");
-    params.append("client_id", msClientId);
-    params.append("client_secret", msClientSecret);
-    params.append("scope", scope);
-
-    const tokenResponse = await fetch(accessTokenUrl, {
+    // Obtener token de acceso usando nuestro endpoint
+    const tokenResponse = (await $fetch("/api/microsoft-graph/token", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: params,
-    });
+    })) as any;
 
-    if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.json();
+    if (!tokenResponse.success) {
       throw createError({
-        statusCode: tokenResponse.status,
-        statusMessage: `Error al obtener el token: ${JSON.stringify(errorData)}`,
+        statusCode: 500,
+        statusMessage: "Error obteniendo token de acceso",
       });
     }
 
-    const tokenData = await tokenResponse.json();
-    const accessToken = tokenData.access_token;
+    const accessToken = tokenResponse.access_token;
 
     // Ahora consultamos los directReports
     const directReportsUrl = `https://graph.microsoft.com/v1.0/users/${userName}/directReports`;
@@ -67,12 +51,27 @@ export default defineEventHandler(async (event) => {
       userName,
       directReports: directReportsData,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error consultando directReports de Microsoft Graph:", error);
+
+    // Si es un error de Microsoft Graph API
+    if (error.status === 404) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: `Usuario ${body?.userName || "desconocido"} no encontrado`,
+      });
+    }
+
+    if (error.status === 401) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: "Token de acceso inválido o expirado",
+      });
+    }
 
     throw createError({
       statusCode: 500,
-      statusMessage: `Error interno del servidor: ${error.message}`,
+      statusMessage: error.message || "Error interno del servidor",
     });
   }
 });

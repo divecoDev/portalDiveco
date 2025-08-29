@@ -43,12 +43,12 @@ export default defineEventHandler(async (event) => {
       token_type: data.token_type,
       expires_in: data.expires_in,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error obteniendo token de Microsoft Graph:", error);
 
     throw createError({
       statusCode: 500,
-      statusMessage: `Error interno del servidor: ${error.message}`,
+      statusMessage: `Error interno del servidor: ${error?.message || "Error desconocido"}`,
     });
   }
 });
