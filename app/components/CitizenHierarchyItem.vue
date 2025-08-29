@@ -7,6 +7,14 @@
         : '',
     ]"
   >
+    <!-- Status Message Global -->
+    <StatusMessage
+      :show="statusMessage.show"
+      :message="statusMessage.message"
+      :type="statusMessage.type"
+      @close="closeStatusMessage"
+    />
+
     <!-- Citizen Card - Diseño Compacto -->
     <div
       :class="[
@@ -142,19 +150,33 @@
                   size="xs"
                   variant="outline"
                   color="cyan"
+                  :loading="isResetting"
+                  :disabled="isResetting || isUnlocking"
                   @click="handleCitizenAction('reset')"
-                  class="px-2 py-1"
+                  class="px-2 py-1 transition-all duration-200"
+                  :class="{ 'animate-pulse': isResetting }"
                 >
-                  <UIcon name="i-heroicons-key" class="w-3 h-3" />
+                  <UIcon
+                    v-if="!isResetting"
+                    name="i-heroicons-key"
+                    class="w-3 h-3"
+                  />
                 </UButton>
                 <UButton
                   size="xs"
                   variant="outline"
                   color="orange"
+                  :loading="isUnlocking"
+                  :disabled="isResetting || isUnlocking"
                   @click="handleCitizenAction('unlock')"
-                  class="px-2 py-1"
+                  class="px-2 py-1 transition-all duration-200"
+                  :class="{ 'animate-pulse': isUnlocking }"
                 >
-                  <UIcon name="i-heroicons-lock-open" class="w-3 h-3" />
+                  <UIcon
+                    v-if="!isUnlocking"
+                    name="i-heroicons-lock-open"
+                    class="w-3 h-3"
+                  />
                 </UButton>
               </template>
 
@@ -164,6 +186,7 @@
                 @click="handleToggleSubordinates"
                 variant="ghost"
                 size="xs"
+                :disabled="isResetting || isUnlocking"
                 :icon="
                   isExpanded
                     ? 'i-heroicons-chevron-up'
@@ -197,6 +220,18 @@
 </template>
 
 <script setup>
+import { ref, computed } from "vue";
+import { generateClient } from "aws-amplify/api";
+import { getCurrentUser } from "aws-amplify/auth";
+import { useToast } from "#imports";
+
+// Importar el componente StatusMessage
+import StatusMessage from "./StatusMessage.vue";
+
+// Generar cliente de Amplify
+const client = generateClient();
+const toast = useToast();
+
 const props = defineProps({
   citizen: {
     type: Object,
@@ -222,6 +257,42 @@ const props = defineProps({
 
 const emit = defineEmits(["citizen-selected", "toggle-subordinates"]);
 
+// Estados reactivos para las acciones
+const isResetting = ref(false);
+const isUnlocking = ref(false);
+
+// Estado para notificaciones locales
+const statusMessage = ref({
+  show: false,
+  message: "",
+  type: "info",
+});
+
+// Función para mostrar mensaje de estado
+const showStatusMessage = (message, type = "info") => {
+  console.log(
+    `🔔 ${props.citizen.displayName} - Mostrando mensaje:`,
+    message,
+    type
+  );
+
+  // Cerrar mensaje anterior
+  statusMessage.value.show = false;
+
+  // Mostrar nuevo mensaje después de un pequeño delay
+  setTimeout(() => {
+    statusMessage.value = {
+      show: true,
+      message,
+      type,
+    };
+  }, 100);
+};
+
+const closeStatusMessage = () => {
+  statusMessage.value.show = false;
+};
+
 const getInitials = (name) => {
   if (!name) return "??";
   return name
@@ -236,7 +307,203 @@ const isExpanded = computed(() => {
   return props.expandedSubordinates.has(props.citizen.id);
 });
 
+// Función para obtener el usuario SAP basado en el email
+const getSapUserFromEmail = async (email) => {
+  try {
+    const response = await $fetch("/api/sap/users");
+    const users = response.data;
+
+    // Buscar el usuario SAP que coincida con el email
+    const sapUser = users.find(
+      (user) => user.correo?.toLowerCase() === email?.toLowerCase()
+    );
+
+    return sapUser;
+  } catch (error) {
+    console.error("Error obteniendo usuarios SAP:", error);
+    return null;
+  }
+};
+
+// Función para guardar historial de acciones
+const saveActionHistory = async (action, response) => {
+  try {
+    const currentUser = await getCurrentUser();
+    const loggedUserEmail =
+      currentUser?.signInDetails?.loginId ||
+      currentUser?.username ||
+      "usuario-desconocido";
+
+    const historyData = {
+      sapUser: props.citizen.sapUserData?.usuario || props.citizen.mail,
+      emailOwner: loggedUserEmail,
+      accion: action === "reset" ? "RESET_PASSWORD" : "UNLOCK_USER",
+      status: "Completado",
+      logs: JSON.stringify(response),
+      date: new Date().toISOString(),
+    };
+
+    const { errors, data: historyResponse } =
+      await client.models.SapUserActionHistory.create(historyData);
+
+    if (errors) {
+      console.error("❌ Errores al guardar historial:", errors);
+    } else {
+      console.log("✅ Historial guardado exitosamente:", historyResponse);
+    }
+  } catch (error) {
+    console.error("❌ Error al guardar historial:", error);
+  }
+};
+
+// Función para reiniciar contraseña
+const handlePasswordReset = async () => {
+  if (!props.citizen.hasSapUser || isResetting.value) return;
+
+  isResetting.value = true;
+
+  try {
+    console.log(
+      `🚀 Iniciando reinicio de contraseña para: ${props.citizen.displayName}`
+    );
+
+    // Obtener datos del usuario SAP
+    const sapUserData = await getSapUserFromEmail(props.citizen.mail);
+
+    if (!sapUserData) {
+      throw new Error("No se encontró el usuario SAP correspondiente");
+    }
+
+    // Almacenar datos SAP en el ciudadano para referencia
+    props.citizen.sapUserData = sapUserData;
+
+    // Mostrar mensaje de procesando
+    showStatusMessage(
+      `Iniciando proceso de reinicio para ${props.citizen.displayName} (${sapUserData.usuario})`,
+      "info"
+    );
+
+    const response = await client.queries.ResetPassword({
+      sapUser: sapUserData.usuario,
+      email: props.citizen.mail,
+      accion: "R",
+    });
+
+    console.log("📡 Respuesta de reinicio:", response);
+
+    // Parsear la respuesta
+    let parsedData = null;
+    if (response.data && typeof response.data === "string") {
+      parsedData = JSON.parse(response.data);
+    }
+
+    if (parsedData && parsedData.success && parsedData.data) {
+      const resetData = parsedData.data;
+
+      // Mostrar mensaje de éxito
+      const successMessage = `${props.citizen.displayName}: ${resetData.mensaje || "Contraseña reiniciada exitosamente"}`;
+      showStatusMessage(successMessage, "success");
+
+      // Guardar historial
+      await saveActionHistory("reset", resetData);
+
+      console.log(`✅ Reinicio exitoso para ${props.citizen.displayName}`);
+    } else {
+      throw new Error(
+        parsedData?.mensaje || "Error en el servicio de reinicio"
+      );
+    }
+  } catch (error) {
+    console.error(
+      `❌ Error en reinicio para ${props.citizen.displayName}:`,
+      error
+    );
+
+    // Mostrar mensaje de error
+    const errorMessage = `${props.citizen.displayName}: ${error.message}`;
+    showStatusMessage(errorMessage, "error");
+  } finally {
+    isResetting.value = false;
+  }
+};
+
+// Función para desbloquear usuario
+const handleUserUnlock = async () => {
+  if (!props.citizen.hasSapUser || isUnlocking.value) return;
+
+  isUnlocking.value = true;
+
+  try {
+    console.log(`🚀 Iniciando desbloqueo para: ${props.citizen.displayName}`);
+
+    // Obtener datos del usuario SAP
+    const sapUserData = await getSapUserFromEmail(props.citizen.mail);
+
+    if (!sapUserData) {
+      throw new Error("No se encontró el usuario SAP correspondiente");
+    }
+
+    // Almacenar datos SAP en el ciudadano para referencia
+    props.citizen.sapUserData = sapUserData;
+
+    // Mostrar mensaje de procesando
+    showStatusMessage(
+      `Iniciando proceso de desbloqueo para ${props.citizen.displayName} (${sapUserData.usuario})`,
+      "info"
+    );
+
+    const response = await client.queries.ResetPassword({
+      sapUser: sapUserData.usuario,
+      email: props.citizen.mail,
+      accion: "D", // Acción de desbloqueo
+    });
+
+    console.log("📡 Respuesta de desbloqueo:", response);
+
+    // Parsear la respuesta
+    let parsedData = null;
+    if (response.data && typeof response.data === "string") {
+      parsedData = JSON.parse(response.data);
+    }
+
+    if (parsedData && parsedData.success && parsedData.data) {
+      const unlockData = parsedData.data;
+
+      // Mostrar mensaje de éxito
+      const successMessage = `${props.citizen.displayName}: ${unlockData.mensaje || "Usuario desbloqueado exitosamente"}`;
+      showStatusMessage(successMessage, "success");
+
+      // Guardar historial
+      await saveActionHistory("unlock", unlockData);
+
+      console.log(`✅ Desbloqueo exitoso para ${props.citizen.displayName}`);
+    } else {
+      throw new Error(
+        parsedData?.mensaje || "Error en el servicio de desbloqueo"
+      );
+    }
+  } catch (error) {
+    console.error(
+      `❌ Error en desbloqueo para ${props.citizen.displayName}:`,
+      error
+    );
+
+    // Mostrar mensaje de error
+    const errorMessage = `${props.citizen.displayName}: ${error.message}`;
+    showStatusMessage(errorMessage, "error");
+  } finally {
+    isUnlocking.value = false;
+  }
+};
+
 const handleCitizenAction = (action) => {
+  if (action === "reset") {
+    handlePasswordReset();
+  } else if (action === "unlock") {
+    handleUserUnlock();
+  }
+
+  // Mantener compatibilidad con el evento original
   emit("citizen-selected", props.citizen, action);
 };
 
@@ -289,5 +556,41 @@ const handleToggleSubordinates = () => {
 /* Efectos de hover para los botones */
 .group:hover .group-hover\:opacity-100 {
   opacity: 1;
+}
+
+/* Animaciones para estados de carga */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Estilos para botones en estado de carga */
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+button[loading="true"] {
+  cursor: wait;
+}
+
+/* Efectos para botones de acción */
+button[color="cyan"]:not(:disabled):hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(6, 182, 212, 0.3);
+}
+
+button[color="orange"]:not(:disabled):hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(249, 115, 22, 0.3);
 }
 </style>
