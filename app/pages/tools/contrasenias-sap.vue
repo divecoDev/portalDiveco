@@ -9,8 +9,13 @@
               Gestión de Contraseñas SAP
             </h1>
             <p class="text-gray-600 dark:text-gray-400 mt-2">
-              Reinicia contraseñas y desbloquea usuario SAP de forma
-              autogestionada
+              <span v-if="hasGroup('ADMIN')">
+                Reinicia contraseñas y desbloquea usuario SAP de forma
+                autogestionada
+              </span>
+              <span v-else>
+                Gestiona las contraseñas de tus subordinados SAP
+              </span>
             </p>
           </div>
         </div>
@@ -19,7 +24,8 @@
       <!-- Subordinates Display -->
       <SubordinatesDisplay @citizen-selected="handleCitizenSelected" />
 
-      <div class="mb-6">
+      <!-- Gestión Global - Solo para ADMIN -->
+      <div v-if="hasGroup('ADMIN')" class="mb-6">
         <h2
           class="text-2xl font-bold text-gray-900 dark:text-white flex items-center space-x-3"
         >
@@ -36,6 +42,7 @@
       </div>
 
       <div
+        v-if="hasGroup('ADMIN')"
         class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6 px-6 py-4"
       >
         <!-- Tabs Navigation -->
@@ -99,7 +106,7 @@
 definePageMeta({
   layout: "default",
   middleware: ["require-role"],
-  requiredRole: "ADMIN",
+  requiredRole: ["ADMIN", "SAP-USER-ADMIN"],
 });
 
 useSeoMeta({
@@ -107,6 +114,9 @@ useSeoMeta({
   description:
     "Herramienta de autogestión para reinicio de contraseñas y desbloqueo de usuarios SAP",
 });
+
+// Composables
+const { hasGroup } = useUserGroups();
 
 // Reactive data
 const activeTab = ref("reset");

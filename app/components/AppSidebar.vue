@@ -528,8 +528,8 @@ const navigationSections = computed(() => {
     },
   ];
 
-  // Solo mostrar la sección de herramientas si el usuario es ADMIN
-  if (hasGroup("ADMIN")) {
+  // Solo mostrar la sección de herramientas si el usuario es ADMIN o SAP-USER-ADMIN
+  if (hasGroup("ADMIN") || hasGroup("SAP-USER-ADMIN")) {
     sections.push({
       title: "Herramientas",
       items: [
