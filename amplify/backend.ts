@@ -1,4 +1,5 @@
 import { defineBackend } from "@aws-amplify/backend";
+import * as iam from "aws-cdk-lib/aws-iam";
 import { auth } from "./auth/resource";
 import { data } from "./data/resource";
 import { groups } from "./functions/groups/resource";
@@ -15,5 +16,11 @@ export const backend = defineBackend({
   resetPassword,
 });
 
+const groupsLambda = backend.groups.resources.lambda;
+const groupsPolicy = new iam.PolicyStatement({
+  actions: ["cognito-idp:AdminListGroupsForUser"],
+  resources: ["*"],
+});
+groupsLambda.addToRolePolicy(groupsPolicy);
 // Exportar para uso en otros archivos
 export default backend;
