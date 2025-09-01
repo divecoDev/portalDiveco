@@ -544,6 +544,22 @@ const navigationSections = computed(() => {
     });
   }
 
+  // Solo mostrar la sección de administración si el usuario es ADMIN
+  if (hasGroup("ADMIN")) {
+    sections.push({
+      title: "Administración",
+      items: [
+        {
+          name: "Gestión de Usuarios",
+          href: "/admin/users",
+          icon: "i-heroicons-users",
+          badge: "Admin",
+          badgeColor: "red",
+        },
+      ],
+    });
+  }
+
   return sections;
 });
 
