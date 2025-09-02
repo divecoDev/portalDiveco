@@ -1,4 +1,4 @@
-import { setup, $fetch } from "@nuxt/test-utils/e2e";
+import { setup, createPage } from "@nuxt/test-utils/e2e";
 import { describe, it, expect } from "vitest";
 
 describe("App", async () => {
@@ -7,7 +7,12 @@ describe("App", async () => {
   });
 
   it("should render", async () => {
-    const page = await $fetch("/");
-    expect(page).toContain("DIVECO");
+    const page = await createPage("/");
+    expect(await page.getByTestId("diveco-button").isVisible()).toBe(true);
+  });
+
+  it("should navigate to the login page", async () => {
+    const page = await createPage("/");
+    await page.getByTestId("diveco-button").click();
   });
 });
