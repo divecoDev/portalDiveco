@@ -540,9 +540,7 @@ const navigationSections = computed(() => {
         {
           name: "Gestión de Usuarios",
           href: "/admin/users",
-          icon: "i-heroicons-users",
-          badge: "Admin",
-          badgeColor: "red",
+          icon: "i-heroicons-user-group",
         },
       ],
     });

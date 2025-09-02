@@ -87,8 +87,6 @@
               </div>
             </div>
           </div>
-
-          <!-- Slot para el contenido de la página -->
           <slot />
         </div>
       </main>
