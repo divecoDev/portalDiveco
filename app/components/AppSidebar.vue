@@ -657,20 +657,14 @@ const logout = async () => {
   closeUserMenu();
 
   try {
-    console.log("Cerrando sesión...");
-
     // Cerrar sesión usando Amplify Auth
     await signOut();
-
-    console.log("Sesión cerrada exitosamente");
-
     // Redireccionar a la raíz después del cierre de sesión
     await window.location.reload();
   } catch (error) {
     console.error("Error al cerrar sesión:", error);
 
     // Si hay un error, mostrar mensaje y redireccionar de todas formas
-    console.log("Redirigiendo a la raíz...");
     await navigateTo("/");
   }
 };

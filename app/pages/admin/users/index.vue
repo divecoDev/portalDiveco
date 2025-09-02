@@ -295,27 +295,11 @@ const refreshUsers = async () => {
   try {
     const listUsers = await getUsers();
     users.value = listUsers;
-    console.log("Usuarios actualizados:", listUsers);
   } catch (error) {
     console.error("Error al cargar usuarios:", error);
   } finally {
     isLoading.value = false;
   }
-};
-
-const viewUser = (user) => {
-  // Implementar vista de usuario
-  console.log("Ver usuario:", user);
-};
-
-const editUser = (user) => {
-  // Implementar edición de usuario
-  console.log("Editar usuario:", user);
-};
-
-const deleteUser = (user) => {
-  // Implementar confirmación y eliminación
-  console.log("Eliminar usuario:", user);
 };
 
 const openGroupsModal = (user) => {
@@ -328,18 +312,12 @@ const closeGroupsModal = () => {
   selectedUser.value = null;
 };
 
-const exportUsers = () => {
-  // Implementar exportación
-  console.log("Exportar usuarios");
-};
-
 // Lifecycle
 onMounted(async () => {
   isLoading.value = true;
   try {
     const listUsers = await getUsers();
     users.value = listUsers;
-    console.log("Usuarios cargados:", listUsers);
   } catch (error) {
     console.error("Error al cargar usuarios:", error);
   } finally {
@@ -358,8 +336,6 @@ const getUsers = async () => {
     }
 
     const response = JSON.parse(request.data);
-    console.log("Respuesta completa del handler:", response);
-
     // Verificar que la respuesta no sea null y tenga la estructura esperada
     if (!response) {
       console.error("Respuesta parseada es null");

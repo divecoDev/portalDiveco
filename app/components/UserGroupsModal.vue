@@ -258,15 +258,12 @@ const loadAllGroups = async () => {
     // Cargar todos los grupos disponibles
     const request = await client.queries.AllGroups({});
     const response = JSON.parse(request.data);
-    console.log("Grupos cargados:", response);
-
     // Filtrar grupos que NO contengan "MicrosoftEntra" en el nombre
     const filteredGroups = response.groups.filter(
       (group) => !group.GroupName.includes("MicrosoftEntra")
     );
 
     groups.value = filteredGroups;
-    console.log("Grupos filtrados (sin MicrosoftEntra):", filteredGroups);
   } catch (error) {
     console.error("Error al cargar grupos:", error);
     groups.value = [];
@@ -285,18 +282,12 @@ const loadSelectedUserGroups = async () => {
       username: props.user.Username,
     });
     const response = JSON.parse(request.data);
-    console.log("Grupos del usuario seleccionado:", response);
-
     // Filtrar grupos que NO contengan "MicrosoftEntra" en el nombre
     const filteredUserGroups = response.groups.filter(
       (group) => !group.GroupName.includes("MicrosoftEntra")
     );
 
     selectedUserGroups.value = filteredUserGroups;
-    console.log(
-      "Grupos filtrados del usuario seleccionado:",
-      filteredUserGroups
-    );
   } catch (error) {
     console.error("Error al cargar grupos del usuario seleccionado:", error);
     selectedUserGroups.value = [];
@@ -354,13 +345,8 @@ const assignUserToGroup = async (groupName) => {
     });
 
     const response = JSON.parse(request.data);
-    console.log("Usuario asignado al grupo:", response);
-
     // Recargar grupos del usuario seleccionado para actualizar la UI
     await loadSelectedUserGroups();
-
-    // Mostrar mensaje de éxito (opcional)
-    console.log(`Usuario asignado al grupo ${groupName} exitosamente`);
   } catch (error) {
     console.error("Error al asignar usuario al grupo:", error);
   } finally {
@@ -379,13 +365,11 @@ const removeUserFromGroup = async (groupName) => {
     });
 
     const response = JSON.parse(request.data);
-    console.log("Usuario removido del grupo:", response);
 
     // Recargar grupos del usuario seleccionado para actualizar la UI
     await loadSelectedUserGroups();
 
     // Mostrar mensaje de éxito (opcional)
-    console.log(`Usuario removido del grupo ${groupName} exitosamente`);
   } catch (error) {
     console.error("Error al remover usuario del grupo:", error);
   } finally {
@@ -400,7 +384,6 @@ watch(
     if (newValue) {
       // Cargar grupos del usuario seleccionado cuando se abre el modal
       loadSelectedUserGroups();
-      console.log("Modal abierto, cargando grupos del usuario seleccionado");
     }
   }
 );
@@ -412,7 +395,6 @@ watch(
     if (newUser && props.isOpen) {
       // Recargar grupos si el usuario cambia y el modal está abierto
       loadSelectedUserGroups();
-      console.log("Usuario cambiado, recargando grupos");
     }
   }
 );
