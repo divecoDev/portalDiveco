@@ -2,6 +2,7 @@ import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 import { groups } from "../functions/groups/resource";
 import { resetPassword } from "../functions/reset-password/resource";
 import { users } from "../functions/users/resource";
+import { allGroups } from "../functions/AllGroups/resource";
 /*== STEP 1 ===============================================================
 The section below creates a Todo database table with a "content" field. Try
 adding a new "isDone" field as a boolean. The authorization rule below
@@ -43,6 +44,12 @@ const schema = a.schema({
     .returns(a.string())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(users)),
+
+  AllGroups: a
+    .query()
+    .returns(a.string())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(allGroups)),
 
   SapUserActionHistory: a
     .model({

@@ -5,6 +5,7 @@ import { data } from "./data/resource";
 import { groups } from "./functions/groups/resource";
 import { resetPassword } from "./functions/reset-password/resource";
 import { users } from "./functions/users/resource";
+import { allGroups } from "./functions/AllGroups/resource";
 
 /**
  * Configuración del backend de Amplify
@@ -16,6 +17,7 @@ export const backend = defineBackend({
   groups,
   resetPassword,
   users,
+  allGroups,
 });
 
 const groupsLambda = backend.groups.resources.lambda;
@@ -31,6 +33,13 @@ const usersPolicy = new iam.PolicyStatement({
   resources: ["*"],
 });
 usersLambda.addToRolePolicy(usersPolicy);
+
+const allGroupsLambda = backend.allGroups.resources.lambda;
+const allGroupsPolicy = new iam.PolicyStatement({
+  actions: ["cognito-idp:ListGroups"],
+  resources: ["*"],
+});
+allGroupsLambda.addToRolePolicy(allGroupsPolicy);
 
 // Exportar para uso en otros archivos
 export default backend;

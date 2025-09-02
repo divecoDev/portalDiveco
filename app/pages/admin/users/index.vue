@@ -181,20 +181,12 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <div class="flex items-center space-x-2">
                   <UButton
-                    icon="i-heroicons-eye"
+                    icon="i-heroicons-users"
                     variant="ghost"
-                    color="gray"
+                    color="cyan"
                     size="sm"
-                    @click="viewUser(user)"
-                    title="Ver detalles"
-                  />
-                  <UButton
-                    icon="i-heroicons-pencil"
-                    variant="ghost"
-                    color="blue"
-                    size="sm"
-                    @click="editUser(user)"
-                    title="Editar usuario"
+                    @click="openGroupsModal(user)"
+                    title="Ver grupos"
                   />
                   <UButton
                     icon="i-heroicons-trash"
@@ -249,12 +241,20 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de Grupos -->
+    <UserGroupsModal
+      :is-open="isGroupsModalOpen"
+      :user="selectedUser"
+      @close="closeGroupsModal"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { generateClient } from "aws-amplify/api";
+import UserGroupsModal from "~/components/UserGroupsModal.vue";
 
 const client = generateClient();
 
@@ -276,6 +276,10 @@ const searchQuery = ref("");
 const statusFilter = ref("");
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
+
+// Estado del modal de grupos
+const isGroupsModalOpen = ref(false);
+const selectedUser = ref(null);
 
 // Datos de usuarios de Cognito
 const users = ref([]);
@@ -372,6 +376,16 @@ const editUser = (user) => {
 const deleteUser = (user) => {
   // Implementar confirmación y eliminación
   console.log("Eliminar usuario:", user);
+};
+
+const openGroupsModal = (user) => {
+  selectedUser.value = user;
+  isGroupsModalOpen.value = true;
+};
+
+const closeGroupsModal = () => {
+  isGroupsModalOpen.value = false;
+  selectedUser.value = null;
 };
 
 const exportUsers = () => {
