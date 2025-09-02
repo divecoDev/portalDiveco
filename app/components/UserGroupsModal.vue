@@ -15,16 +15,12 @@
         @click.stop
       >
         <!-- Modal Header -->
-        <div
-          class="bg-gray-50 dark:bg-gray-700 px-6 py-4 border-b border-gray-200 dark:border-gray-600"
-        >
+        <div class="bg-cyan-500 px-6 py-4 border-b border-cyan-600">
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-              Grupos
-            </h3>
+            <h3 class="text-lg font-semibold text-white">Grupos</h3>
             <button
               @click="closeModal"
-              class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              class="rounded-lg p-1.5 text-white hover:bg-cyan-600 hover:text-white transition-colors"
             >
               <svg
                 class="h-5 w-5"
@@ -221,20 +217,6 @@
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- Modal Footer -->
-        <div
-          class="bg-gray-50 dark:bg-gray-700 px-6 py-4 border-t border-gray-200 dark:border-gray-600"
-        >
-          <div class="flex justify-end space-x-3">
-            <button
-              @click="closeModal"
-              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 transition-colors"
-            >
-              Cerrar
-            </button>
           </div>
         </div>
       </div>
