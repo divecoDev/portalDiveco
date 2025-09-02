@@ -244,8 +244,12 @@ const closeStatusMessage = () => {
   statusMessage.value.show = false;
 };
 
-// Función para guardar el historial de reinicio
-const saveResetPasswordHistory = async (sapUser, resetResponse) => {
+// Función para guardar el historial de reinicio (éxito o error)
+const saveResetPasswordHistory = async (
+  sapUser,
+  response,
+  isSuccess = true
+) => {
   try {
     console.log("📝 ===== GUARDANDO HISTORIAL DE REINICIO =====");
 
@@ -257,16 +261,17 @@ const saveResetPasswordHistory = async (sapUser, resetResponse) => {
       "usuario-desconocido";
 
     console.log("👤 Usuario logueado:", loggedUserEmail);
-    console.log("🎯 Usuario SAP reiniciado:", sapUser);
-    console.log("📊 Respuesta a guardar:", resetResponse);
+    console.log("🎯 Usuario SAP:", sapUser);
+    console.log("📊 Respuesta a guardar:", response);
+    console.log("✅ Es éxito:", isSuccess);
 
     // Preparar los datos del historial
     const historyData = {
       sapUser: sapUser,
       emailOwner: loggedUserEmail,
       accion: "RESET_PASSWORD",
-      status: "Completado",
-      logs: JSON.stringify(resetResponse),
+      status: isSuccess ? "Completado" : "Error",
+      logs: JSON.stringify(response),
       date: new Date().toISOString(),
     };
 
@@ -365,7 +370,7 @@ const submitPasswordReset = async () => {
 
       // Guardar historial de reinicio exitoso
       console.log("💾 Guardando historial de reinicio...");
-      await saveResetPasswordHistory(form.value.sapUser, resetData);
+      await saveResetPasswordHistory(form.value.sapUser, resetData, true);
 
       // Éxito - emitir los datos correctos
       emit("reset-success", {
@@ -399,6 +404,10 @@ const submitPasswordReset = async () => {
         timeout: 8000,
       });
 
+      // Guardar historial de error del servicio SAP
+      console.log("💾 Guardando historial de error del servicio SAP...");
+      await saveResetPasswordHistory(form.value.sapUser, parsedData, false);
+
       // Error del servicio
       emit("reset-error", {
         codigo: parsedData.codigo || -1,
@@ -422,6 +431,14 @@ const submitPasswordReset = async () => {
         color: "red",
         timeout: 8000,
       });
+
+      // Guardar historial de error de Amplify
+      console.log("💾 Guardando historial de error de Amplify...");
+      await saveResetPasswordHistory(
+        form.value.sapUser,
+        response.errors,
+        false
+      );
 
       // Error del servicio
       emit("reset-error", {
@@ -458,6 +475,19 @@ const submitPasswordReset = async () => {
 
     // Mostrar mensaje de error
     showStatusMessage(errorMessage, "error");
+
+    // Guardar historial de error crítico
+    console.log("💾 Guardando historial de error crítico...");
+    await saveResetPasswordHistory(
+      form.value.sapUser,
+      {
+        error: error.message,
+        stack: error.stack,
+        codigo: codigo,
+        mensaje: errorMessage,
+      },
+      false
+    );
 
     // Emitir error
     emit("reset-error", {

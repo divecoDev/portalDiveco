@@ -29,6 +29,7 @@ export const auth = defineAuth({
             "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
         },
       },
+
       logoutUrls: [LOGOUT_URL],
       callbackUrls: [CALLBACK_URL],
     },

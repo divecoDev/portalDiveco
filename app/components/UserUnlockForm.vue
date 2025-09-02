@@ -245,8 +245,8 @@ const closeStatusMessage = () => {
   statusMessage.value.show = false;
 };
 
-// Función para guardar el historial de desbloqueo
-const saveUnlockUserHistory = async (sapUser, unlockResponse) => {
+// Función para guardar el historial de desbloqueo (éxito o error)
+const saveUnlockUserHistory = async (sapUser, response, isSuccess = true) => {
   try {
     console.log("📝 ===== GUARDANDO HISTORIAL DE DESBLOQUEO =====");
 
@@ -258,16 +258,17 @@ const saveUnlockUserHistory = async (sapUser, unlockResponse) => {
       "usuario-desconocido";
 
     console.log("👤 Usuario logueado:", loggedUserEmail);
-    console.log("🎯 Usuario SAP desbloqueado:", sapUser);
-    console.log("📊 Respuesta a guardar:", unlockResponse);
+    console.log("🎯 Usuario SAP:", sapUser);
+    console.log("📊 Respuesta a guardar:", response);
+    console.log("✅ Es éxito:", isSuccess);
 
     // Preparar los datos del historial
     const historyData = {
       sapUser: sapUser,
       emailOwner: loggedUserEmail,
       accion: "UNLOCK_USER",
-      status: "Completado",
-      logs: JSON.stringify(unlockResponse),
+      status: isSuccess ? "Completado" : "Error",
+      logs: JSON.stringify(response),
       date: new Date().toISOString(),
     };
 
@@ -368,7 +369,7 @@ const submitUserUnlock = async () => {
 
       // Guardar historial de desbloqueo exitoso
       console.log("💾 Guardando historial de desbloqueo...");
-      await saveUnlockUserHistory(form.value.sapUser, unlockData);
+      await saveUnlockUserHistory(form.value.sapUser, unlockData, true);
 
       // Éxito - emitir los datos correctos
       emit("unlock-success", {
@@ -404,6 +405,10 @@ const submitUserUnlock = async () => {
         timeout: 8000,
       });
 
+      // Guardar historial de error del servicio SAP
+      console.log("💾 Guardando historial de error del servicio SAP...");
+      await saveUnlockUserHistory(form.value.sapUser, parsedData, false);
+
       // Error del servicio
       emit("unlock-error", {
         codigo: parsedData.codigo || -1,
@@ -427,6 +432,10 @@ const submitUserUnlock = async () => {
         color: "red",
         timeout: 8000,
       });
+
+      // Guardar historial de error de Amplify
+      console.log("💾 Guardando historial de error de Amplify...");
+      await saveUnlockUserHistory(form.value.sapUser, response.errors, false);
 
       // Error del servicio
       emit("unlock-error", {
@@ -463,6 +472,19 @@ const submitUserUnlock = async () => {
 
     // Mostrar mensaje de error
     showStatusMessage(errorMessage, "error");
+
+    // Guardar historial de error crítico
+    console.log("💾 Guardando historial de error crítico...");
+    await saveUnlockUserHistory(
+      form.value.sapUser,
+      {
+        error: error.message,
+        stack: error.stack,
+        codigo: codigo,
+        mensaje: errorMessage,
+      },
+      false
+    );
 
     // Emitir error
     emit("unlock-error", {
