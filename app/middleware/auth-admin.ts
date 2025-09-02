@@ -13,5 +13,5 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // Para desarrollo, permitir acceso a todos los usuarios
   // En producción, esto debe verificar la autenticación real
-  return;
+  return false;
 });

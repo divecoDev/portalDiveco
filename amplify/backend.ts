@@ -8,6 +8,7 @@ import { users } from "./functions/admin-users/Users/resource";
 import { allGroups } from "./functions/admin-users/AllGroups/resource";
 import { assignUserToGroup } from "./functions/admin-users/AssignUserToGroup/resource";
 import { removeUserFromGroup } from "./functions/admin-users/RemoveUserFromGroup/resource";
+import { adminUserGlobalSignOut } from "./functions/admin-users/AdminUserGlobalSignOut/resource";
 /**
  * Configuración del backend de Amplify
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
@@ -21,6 +22,7 @@ export const backend = defineBackend({
   allGroups,
   assignUserToGroup,
   removeUserFromGroup,
+  adminUserGlobalSignOut,
 });
 
 const groupsLambda = backend.groups.resources.lambda;
@@ -57,6 +59,14 @@ const removeUserFromGroupPolicy = new iam.PolicyStatement({
   resources: ["*"],
 });
 removeUserFromGroupLambda.addToRolePolicy(removeUserFromGroupPolicy);
+
+const adminUserGlobalSignOutLambda =
+  backend.adminUserGlobalSignOut.resources.lambda;
+const adminUserGlobalSignOutPolicy = new iam.PolicyStatement({
+  actions: ["cognito-idp:AdminUserGlobalSignOut"],
+  resources: ["*"],
+});
+adminUserGlobalSignOutLambda.addToRolePolicy(adminUserGlobalSignOutPolicy);
 
 // Exportar para uso en otros archivos
 export default backend;

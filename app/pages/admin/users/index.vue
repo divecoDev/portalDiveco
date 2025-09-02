@@ -135,6 +135,17 @@
                     size="sm"
                     @click="openGroupsModal(user)"
                     title="Ver grupos"
+                    class="hover:text-cyan-500 cursor-pointer"
+                  />
+
+                  <UButton
+                    icon="i-heroicons-arrow-left-start-on-rectangle"
+                    variant="ghost"
+                    color="cyan"
+                    size="sm"
+                    @click="adminUserGlobalSignOut(user.Username)"
+                    title="Cerrar sesión"
+                    class="hover:text-red-500 cursor-pointer"
                   />
                 </div>
               </td>
@@ -201,7 +212,8 @@ const client = generateClient();
 // Definir el layout y middleware
 definePageMeta({
   layout: "default",
-  middleware: ["auth-admin"], // Temporal para desarrollo
+  middleware: "require-role",
+  requiredRole: "ADMIN",
 });
 
 // Meta tags
@@ -382,6 +394,11 @@ const getUsers = async () => {
     console.error("Error en getUsers:", error);
     return [];
   }
+};
+
+const adminUserGlobalSignOut = async (userId) => {
+  const response = await client.queries.AdminUserGlobalSignOut({ userId });
+  return response;
 };
 </script>
 

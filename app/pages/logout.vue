@@ -106,6 +106,8 @@ const goToRoot = async () => {
 
 // Lifecycle
 onMounted(async () => {
+  // limpiar en local storage
+  localStorage.clear();
   // Cerrar sesión automáticamente al cargar la página
   await logout();
 });

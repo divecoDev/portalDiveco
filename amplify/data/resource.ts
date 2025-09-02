@@ -5,6 +5,7 @@ import { users } from "../functions/admin-users/Users/resource";
 import { allGroups } from "../functions/admin-users/AllGroups/resource";
 import { assignUserToGroup } from "../functions/admin-users/AssignUserToGroup/resource";
 import { removeUserFromGroup } from "../functions/admin-users/RemoveUserFromGroup/resource";
+import { adminUserGlobalSignOut } from "../functions/admin-users/AdminUserGlobalSignOut/resource";
 /*== STEP 1 ===============================================================
 The section below creates a Todo database table with a "content" field. Try
 adding a new "isDone" field as a boolean. The authorization rule below
@@ -66,6 +67,13 @@ const schema = a.schema({
     .returns(a.string())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(removeUserFromGroup)),
+
+  AdminUserGlobalSignOut: a
+    .query()
+    .arguments({ userId: a.string() })
+    .returns(a.string())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(adminUserGlobalSignOut)),
 
   SapUserActionHistory: a
     .model({
