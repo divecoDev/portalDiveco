@@ -348,29 +348,64 @@ onMounted(async () => {
 });
 
 const getUsers = async () => {
-  const request = await client.queries.ListUsers({});
-  const response = JSON.parse(request.data);
+  try {
+    const request = await client.queries.ListUsers({});
 
-  console.log("Respuesta completa del handler:", response);
+    // Verificar que la respuesta existe y tiene data
+    if (!request || !request.data) {
+      console.error("Respuesta vacía o sin data:", request);
+      return [];
+    }
 
-  // Verificar si la respuesta tiene la estructura esperada
-  const users = response.users || response;
+    const response = JSON.parse(request.data);
+    console.log("Respuesta completa del handler:", response);
 
-  // Si es un array directamente, usarlo; si no, intentar acceder a la propiedad users
-  const usersArray = Array.isArray(users) ? users : users.users || [];
+    // Verificar que la respuesta no sea null y tenga la estructura esperada
+    if (!response) {
+      console.error("Respuesta parseada es null");
+      return [];
+    }
 
-  // Procesar los usuarios de Cognito para extraer el email
-  const processedUsers = usersArray.map((user) => {
-    const emailAttribute = user.Attributes.find(
-      (attr) => attr.Name === "email"
-    );
-    return {
-      ...user,
-      email: emailAttribute ? emailAttribute.Value : "Sin email",
-    };
-  });
+    // Verificar si la respuesta tiene la estructura esperada
+    let usersArray = [];
 
-  return processedUsers;
+    if (response.users && Array.isArray(response.users)) {
+      usersArray = response.users;
+    } else if (Array.isArray(response)) {
+      usersArray = response;
+    } else if (response.users && !Array.isArray(response.users)) {
+      // Si users existe pero no es array, intentar convertirlo
+      usersArray = [response.users];
+    } else {
+      console.warn("Estructura de respuesta inesperada:", response);
+      return [];
+    }
+
+    // Procesar los usuarios de Cognito para extraer el email
+    const processedUsers = usersArray.map((user) => {
+      // Verificar que el usuario tenga Attributes
+      if (!user.Attributes || !Array.isArray(user.Attributes)) {
+        console.warn("Usuario sin Attributes válidas:", user);
+        return {
+          ...user,
+          email: "Sin email",
+        };
+      }
+
+      const emailAttribute = user.Attributes.find(
+        (attr) => attr.Name === "email"
+      );
+      return {
+        ...user,
+        email: emailAttribute ? emailAttribute.Value : "Sin email",
+      };
+    });
+
+    return processedUsers;
+  } catch (error) {
+    console.error("Error en getUsers:", error);
+    return [];
+  }
 };
 </script>
 

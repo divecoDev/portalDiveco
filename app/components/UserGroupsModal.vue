@@ -251,6 +251,7 @@ const emit = defineEmits(["close"]);
 const isLoading = ref(false);
 const groups = ref([]);
 const loadingGroups = ref(new Set());
+const selectedUserGroups = ref([]);
 
 const loadAllGroups = async () => {
   try {
@@ -264,15 +265,43 @@ const loadAllGroups = async () => {
       (group) => !group.GroupName.includes("MicrosoftEntra")
     );
 
-    // Cargar grupos del usuario actual para comparar
-    await fetchUserGroups();
-    console.log("Grupos del usuario actual:", currentUserGroups.value);
-
     groups.value = filteredGroups;
     console.log("Grupos filtrados (sin MicrosoftEntra):", filteredGroups);
   } catch (error) {
     console.error("Error al cargar grupos:", error);
     groups.value = [];
+  }
+};
+
+const loadSelectedUserGroups = async () => {
+  if (!props.user) {
+    selectedUserGroups.value = [];
+    return;
+  }
+
+  try {
+    isLoading.value = true;
+    const request = await client.queries.Group({
+      username: props.user.Username,
+    });
+    const response = JSON.parse(request.data);
+    console.log("Grupos del usuario seleccionado:", response);
+
+    // Filtrar grupos que NO contengan "MicrosoftEntra" en el nombre
+    const filteredUserGroups = response.groups.filter(
+      (group) => !group.GroupName.includes("MicrosoftEntra")
+    );
+
+    selectedUserGroups.value = filteredUserGroups;
+    console.log(
+      "Grupos filtrados del usuario seleccionado:",
+      filteredUserGroups
+    );
+  } catch (error) {
+    console.error("Error al cargar grupos del usuario seleccionado:", error);
+    selectedUserGroups.value = [];
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -305,7 +334,7 @@ const formatDate = (dateString) => {
 };
 
 const isGroupAssignedToUser = (groupName) => {
-  return currentUserGroups.value.some(
+  return selectedUserGroups.value.some(
     (userGroup) => userGroup.GroupName === groupName
   );
 };
@@ -327,8 +356,8 @@ const assignUserToGroup = async (groupName) => {
     const response = JSON.parse(request.data);
     console.log("Usuario asignado al grupo:", response);
 
-    // Recargar grupos del usuario para actualizar la UI
-    await fetchUserGroups();
+    // Recargar grupos del usuario seleccionado para actualizar la UI
+    await loadSelectedUserGroups();
 
     // Mostrar mensaje de éxito (opcional)
     console.log(`Usuario asignado al grupo ${groupName} exitosamente`);
@@ -352,8 +381,8 @@ const removeUserFromGroup = async (groupName) => {
     const response = JSON.parse(request.data);
     console.log("Usuario removido del grupo:", response);
 
-    // Recargar grupos del usuario para actualizar la UI
-    await fetchUserGroups();
+    // Recargar grupos del usuario seleccionado para actualizar la UI
+    await loadSelectedUserGroups();
 
     // Mostrar mensaje de éxito (opcional)
     console.log(`Usuario removido del grupo ${groupName} exitosamente`);
@@ -364,45 +393,26 @@ const removeUserFromGroup = async (groupName) => {
   }
 };
 
-const loadUserGroups = async () => {
-  if (!props.user) return;
-
-  isLoading.value = true;
-  try {
-    // TODO: Implementar llamada a la API para obtener grupos del usuario
-    // Por ahora usamos datos de ejemplo
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Datos de ejemplo - esto se reemplazará con la API real
-    groups.value = [
-      {
-        id: 1,
-        name: "Administradores",
-        description: "Grupo de administradores del sistema",
-        role: "ADMIN",
-      },
-      {
-        id: 2,
-        name: "Usuarios SAP",
-        description: "Usuarios con acceso a funcionalidades SAP",
-        role: "SAP-USER-ADMIN",
-      },
-    ];
-  } catch (error) {
-    console.error("Error al cargar grupos del usuario:", error);
-    groups.value = [];
-  } finally {
-    isLoading.value = false;
-  }
-};
-
 // Watchers
 watch(
   () => props.isOpen,
   (newValue) => {
     if (newValue) {
-      // Los grupos ya se cargan en onMounted, no necesitamos recargarlos
-      console.log("Modal abierto, mostrando grupos disponibles");
+      // Cargar grupos del usuario seleccionado cuando se abre el modal
+      loadSelectedUserGroups();
+      console.log("Modal abierto, cargando grupos del usuario seleccionado");
+    }
+  }
+);
+
+// Watcher para cuando cambie el usuario seleccionado
+watch(
+  () => props.user,
+  (newUser) => {
+    if (newUser && props.isOpen) {
+      // Recargar grupos si el usuario cambia y el modal está abierto
+      loadSelectedUserGroups();
+      console.log("Usuario cambiado, recargando grupos");
     }
   }
 );
