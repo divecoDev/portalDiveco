@@ -162,6 +162,63 @@
                     </p>
                   </div>
                 </div>
+
+                <!-- Botones de acción -->
+                <div class="flex items-center space-x-2">
+                  <button
+                    v-if="!isGroupAssignedToUser(group.GroupName)"
+                    @click="assignUserToGroup(group.GroupName)"
+                    :disabled="isGroupLoading(group.GroupName)"
+                    class="inline-flex items-center justify-center w-8 h-8 text-white bg-cyan-500 hover:bg-cyan-600 disabled:bg-cyan-300 rounded-lg transition-colors"
+                    title="Asignar grupo al usuario"
+                  >
+                    <svg
+                      v-if="!isGroupLoading(group.GroupName)"
+                      class="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                    <div
+                      v-else
+                      class="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin"
+                    ></div>
+                  </button>
+
+                  <button
+                    v-else
+                    @click="removeUserFromGroup(group.GroupName)"
+                    :disabled="isGroupLoading(group.GroupName)"
+                    class="inline-flex items-center justify-center w-8 h-8 text-white bg-red-300 hover:bg-red-400 disabled:bg-red-200 rounded-lg transition-colors"
+                    title="Quitar grupo del usuario"
+                  >
+                    <svg
+                      v-if="!isGroupLoading(group.GroupName)"
+                      class="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                    <div
+                      v-else
+                      class="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin"
+                    ></div>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -211,6 +268,7 @@ const emit = defineEmits(["close"]);
 // Estado reactivo
 const isLoading = ref(false);
 const groups = ref([]);
+const loadingGroups = ref(new Set());
 
 const loadAllGroups = async () => {
   try {
@@ -268,6 +326,60 @@ const isGroupAssignedToUser = (groupName) => {
   return currentUserGroups.value.some(
     (userGroup) => userGroup.GroupName === groupName
   );
+};
+
+const isGroupLoading = (groupName) => {
+  return loadingGroups.value.has(groupName);
+};
+
+const assignUserToGroup = async (groupName) => {
+  if (!props.user) return;
+
+  try {
+    loadingGroups.value.add(groupName);
+    const request = await client.queries.AssignUserToGroup({
+      userId: props.user.Username,
+      groupName: groupName,
+    });
+
+    const response = JSON.parse(request.data);
+    console.log("Usuario asignado al grupo:", response);
+
+    // Recargar grupos del usuario para actualizar la UI
+    await fetchUserGroups();
+
+    // Mostrar mensaje de éxito (opcional)
+    console.log(`Usuario asignado al grupo ${groupName} exitosamente`);
+  } catch (error) {
+    console.error("Error al asignar usuario al grupo:", error);
+  } finally {
+    loadingGroups.value.delete(groupName);
+  }
+};
+
+const removeUserFromGroup = async (groupName) => {
+  if (!props.user) return;
+
+  try {
+    loadingGroups.value.add(groupName);
+    const request = await client.queries.RemoveUserFromGroup({
+      userId: props.user.Username,
+      groupName: groupName,
+    });
+
+    const response = JSON.parse(request.data);
+    console.log("Usuario removido del grupo:", response);
+
+    // Recargar grupos del usuario para actualizar la UI
+    await fetchUserGroups();
+
+    // Mostrar mensaje de éxito (opcional)
+    console.log(`Usuario removido del grupo ${groupName} exitosamente`);
+  } catch (error) {
+    console.error("Error al remover usuario del grupo:", error);
+  } finally {
+    loadingGroups.value.delete(groupName);
+  }
 };
 
 const loadUserGroups = async () => {

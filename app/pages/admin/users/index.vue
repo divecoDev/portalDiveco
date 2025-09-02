@@ -163,11 +163,7 @@
               </td>
 
               <td class="px-6 py-4 whitespace-nowrap">
-                <UBadge
-                  :color="user.Enabled ? 'green' : 'red'"
-                  variant="subtle"
-                  size="sm"
-                >
+                <UBadge variant="subtle" size="sm">
                   {{ user.Enabled ? "Activo" : "Inactivo" }}
                 </UBadge>
               </td>
@@ -187,14 +183,6 @@
                     size="sm"
                     @click="openGroupsModal(user)"
                     title="Ver grupos"
-                  />
-                  <UButton
-                    icon="i-heroicons-trash"
-                    variant="ghost"
-                    color="red"
-                    size="sm"
-                    @click="deleteUser(user)"
-                    title="Eliminar usuario"
                   />
                 </div>
               </td>
