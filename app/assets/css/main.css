@@ -7,7 +7,7 @@
   --diveco-primary-dark: #1e3a8a;
   --diveco-secondary: #059669;
   --diveco-accent: #2dd0f8;
-  --diveco-gradient: linear-gradient(135deg, #24313b, #00528a 100%);
+  --diveco-gradient: linear-gradient(135deg, #112131, #00528a 100%);
   --diveco-shadow:
     0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --diveco-shadow-lg:
@@ -16,11 +16,11 @@
 
 /* Tema oscuro */
 .dark {
-  --diveco-primary: #3b82f6;
+  --diveco-primary: rgb(45, 208, 248);
   --diveco-primary-dark: #2563eb;
   --diveco-secondary: #10b981;
   --diveco-accent: #8b5cf6;
-  --diveco-gradient: linear-gradient(135deg, #24313b, #00528a 100%);
+  --diveco-gradient: linear-gradient(135deg, #112131, #00528a 100%);
   --diveco-shadow:
     0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
   --diveco-shadow-lg:

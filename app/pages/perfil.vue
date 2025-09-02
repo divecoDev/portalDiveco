@@ -205,7 +205,7 @@
                     variant="outline"
                     size="xs"
                   >
-                    {{ group }}
+                    {{ group.GroupName }}
                   </UBadge>
                   <span
                     v-if="userGroups.length > 2"
@@ -217,87 +217,6 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- Actions Section -->
-        <div
-          v-if="hasSapUser"
-          class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
-        >
-          <h3
-            class="text-sm font-medium text-gray-900 dark:text-white mb-4 flex items-center"
-          >
-            <UIcon
-              name="i-heroicons-wrench-screwdriver"
-              class="w-4 h-4 mr-2 text-cyan-500"
-            />
-            Acciones SAP
-          </h3>
-
-          <div class="flex flex-wrap gap-3">
-            <!-- Self Password Reset -->
-            <UButton
-              variant="outline"
-              color="cyan"
-              size="sm"
-              @click="handleSelfPasswordReset"
-              :loading="isResettingPassword"
-              :disabled="isUnlockingUser"
-            >
-              <UIcon name="i-heroicons-key" class="w-4 h-4 mr-2" />
-              Reiniciar Contraseña
-            </UButton>
-
-            <!-- Self Unlock -->
-            <UButton
-              variant="outline"
-              color="orange"
-              size="sm"
-              @click="handleSelfUnlock"
-              :loading="isUnlockingUser"
-              :disabled="isResettingPassword"
-            >
-              <UIcon name="i-heroicons-lock-open" class="w-4 h-4 mr-2" />
-              Desbloquear Usuario
-            </UButton>
-
-            <!-- Refresh Profile -->
-            <UButton
-              variant="ghost"
-              color="gray"
-              size="sm"
-              @click="refreshProfile"
-              :loading="loadingProfile"
-              class="ml-auto"
-            >
-              <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2" />
-              Actualizar
-            </UButton>
-          </div>
-        </div>
-
-        <!-- No SAP Access Message -->
-        <div
-          v-else
-          class="bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 p-4 text-center"
-        >
-          <UIcon
-            name="i-heroicons-information-circle"
-            class="w-5 h-5 text-gray-400 mx-auto mb-2"
-          />
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-            No tienes acceso a funciones SAP
-          </p>
-          <UButton
-            variant="ghost"
-            color="gray"
-            size="sm"
-            @click="refreshProfile"
-            :loading="loadingProfile"
-          >
-            <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2" />
-            Actualizar Perfil
-          </UButton>
         </div>
       </div>
     </div>

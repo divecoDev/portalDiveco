@@ -32,7 +32,7 @@
             />
 
             <h1 class="text-2xl font-bold text-white sm:text-lg">
-              Portal <span class="text-cyan-300">DIVECO</span>
+              Portal <span style="color: #2dd0f8">DIVECO</span>
             </h1>
           </div>
 
@@ -327,18 +327,6 @@
                 <div
                   class="border-t border-gray-200 dark:border-gray-700 my-1.5 mx-3"
                 ></div>
-
-                <!-- Ayuda y Soporte -->
-                <button
-                  @click="navigateTo('/ayuda')"
-                  class="w-full px-3 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors duration-150"
-                >
-                  <UIcon
-                    name="i-heroicons-question-mark-circle"
-                    class="h-4 w-4 flex-shrink-0"
-                  />
-                  <span>Ayuda y Soporte</span>
-                </button>
 
                 <!-- Separador -->
                 <div
