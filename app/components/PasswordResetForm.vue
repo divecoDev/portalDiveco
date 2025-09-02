@@ -3,24 +3,6 @@
     class="animate-fade-in-up border border-cyan-200 dark:border-cyan-700 shadow-lg"
     :style="'box-shadow: var(--diveco-shadow);'"
   >
-    <template #header>
-      <div
-        class="flex items-center bg-gradient-to-r from-cyan-50 to-cyan-100 dark:from-cyan-900/20 dark:to-cyan-800/20 -m-6 mb-6 p-6 rounded-t-lg"
-      >
-        <div class="flex-shrink-0 p-2 bg-cyan-600 dark:bg-cyan-500 rounded-lg">
-          <UIcon name="i-heroicons-key" class="w-6 h-6 text-white" />
-        </div>
-        <div class="ml-4">
-          <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-            Reinicio de Contraseña SAP
-          </h3>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Solicita el reinicio de tu contraseña SAP
-          </p>
-        </div>
-      </div>
-    </template>
-
     <!-- Mensaje de Status -->
     <StatusMessage
       :show="statusMessage.show"
@@ -34,7 +16,7 @@
       v-if="retryState.isRetrying"
       class="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg"
     >
-      <div class="flex items-center space-x-3">
+      <div class="flex justify-center items-center space-x-3">
         <div class="flex">
           <UIcon
             name="i-heroicons-arrow-path"
@@ -56,8 +38,10 @@
       </div>
     </div>
 
-    <div class="flex space-x-4 gap-6">
-      <div class="w-1/3 space-y-2">
+    <div
+      class="flex justify-center items-center flex-col sm:flex-row space-x-4 space-y-4 gap-6"
+    >
+      <div class="w-full sm:w-1/3 space-y-2">
         <label
           for="sapUser"
           class="block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -78,12 +62,12 @@
         />
       </div>
 
-      <div class="flex-1 space-y-2">
+      <div class="w-full sm:w-1/3 space-y-2">
         <label
           for="email"
           class="block text-sm font-medium text-gray-700 dark:text-gray-300"
         >
-          Codigo Empleado
+          Codigo Ciudadano
         </label>
         <UInput
           id="cod_personal"
@@ -98,7 +82,7 @@
         />
       </div>
 
-      <div class="flex-1 space-y-2">
+      <div class="w-full sm:w-1/3 space-y-2">
         <label
           for="email"
           class="block text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -123,7 +107,7 @@
 
     <template #footer>
       <div
-        class="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0 sm:space-x-3 bg-gray-50 dark:bg-gray-800/50 -m-6 mt-6 p-6 rounded-b-lg"
+        class="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0 sm:space-x-3 bg-gray-50 dark:bg-gray-800/50 -m-6 p-6 rounded-b-lg"
       >
         <div class="text-sm text-gray-600 dark:text-gray-400">
           <UIcon
@@ -134,17 +118,6 @@
         </div>
         <div class="flex space-x-3">
           <UButton
-            variant="outline"
-            color="gray"
-            @click="clearForm"
-            :disabled="isProcessing"
-            size="lg"
-            class="border-2 border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-800 bg-white hover:bg-gray-50 font-medium transition-all duration-300 transform hover:scale-105 cursor-pointer"
-          >
-            <UIcon name="i-heroicons-arrow-path" class="w-5 h-5 mr-2" />
-            Limpiar
-          </UButton>
-          <UButton
             color="cyan"
             @click="submitPasswordReset"
             :loading="isSubmitting"
@@ -154,14 +127,10 @@
           >
             <UIcon
               v-if="!isSubmitting"
-              name="i-heroicons-paper-airplane"
+              name="i-heroicons-key"
               class="w-5 h-5 mr-2"
             />
-            <UIcon
-              v-else
-              name="i-heroicons-arrow-path"
-              class="w-5 h-5 mr-2 animate-spin"
-            />
+
             {{ isSubmitting ? "Procesando..." : "Solicitar Reinicio" }}
           </UButton>
         </div>
@@ -240,7 +209,7 @@ const statusMessage = ref({
 const retryState = ref({
   isRetrying: false,
   currentAttempt: 0,
-  maxAttempts: 5,
+  maxAttempts: 15,
   message: "",
 });
 
@@ -275,8 +244,12 @@ const closeStatusMessage = () => {
   statusMessage.value.show = false;
 };
 
-// Función para guardar el historial de reinicio
-const saveResetPasswordHistory = async (sapUser, resetResponse) => {
+// Función para guardar el historial de reinicio (éxito o error)
+const saveResetPasswordHistory = async (
+  sapUser,
+  response,
+  isSuccess = true
+) => {
   try {
     console.log("📝 ===== GUARDANDO HISTORIAL DE REINICIO =====");
 
@@ -288,16 +261,17 @@ const saveResetPasswordHistory = async (sapUser, resetResponse) => {
       "usuario-desconocido";
 
     console.log("👤 Usuario logueado:", loggedUserEmail);
-    console.log("🎯 Usuario SAP reiniciado:", sapUser);
-    console.log("📊 Respuesta a guardar:", resetResponse);
+    console.log("🎯 Usuario SAP:", sapUser);
+    console.log("📊 Respuesta a guardar:", response);
+    console.log("✅ Es éxito:", isSuccess);
 
     // Preparar los datos del historial
     const historyData = {
       sapUser: sapUser,
       emailOwner: loggedUserEmail,
       accion: "RESET_PASSWORD",
-      status: "Completado",
-      logs: JSON.stringify(resetResponse),
+      status: isSuccess ? "Completado" : "Error",
+      logs: JSON.stringify(response),
       date: new Date().toISOString(),
     };
 
@@ -391,12 +365,12 @@ const submitPasswordReset = async () => {
         title: "✅ Contraseña Reiniciada",
         description: successMessage,
         color: "green",
-        timeout: 8000,
+        timeout: 20000,
       });
 
       // Guardar historial de reinicio exitoso
       console.log("💾 Guardando historial de reinicio...");
-      await saveResetPasswordHistory(form.value.sapUser, resetData);
+      await saveResetPasswordHistory(form.value.sapUser, resetData, true);
 
       // Éxito - emitir los datos correctos
       emit("reset-success", {
@@ -430,6 +404,10 @@ const submitPasswordReset = async () => {
         timeout: 8000,
       });
 
+      // Guardar historial de error del servicio SAP
+      console.log("💾 Guardando historial de error del servicio SAP...");
+      await saveResetPasswordHistory(form.value.sapUser, parsedData, false);
+
       // Error del servicio
       emit("reset-error", {
         codigo: parsedData.codigo || -1,
@@ -453,6 +431,14 @@ const submitPasswordReset = async () => {
         color: "red",
         timeout: 8000,
       });
+
+      // Guardar historial de error de Amplify
+      console.log("💾 Guardando historial de error de Amplify...");
+      await saveResetPasswordHistory(
+        form.value.sapUser,
+        response.errors,
+        false
+      );
 
       // Error del servicio
       emit("reset-error", {
@@ -489,6 +475,19 @@ const submitPasswordReset = async () => {
 
     // Mostrar mensaje de error
     showStatusMessage(errorMessage, "error");
+
+    // Guardar historial de error crítico
+    console.log("💾 Guardando historial de error crítico...");
+    await saveResetPasswordHistory(
+      form.value.sapUser,
+      {
+        error: error.message,
+        stack: error.stack,
+        codigo: codigo,
+        mensaje: errorMessage,
+      },
+      false
+    );
 
     // Emitir error
     emit("reset-error", {

@@ -12,7 +12,7 @@ export const handler: Handler = async (event) => {
   const { username } = event.arguments;
 
   const input = {
-    UserPoolId: "us-east-1_d2aKaoDxL",
+    UserPoolId: process.env.COGNITO_USER_POOL_ID,
     Username: username,
   };
 

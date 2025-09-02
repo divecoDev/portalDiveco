@@ -12,6 +12,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return;
   }
 
+  // Convertir a array si es un string individual
+  const requiredRoles = Array.isArray(requiredRole)
+    ? requiredRole
+    : [requiredRole];
+
   try {
     // Usar el composable de autenticación mejorado
     const { useAuth } = await import("~/composables/useAuth");
@@ -24,24 +29,33 @@ export default defineNuxtRouteMiddleware(async (to) => {
       return navigateTo("/");
     }
 
-    // Verificar si el usuario tiene el rol requerido
-    if (!requireRole(requiredRole)) {
-      console.log(
-        `Usuario no tiene permisos de ${requiredRole}, acceso denegado`
-      );
+    // Verificar si el usuario tiene alguno de los roles requeridos
+    const hasRequiredRole = requiredRoles.some((role) => requireRole(role));
+
+    if (!hasRequiredRole) {
+      const rolesText =
+        requiredRoles.length === 1
+          ? requiredRoles[0]
+          : requiredRoles.join(" o ");
+      console.log(`Usuario no tiene permisos de ${rolesText}, acceso denegado`);
       throw createError({
         statusCode: 403,
-        statusMessage: `Acceso Denegado - Se requiere rol de ${requiredRole}`,
+        statusMessage: `Acceso Denegado - Se requiere rol de ${rolesText}`,
         fatal: true,
       });
     }
 
+    const rolesText =
+      requiredRoles.length === 1 ? requiredRoles[0] : requiredRoles.join(" o ");
     console.log(
-      `Usuario autenticado y tiene rol ${requiredRole}, acceso permitido`
+      `Usuario autenticado y tiene rol ${rolesText}, acceso permitido`
     );
     return;
   } catch (error) {
-    console.error(`Error en middleware require-role (${requiredRole}):`, error);
+    const rolesText = Array.isArray(requiredRole)
+      ? requiredRole.join(" o ")
+      : requiredRole;
+    console.error(`Error en middleware require-role (${rolesText}):`, error);
 
     // Si hay un error de autenticación, redirigir al login
     if (
