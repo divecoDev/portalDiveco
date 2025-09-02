@@ -2,12 +2,12 @@ import { defineBackend } from "@aws-amplify/backend";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { auth } from "./auth/resource";
 import { data } from "./data/resource";
-import { groups } from "./functions/groups/resource";
+import { groups } from "./functions/admin-users/Groups/resource";
 import { resetPassword } from "./functions/reset-password/resource";
-import { users } from "./functions/users/resource";
-import { allGroups } from "./functions/AllGroups/resource";
-import { assignUserToGroup } from "./functions/AssignUserToGroup/resource";
-import { removeUserFromGroup } from "./functions/removeUserFromGroup/resource";
+import { users } from "./functions/admin-users/Users/resource";
+import { allGroups } from "./functions/admin-users/AllGroups/resource";
+import { assignUserToGroup } from "./functions/admin-users/AssignUserToGroup/resource";
+import { removeUserFromGroup } from "./functions/admin-users/RemoveUserFromGroup/resource";
 /**
  * Configuración del backend de Amplify
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
