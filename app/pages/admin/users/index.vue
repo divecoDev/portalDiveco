@@ -40,25 +40,6 @@
             @change="handleFilterChange"
           />
 
-          <USelect
-            v-model="roleFilter"
-            :options="roleOptions"
-            placeholder="Rol"
-            size="lg"
-            class="min-w-32"
-            @change="handleFilterChange"
-          />
-
-          <UButton
-            icon="i-heroicons-funnel"
-            variant="outline"
-            color="gray"
-            size="lg"
-            @click="showAdvancedFilters = !showAdvancedFilters"
-          >
-            Filtros
-          </UButton>
-
           <UButton
             icon="i-heroicons-arrow-path"
             variant="outline"
@@ -68,53 +49,6 @@
           >
             Limpiar
           </UButton>
-        </div>
-      </div>
-
-      <!-- Filtros avanzados -->
-      <div
-        v-if="showAdvancedFilters"
-        class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700"
-      >
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Fecha de creación
-            </label>
-            <UInput v-model="dateFilter" type="date" size="lg" class="w-full" />
-          </div>
-
-          <div>
-            <label
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Último acceso
-            </label>
-            <USelect
-              v-model="lastAccessFilter"
-              :options="lastAccessOptions"
-              placeholder="Seleccionar"
-              size="lg"
-              class="w-full"
-            />
-          </div>
-
-          <div>
-            <label
-              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Departamento
-            </label>
-            <USelect
-              v-model="departmentFilter"
-              :options="departmentOptions"
-              placeholder="Seleccionar"
-              size="lg"
-              class="w-full"
-            />
-          </div>
         </div>
       </div>
     </div>
@@ -160,17 +94,7 @@
               <th
                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
               >
-                Usuario
-              </th>
-              <th
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-              >
                 Email
-              </th>
-              <th
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-              >
-                Rol
               </th>
               <th
                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
@@ -180,7 +104,7 @@
               <th
                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
               >
-                Último acceso
+                Fecha de Creación
               </th>
               <th
                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
@@ -193,7 +117,7 @@
             class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"
           >
             <tr v-if="isLoading" class="animate-pulse">
-              <td colspan="6" class="px-6 py-12 text-center">
+              <td colspan="4" class="px-6 py-12 text-center">
                 <div class="flex items-center justify-center space-x-3">
                   <div
                     class="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"
@@ -206,7 +130,7 @@
             </tr>
 
             <tr v-else-if="filteredUsers.length === 0" class="text-center">
-              <td colspan="6" class="px-6 py-12">
+              <td colspan="4" class="px-6 py-12">
                 <div class="flex flex-col items-center space-y-3">
                   <UIcon
                     name="i-heroicons-users"
@@ -229,22 +153,9 @@
             <tr
               v-else
               v-for="user in paginatedUsers"
-              :key="user.id"
+              :key="user.Username"
               class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
             >
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div>
-                  <div
-                    class="text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    {{ user.name }}
-                  </div>
-                  <div class="text-sm text-gray-500 dark:text-gray-400">
-                    ID: {{ user.id }}
-                  </div>
-                </div>
-              </td>
-
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm text-gray-900 dark:text-white">
                   {{ user.email }}
@@ -253,28 +164,18 @@
 
               <td class="px-6 py-4 whitespace-nowrap">
                 <UBadge
-                  :color="getRoleColor(user.role)"
+                  :color="user.Enabled ? 'green' : 'red'"
                   variant="subtle"
                   size="sm"
                 >
-                  {{ user.role }}
-                </UBadge>
-              </td>
-
-              <td class="px-6 py-4 whitespace-nowrap">
-                <UBadge
-                  :color="user.status === 'active' ? 'green' : 'red'"
-                  variant="subtle"
-                  size="sm"
-                >
-                  {{ user.status === "active" ? "Activo" : "Inactivo" }}
+                  {{ user.Enabled ? "Activo" : "Inactivo" }}
                 </UBadge>
               </td>
 
               <td
                 class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400"
               >
-                {{ formatDate(user.lastAccess) }}
+                {{ formatDate(user.UserCreateDate) }}
               </td>
 
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -353,6 +254,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
+import { generateClient } from "aws-amplify/api";
+
+const client = generateClient();
 
 // Definir el layout y middleware
 definePageMeta({
@@ -370,73 +274,16 @@ useSeoMeta({
 const isLoading = ref(false);
 const searchQuery = ref("");
 const statusFilter = ref("");
-const roleFilter = ref("");
-const dateFilter = ref("");
-const lastAccessFilter = ref("");
-const departmentFilter = ref("");
-const showAdvancedFilters = ref(false);
 const currentPage = ref(1);
 const itemsPerPage = ref(10);
 
-// Datos de ejemplo (esto se reemplazará con datos reales)
-const users = ref([
-  {
-    id: 1,
-    name: "Juan Pérez",
-    email: "juan.perez@diveco.com",
-    role: "ADMIN",
-    status: "active",
-    department: "IT",
-    lastAccess: "2024-01-15T10:30:00Z",
-    createdAt: "2024-01-01T00:00:00Z",
-  },
-  {
-    id: 2,
-    name: "María García",
-    email: "maria.garcia@diveco.com",
-    role: "USER",
-    status: "active",
-    department: "HR",
-    lastAccess: "2024-01-14T15:45:00Z",
-    createdAt: "2024-01-02T00:00:00Z",
-  },
-  {
-    id: 3,
-    name: "Carlos López",
-    email: "carlos.lopez@diveco.com",
-    role: "SAP-USER-ADMIN",
-    status: "inactive",
-    department: "Finance",
-    lastAccess: "2024-01-10T09:20:00Z",
-    createdAt: "2024-01-03T00:00:00Z",
-  },
-]);
+// Datos de usuarios de Cognito
+const users = ref([]);
 
 // Opciones para filtros
 const statusOptions = [
   { label: "Activo", value: "active" },
   { label: "Inactivo", value: "inactive" },
-];
-
-const roleOptions = [
-  { label: "Administrador", value: "ADMIN" },
-  { label: "Usuario", value: "USER" },
-  { label: "Admin SAP", value: "SAP-USER-ADMIN" },
-];
-
-const lastAccessOptions = [
-  { label: "Última semana", value: "week" },
-  { label: "Último mes", value: "month" },
-  { label: "Últimos 3 meses", value: "quarter" },
-  { label: "Último año", value: "year" },
-];
-
-const departmentOptions = [
-  { label: "IT", value: "IT" },
-  { label: "Recursos Humanos", value: "HR" },
-  { label: "Finanzas", value: "Finance" },
-  { label: "Ventas", value: "Sales" },
-  { label: "Marketing", value: "Marketing" },
 ];
 
 // Computed
@@ -448,27 +295,15 @@ const filteredUsers = computed(() => {
     const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(
       (user) =>
-        user.name.toLowerCase().includes(query) ||
         user.email.toLowerCase().includes(query) ||
-        user.role.toLowerCase().includes(query)
+        user.Username.toLowerCase().includes(query)
     );
   }
 
   // Filtro de estado
   if (statusFilter.value) {
-    filtered = filtered.filter((user) => user.status === statusFilter.value);
-  }
-
-  // Filtro de rol
-  if (roleFilter.value) {
-    filtered = filtered.filter((user) => user.role === roleFilter.value);
-  }
-
-  // Filtro de departamento
-  if (departmentFilter.value) {
-    filtered = filtered.filter(
-      (user) => user.department === departmentFilter.value
-    );
+    const isActive = statusFilter.value === "active";
+    filtered = filtered.filter((user) => user.Enabled === isActive);
   }
 
   return filtered;
@@ -485,15 +320,6 @@ const totalPages = computed(() => {
 });
 
 // Métodos
-
-const getRoleColor = (role) => {
-  const colors = {
-    ADMIN: "red",
-    "SAP-USER-ADMIN": "purple",
-    USER: "blue",
-  };
-  return colors[role] || "gray";
-};
 
 const formatDate = (dateString) => {
   const date = new Date(dateString);
@@ -517,18 +343,15 @@ const handleFilterChange = () => {
 const resetFilters = () => {
   searchQuery.value = "";
   statusFilter.value = "";
-  roleFilter.value = "";
-  dateFilter.value = "";
-  lastAccessFilter.value = "";
-  departmentFilter.value = "";
   currentPage.value = 1;
 };
 
 const refreshUsers = async () => {
   isLoading.value = true;
   try {
-    // Aquí se haría la llamada a la API real
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const listUsers = await getUsers();
+    users.value = listUsers;
+    console.log("Usuarios actualizados:", listUsers);
   } catch (error) {
     console.error("Error al cargar usuarios:", error);
   } finally {
@@ -557,9 +380,40 @@ const exportUsers = () => {
 };
 
 // Lifecycle
-onMounted(() => {
-  // Inicialización si es necesaria
+onMounted(async () => {
+  isLoading.value = true;
+  try {
+    const listUsers = await getUsers();
+    users.value = listUsers;
+    console.log("Usuarios cargados:", listUsers);
+  } catch (error) {
+    console.error("Error al cargar usuarios:", error);
+  } finally {
+    isLoading.value = false;
+  }
 });
+
+const getUsers = async () => {
+  const request = await client.queries.ListUsers({
+    limit: 10,
+    paginationToken: "",
+    filter: "",
+  });
+  const response = JSON.parse(request.data);
+
+  // Procesar los usuarios de Cognito para extraer el email
+  const processedUsers = response.users.map((user) => {
+    const emailAttribute = user.Attributes.find(
+      (attr) => attr.Name === "email"
+    );
+    return {
+      ...user,
+      email: emailAttribute ? emailAttribute.Value : "Sin email",
+    };
+  });
+
+  return processedUsers;
+};
 </script>
 
 <style scoped>

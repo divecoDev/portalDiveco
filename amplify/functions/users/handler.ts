@@ -12,8 +12,8 @@ export const handler = async (event: any) => {
   const command = new ListUsersCommand(input);
   const response = await client.send(command);
 
-  return {
+  return JSON.stringify({
     statusCode: 200,
-    body: JSON.stringify({ users: response.Users }),
-  };
+    users: response.Users,
+  });
 };
