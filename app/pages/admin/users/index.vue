@@ -30,26 +30,7 @@
         </div>
 
         <!-- Filtros -->
-        <div class="flex flex-wrap items-center space-x-4">
-          <USelect
-            v-model="statusFilter"
-            :options="statusOptions"
-            placeholder="Estado"
-            size="lg"
-            class="min-w-32"
-            @change="handleFilterChange"
-          />
-
-          <UButton
-            icon="i-heroicons-arrow-path"
-            variant="outline"
-            color="gray"
-            size="lg"
-            @click="resetFilters"
-          >
-            Limpiar
-          </UButton>
-        </div>
+        <div class="flex flex-wrap items-center space-x-4"></div>
       </div>
     </div>
 
@@ -57,35 +38,6 @@
     <div
       class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 overflow-hidden"
     >
-      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-        <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-            Lista de Usuarios
-          </h3>
-          <div class="flex items-center space-x-2">
-            <UButton
-              icon="i-heroicons-arrow-down-tray"
-              variant="outline"
-              color="gray"
-              size="sm"
-              @click="exportUsers"
-            >
-              Exportar
-            </UButton>
-            <UButton
-              icon="i-heroicons-arrow-path"
-              variant="outline"
-              color="gray"
-              size="sm"
-              @click="refreshUsers"
-              :loading="isLoading"
-            >
-              Actualizar
-            </UButton>
-          </div>
-        </div>
-      </div>
-
       <!-- Tabla -->
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -396,15 +348,19 @@ onMounted(async () => {
 });
 
 const getUsers = async () => {
-  const request = await client.queries.ListUsers({
-    limit: 10,
-    paginationToken: "",
-    filter: "",
-  });
+  const request = await client.queries.ListUsers({});
   const response = JSON.parse(request.data);
 
+  console.log("Respuesta completa del handler:", response);
+
+  // Verificar si la respuesta tiene la estructura esperada
+  const users = response.users || response;
+
+  // Si es un array directamente, usarlo; si no, intentar acceder a la propiedad users
+  const usersArray = Array.isArray(users) ? users : users.users || [];
+
   // Procesar los usuarios de Cognito para extraer el email
-  const processedUsers = response.users.map((user) => {
+  const processedUsers = usersArray.map((user) => {
     const emailAttribute = user.Attributes.find(
       (attr) => attr.Name === "email"
     );
