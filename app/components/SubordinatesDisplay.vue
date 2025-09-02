@@ -321,8 +321,12 @@
 
 <script setup>
 import { getCurrentUser } from "aws-amplify/auth";
+import { generateClient } from "aws-amplify/api";
 
 const user = ref(null);
+
+// Generar cliente de Amplify
+const client = generateClient();
 
 const props = defineProps({
   subordinates: {
@@ -806,6 +810,60 @@ const getInitials = (name) => {
     .toUpperCase();
 };
 
+// Función para guardar historial de operaciones (éxito o error)
+const saveActionHistory = async (
+  sapUser,
+  response,
+  action,
+  isSuccess = true
+) => {
+  try {
+    console.log("📝 ===== GUARDANDO HISTORIAL DE OPERACIÓN =====");
+
+    // Obtener el usuario logueado
+    const currentUser = await getCurrentUser();
+    const loggedUserEmail =
+      currentUser?.signInDetails?.loginId ||
+      currentUser?.username ||
+      "usuario-desconocido";
+
+    console.log("👤 Usuario logueado:", loggedUserEmail);
+    console.log("🎯 Usuario SAP:", sapUser);
+    console.log("📊 Respuesta a guardar:", response);
+    console.log("🎯 Acción:", action);
+    console.log("✅ Es éxito:", isSuccess);
+
+    // Preparar los datos del historial
+    const historyData = {
+      sapUser: sapUser,
+      emailOwner: loggedUserEmail,
+      accion: action === "reset" ? "RESET_PASSWORD" : "UNLOCK_USER",
+      status: isSuccess ? "Completado" : "Error",
+      logs: JSON.stringify(response),
+      date: new Date().toISOString(),
+    };
+
+    console.log("💾 Datos del historial:", historyData);
+
+    // Guardar en la base de datos usando Amplify
+    const { errors, data: historyResponse } =
+      await client.models.SapUserActionHistory.create(historyData);
+
+    if (errors) {
+      console.error("❌ Errores al guardar historial:", errors);
+      return null;
+    }
+
+    console.log("✅ Historial guardado exitosamente:", historyResponse);
+
+    return historyResponse;
+  } catch (error) {
+    console.error("❌ Error al guardar historial:", error);
+    // No lanzamos el error para que no afecte el flujo principal
+    return null;
+  }
+};
+
 const selectCitizenForAction = (citizen, action) => {
   emit("citizen-selected", { citizen, action });
 };
@@ -870,6 +928,11 @@ const isAllHierarchyExpanded = computed(() => {
     allIds.length > 0 &&
     allIds.every((id) => expandedSubordinates.value.has(id))
   );
+});
+
+// Exponer funciones para uso externo
+defineExpose({
+  saveActionHistory,
 });
 </script>
 

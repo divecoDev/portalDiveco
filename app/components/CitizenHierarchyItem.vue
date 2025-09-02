@@ -325,34 +325,51 @@ const getSapUserFromEmail = async (email) => {
   }
 };
 
-// Función para guardar historial de acciones
-const saveActionHistory = async (action, response) => {
+// Función para guardar historial de acciones (éxito o error)
+const saveActionHistory = async (action, response, isSuccess = true) => {
   try {
+    console.log("📝 ===== GUARDANDO HISTORIAL DE OPERACIÓN =====");
+
     const currentUser = await getCurrentUser();
     const loggedUserEmail =
       currentUser?.signInDetails?.loginId ||
       currentUser?.username ||
       "usuario-desconocido";
 
+    console.log("👤 Usuario logueado:", loggedUserEmail);
+    console.log(
+      "🎯 Usuario SAP:",
+      props.citizen.sapUserData?.usuario || props.citizen.mail
+    );
+    console.log("📊 Respuesta a guardar:", response);
+    console.log("🎯 Acción:", action);
+    console.log("✅ Es éxito:", isSuccess);
+
     const historyData = {
       sapUser: props.citizen.sapUserData?.usuario || props.citizen.mail,
       emailOwner: loggedUserEmail,
       accion: action === "reset" ? "RESET_PASSWORD" : "UNLOCK_USER",
-      status: "Completado",
+      status: isSuccess ? "Completado" : "Error",
       logs: JSON.stringify(response),
       date: new Date().toISOString(),
     };
+
+    console.log("💾 Datos del historial:", historyData);
 
     const { errors, data: historyResponse } =
       await client.models.SapUserActionHistory.create(historyData);
 
     if (errors) {
       console.error("❌ Errores al guardar historial:", errors);
+      return null;
     } else {
       console.log("✅ Historial guardado exitosamente:", historyResponse);
+      return historyResponse;
     }
   } catch (error) {
     console.error("❌ Error al guardar historial:", error);
+    // No lanzamos el error para que no afecte el flujo principal
+    return null;
   }
 };
 
@@ -404,14 +421,20 @@ const handlePasswordReset = async () => {
       const successMessage = `${props.citizen.displayName}: ${resetData.mensaje || "Contraseña reiniciada exitosamente"}`;
       showStatusMessage(successMessage, "success");
 
-      // Guardar historial
-      await saveActionHistory("reset", resetData);
+      // Guardar historial de éxito
+      await saveActionHistory("reset", resetData, true);
 
       console.log(`✅ Reinicio exitoso para ${props.citizen.displayName}`);
     } else {
-      throw new Error(
-        parsedData?.mensaje || "Error en el servicio de reinicio"
-      );
+      // Error del servicio SAP
+      const errorMessage =
+        parsedData?.mensaje || "Error en el servicio de reinicio";
+
+      // Guardar historial de error del servicio SAP
+      console.log("💾 Guardando historial de error del servicio SAP...");
+      await saveActionHistory("reset", parsedData, false);
+
+      throw new Error(errorMessage);
     }
   } catch (error) {
     console.error(
@@ -422,6 +445,19 @@ const handlePasswordReset = async () => {
     // Mostrar mensaje de error
     const errorMessage = `${props.citizen.displayName}: ${error.message}`;
     showStatusMessage(errorMessage, "error");
+
+    // Guardar historial de error crítico
+    console.log("💾 Guardando historial de error crítico...");
+    await saveActionHistory(
+      "reset",
+      {
+        error: error.message,
+        stack: error.stack,
+        citizen: props.citizen.displayName,
+        email: props.citizen.mail,
+      },
+      false
+    );
   } finally {
     isResetting.value = false;
   }
@@ -473,14 +509,20 @@ const handleUserUnlock = async () => {
       const successMessage = `${props.citizen.displayName}: ${unlockData.mensaje || "Usuario desbloqueado exitosamente"}`;
       showStatusMessage(successMessage, "success");
 
-      // Guardar historial
-      await saveActionHistory("unlock", unlockData);
+      // Guardar historial de éxito
+      await saveActionHistory("unlock", unlockData, true);
 
       console.log(`✅ Desbloqueo exitoso para ${props.citizen.displayName}`);
     } else {
-      throw new Error(
-        parsedData?.mensaje || "Error en el servicio de desbloqueo"
-      );
+      // Error del servicio SAP
+      const errorMessage =
+        parsedData?.mensaje || "Error en el servicio de desbloqueo";
+
+      // Guardar historial de error del servicio SAP
+      console.log("💾 Guardando historial de error del servicio SAP...");
+      await saveActionHistory("unlock", parsedData, false);
+
+      throw new Error(errorMessage);
     }
   } catch (error) {
     console.error(
@@ -491,6 +533,19 @@ const handleUserUnlock = async () => {
     // Mostrar mensaje de error
     const errorMessage = `${props.citizen.displayName}: ${error.message}`;
     showStatusMessage(errorMessage, "error");
+
+    // Guardar historial de error crítico
+    console.log("💾 Guardando historial de error crítico...");
+    await saveActionHistory(
+      "unlock",
+      {
+        error: error.message,
+        stack: error.stack,
+        citizen: props.citizen.displayName,
+        email: props.citizen.mail,
+      },
+      false
+    );
   } finally {
     isUnlocking.value = false;
   }
