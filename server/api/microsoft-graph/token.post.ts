@@ -11,6 +11,8 @@ export default defineEventHandler(async (event) => {
     console.log("msTenantId", msTenantId);
     console.log("msClientId", msClientId);
     console.log("msClientSecret", msClientSecret);
+    console.log("process.env.NUXT_MS_TENANT_ID", process.env);
+    console.log("runtimeConfig", runtimeConfig);
 
     // Credenciales de Microsoft Graph API
     const accessTokenUrl = `https://login.microsoftonline.com/${msTenantId}/oauth2/v2.0/token`;
