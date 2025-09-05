@@ -4,6 +4,12 @@ export default defineEventHandler(async (event) => {
   try {
     const { msTenantId, msClientId, msClientSecret } = useRuntimeConfig(event);
 
+    console.log("Iniciando obtención de token de Microsoft Graph...");
+
+    console.log("msTenantId", msTenantId);
+    console.log("msClientId", msClientId);
+    console.log("msClientSecret", msClientSecret);
+
     // Credenciales de Microsoft Graph API
     const accessTokenUrl = `https://login.microsoftonline.com/${msTenantId}/oauth2/v2.0/token`;
     const scope = "https://graph.microsoft.com/.default";
