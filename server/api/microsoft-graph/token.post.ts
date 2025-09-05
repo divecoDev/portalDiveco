@@ -2,7 +2,9 @@ export default defineEventHandler(async (event) => {
   const runtimeConfig = useRuntimeConfig();
 
   try {
-    const { msTenantId, msClientId, msClientSecret } = useRuntimeConfig(event);
+    const msTenantId = process.env.NUXT_MS_TENANT_ID;
+    const msClientId = process.env.NUXT_MS_CLIENT_ID;
+    const msClientSecret = process.env.NUXT_MS_CLIENT_SECRET;
 
     console.log("Iniciando obtención de token de Microsoft Graph...");
 
