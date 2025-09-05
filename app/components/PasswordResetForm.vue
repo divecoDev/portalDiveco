@@ -142,7 +142,7 @@
 <script setup>
 import { ref, computed, nextTick } from "vue";
 import { generateClient } from "aws-amplify/api";
-import { getCurrentUser } from "aws-amplify/auth";
+import { getCurrentUser, fetchAuthSession } from "aws-amplify/auth";
 import { useToast } from "#imports";
 
 // Importar el componente StatusMessage
@@ -181,7 +181,9 @@ const getUsers = async () => {
   sapUsers.value = users.value.map((user) => user.usuario);
 };
 
-onMounted(() => {
+onMounted(async () => {
+  const session = await fetchAuthSession();
+  console.log("session", session);
   getUsers();
 });
 

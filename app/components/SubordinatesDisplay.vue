@@ -183,6 +183,7 @@
 
   <!-- Subordinates Section -->
   <div
+    v-if="directReports.length > 0"
     class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-8"
   >
     <!-- Header -->
@@ -320,7 +321,7 @@
 </template>
 
 <script setup>
-import { getCurrentUser } from "aws-amplify/auth";
+import { getCurrentUser, fetchUserAttributes } from "aws-amplify/auth";
 import { generateClient } from "aws-amplify/api";
 
 const user = ref(null);
@@ -771,10 +772,12 @@ const getAllCitizensFlat = (reports) => {
 onMounted(async () => {
   try {
     // Obtener información del usuario actual de Amplify
-    user.value = await getCurrentUser();
+    user.value = await fetchUserAttributes();
+
+    console.log("user XD", user.value);
 
     // TEMPORAL: Usar email específico para pruebas
-    const testEmail = "hector.merida.gt@camasolympia.com";
+    const testEmail = user.value.email;
 
     // Obtener token de acceso para Microsoft Graph
     await getAccessToken();

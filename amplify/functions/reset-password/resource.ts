@@ -4,7 +4,7 @@ import { secret } from "@aws-amplify/backend";
 export const resetPassword = defineFunction({
   name: "reset-password",
   entry: "./handler.ts",
-  timeoutSeconds: 180,
+  timeoutSeconds: 60,
   memoryMB: 1024,
   environment: {
     SAP_URL: secret("SAP_URL"),
