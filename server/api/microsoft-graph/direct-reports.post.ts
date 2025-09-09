@@ -1,3 +1,10 @@
+import { Amplify } from "aws-amplify";
+import outputs from "../../../amplify_outputs.json";
+import { generateClient } from "aws-amplify/api";
+
+Amplify.configure(outputs);
+
+const amplifyClient = generateClient();
 export default defineEventHandler(async (event) => {
   let body: any;
   try {
@@ -11,20 +18,10 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Obtener token de acceso usando nuestro endpoint
-    const tokenResponse = (await $fetch("/api/microsoft-graph/token", {
-      method: "POST",
-    })) as any;
-
-    if (!tokenResponse.success) {
-      throw createError({
-        statusCode: 500,
-        statusMessage: "Error obteniendo token de acceso",
-      });
-    }
-
-    const accessToken = tokenResponse.access_token;
-
+    // Obtener token de acceso
+    const request = await amplifyClient.queries.MicrosoftGraphToken();
+    const response = JSON.parse(request.data);
+    const accessToken = response.access_token;
     // Ahora consultamos los directReports
     const directReportsUrl = `https://graph.microsoft.com/v1.0/users/${userName}/directReports`;
 

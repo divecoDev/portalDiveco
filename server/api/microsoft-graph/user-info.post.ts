@@ -1,3 +1,11 @@
+import { Amplify } from "aws-amplify";
+import outputs from "../../../amplify_outputs.json";
+import { generateClient } from "aws-amplify/api";
+
+Amplify.configure(outputs);
+
+const amplifyClient = generateClient();
+
 export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event);
@@ -13,18 +21,9 @@ export default defineEventHandler(async (event) => {
     console.log(`Obteniendo información del usuario: ${userName}`);
 
     // Obtener token de acceso
-    const tokenResponse = await $fetch("/api/microsoft-graph/token", {
-      method: "POST",
-    });
-
-    if (!tokenResponse.success) {
-      throw createError({
-        statusCode: 500,
-        statusMessage: "Error obteniendo token de acceso",
-      });
-    }
-
-    const accessToken = tokenResponse.access_token;
+    const request = await amplifyClient.queries.MicrosoftGraphToken();
+    const response = JSON.parse(request.data);
+    const accessToken = response.access_token;
 
     // Realizar consulta a Microsoft Graph API para obtener información del usuario
     const graphResponse = await $fetch(

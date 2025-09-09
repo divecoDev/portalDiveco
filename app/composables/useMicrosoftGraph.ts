@@ -8,8 +8,10 @@
  */
 
 import { ref, reactive } from "vue";
+import { generateClient } from "aws-amplify/api";
 
 export const useMicrosoftGraph = () => {
+  const amplifyClient = generateClient();
   // Estado reactivo
   const accessToken = ref<string | null>(null);
   const isLoadingToken = ref(false);
@@ -28,32 +30,9 @@ export const useMicrosoftGraph = () => {
    * @returns Promise<string> Token de acceso
    */
   const getAccessToken = async (): Promise<string> => {
-    if (accessToken.value) {
-      return accessToken.value;
-    }
-
-    isLoadingToken.value = true;
-    tokenError.value = null;
-
-    try {
-      const data = await $fetch("/api/microsoft-graph/token", {
-        method: "POST",
-      });
-
-      if (data.success) {
-        accessToken.value = data.access_token;
-        return data.access_token;
-      } else {
-        throw new Error("Error en la respuesta del servidor");
-      }
-    } catch (error: any) {
-      tokenError.value =
-        error.message || "Error desconocido al obtener el token";
-      console.error("Error obteniendo token:", error);
-      throw error;
-    } finally {
-      isLoadingToken.value = false;
-    }
+    const request = await amplifyClient.queries.MicrosoftGraphToken();
+    const response = JSON.parse(request.data);
+    return response.access_token;
   };
 
   /**
