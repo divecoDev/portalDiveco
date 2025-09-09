@@ -343,9 +343,6 @@ const emit = defineEmits(["citizen-selected"]);
 const isExpanded = ref(true);
 
 // Estado reactivo para Microsoft Graph API
-const accessToken = ref(null);
-const tokenError = ref(null);
-const isLoadingToken = ref(false);
 const directReports = ref([]);
 const isLoadingReports = ref(false);
 const reportsError = ref(null);
@@ -363,32 +360,6 @@ const loadingCurrentUserPhoto = ref(false);
 const graphUserData = ref(null);
 const loadingGraphUserData = ref(false);
 const graphUserError = ref(null);
-
-// Función para obtener el token de acceso desde el backend
-const getAccessToken = async () => {
-  isLoadingToken.value = true;
-  tokenError.value = null;
-
-  try {
-    const data = await $fetch("/api/microsoft-graph/token", {
-      method: "POST",
-    });
-
-    if (data.success) {
-      accessToken.value = data.access_token;
-
-      return data.access_token;
-    } else {
-      throw new Error("Error en la respuesta del servidor");
-    }
-  } catch (error) {
-    tokenError.value = error.message || "Error desconocido al obtener el token";
-    console.error("Error obteniendo token:", error);
-    throw error;
-  } finally {
-    isLoadingToken.value = false;
-  }
-};
 
 // Función para obtener la foto de perfil de un usuario
 const getUserPhoto = async (userId) => {
@@ -778,9 +749,6 @@ onMounted(async () => {
 
     // TEMPORAL: Usar email específico para pruebas
     const testEmail = user.value.email;
-
-    // Obtener token de acceso para Microsoft Graph
-    await getAccessToken();
 
     // Obtener datos completos del usuario desde Microsoft Graph
     await getGraphUserData(testEmail);

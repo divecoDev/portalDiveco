@@ -9,6 +9,7 @@ import { allGroups } from "./functions/admin-users/AllGroups/resource";
 import { assignUserToGroup } from "./functions/admin-users/AssignUserToGroup/resource";
 import { removeUserFromGroup } from "./functions/admin-users/RemoveUserFromGroup/resource";
 import { adminUserGlobalSignOut } from "./functions/admin-users/AdminUserGlobalSignOut/resource";
+import { microsoftGraphToken } from "./functions/microsoft-graph/token/resource";
 /**
  * Configuración del backend de Amplify
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
@@ -24,6 +25,19 @@ export const backend = defineBackend({
   removeUserFromGroup,
   adminUserGlobalSignOut,
 });
+
+const resetPasswordLambda = backend.resetPassword.resources.lambda;
+const resetPasswordPolicy = new iam.PolicyStatement({
+  actions: [
+    "ec2:CreateNetworkInterface",
+    "ec2:DescribeNetworkInterfaces",
+    "ec2:DeleteNetworkInterface",
+  ],
+  resources: ["*"],
+});
+resetPasswordLambda.addToRolePolicy(resetPasswordPolicy);
+
+/// add resePasswordLambda to  VPC
 
 const groupsLambda = backend.groups.resources.lambda;
 const groupsPolicy = new iam.PolicyStatement({
@@ -67,6 +81,11 @@ const adminUserGlobalSignOutPolicy = new iam.PolicyStatement({
   resources: ["*"],
 });
 adminUserGlobalSignOutLambda.addToRolePolicy(adminUserGlobalSignOutPolicy);
+
+/*
+ * CREACION DE API REST
+ */
+const apiStack = backend.createStack("api-stack");
 
 // Exportar para uso en otros archivos
 export default backend;

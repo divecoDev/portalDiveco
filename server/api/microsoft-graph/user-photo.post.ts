@@ -1,3 +1,11 @@
+import { Amplify } from "aws-amplify";
+import outputs from "../../../amplify_outputs.json";
+import { generateClient } from "aws-amplify/api";
+
+Amplify.configure(outputs);
+
+const amplifyClient = generateClient();
+
 export default defineEventHandler(async (event) => {
   let body: any;
   try {
@@ -11,20 +19,11 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    const request = await amplifyClient.queries.MicrosoftGraphToken();
+    const response = JSON.parse(request.data);
+    const accessToken = response.access_token;
+
     // Obtener token de acceso usando nuestro endpoint
-    const tokenResponse = (await $fetch("/api/microsoft-graph/token", {
-      method: "POST",
-    })) as any;
-
-    if (!tokenResponse.success) {
-      throw createError({
-        statusCode: 500,
-        statusMessage: "Error obteniendo token de acceso",
-      });
-    }
-
-    const accessToken = tokenResponse.access_token;
-
     // Ahora obtenemos la foto del usuario
     const photoUrl = `https://graph.microsoft.com/v1.0/users/${userId}/photo/$value`;
 

@@ -1,12 +1,16 @@
-export default defineEventHandler(async (event) => {
-  const runtimeConfig = useRuntimeConfig();
-  return false;
-
+export const handler = async (event: any) => {
+  console.log("Iniciando handler de Microsoft Graph Token");
   try {
-    const msTenantId = process.env.NUXT_MS_TENANT_ID;
-    const msClientId = process.env.NUXT_MS_CLIENT_ID;
-    const msClientSecret = process.env.NUXT_MS_CLIENT_SECRET;
+    const msTenantId: string = process.env.MS_TENANT_ID || "";
+    const msClientId: string = process.env.MS_CLIENT_ID || "";
+    const msClientSecret: string = process.env.MS_CLIENT_SECRET || "";
 
+    console.log("Iniciando obtención de token de Microsoft Graph...");
+
+    console.log("msTenantId", msTenantId);
+    console.log("msClientId", msClientId);
+    console.log("msClientSecret", msClientSecret);
+    // Credenciales de Microsoft Graph API
     const accessTokenUrl = `https://login.microsoftonline.com/${msTenantId}/oauth2/v2.0/token`;
     const scope = "https://graph.microsoft.com/.default";
 
@@ -26,26 +30,17 @@ export default defineEventHandler(async (event) => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw createError({
-        statusCode: response.status,
-        statusMessage: `Error al obtener el token: ${JSON.stringify(errorData)}`,
-      });
+      console.error("Error al obtener el token:", errorData);
+      return {
+        success: false,
+        error: errorData,
+      };
     }
 
     const data = await response.json();
 
-    return {
-      success: true,
-      access_token: data.access_token,
-      token_type: data.token_type,
-      expires_in: data.expires_in,
-    };
+    return JSON.stringify(data);
   } catch (error: any) {
     console.error("Error obteniendo token de Microsoft Graph:", error);
-
-    throw createError({
-      statusCode: 500,
-      statusMessage: `Error interno del servidor: ${error?.message || "Error desconocido"}`,
-    });
   }
-});
+};
