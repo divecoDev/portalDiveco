@@ -23,21 +23,12 @@ const getTenantConfig = (tenantName: string) => {
 };
 
 export const handler = async (event: any) => {
-  console.log("Iniciando handler de Microsoft Graph Token");
-
   const { tenantName } = event.arguments;
-  console.log("tenantName", tenantName);
 
   try {
     // Obtener configuración del tenant
     const tenantConfig = getTenantConfig(tenantName);
     const { tenantId, clientId, clientSecret } = tenantConfig;
-
-    console.log("Iniciando obtención de token de Microsoft Graph...");
-    console.log("Tenant seleccionado:", tenantName);
-    console.log("msTenantId", tenantId);
-    console.log("msClientId", clientId);
-    console.log("msClientSecret", clientSecret ? "***" : "NOT SET");
     // Credenciales de Microsoft Graph API
     const accessTokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
     const scope = "https://graph.microsoft.com/.default";

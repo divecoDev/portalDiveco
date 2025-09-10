@@ -75,17 +75,9 @@ const isLoading = ref(false);
 // Métodos
 const logout = async () => {
   try {
-    console.log("Cerrando sesión desde página de logout...");
-
-    // Cerrar sesión usando Amplify Auth
     await signOut();
-
-    console.log("Sesión cerrada exitosamente desde página de logout");
   } catch (error) {
     console.error("Error al cerrar sesión desde página de logout:", error);
-
-    // Aunque haya error, continuamos con la redirección
-    console.log("Continuando con la redirección...");
   }
 };
 

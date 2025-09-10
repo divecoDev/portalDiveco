@@ -745,8 +745,6 @@ onMounted(async () => {
     // Obtener información del usuario actual de Amplify
     user.value = await fetchUserAttributes();
 
-    console.log("user XD", user.value);
-
     // TEMPORAL: Usar email específico para pruebas
     const testEmail = user.value.email;
 

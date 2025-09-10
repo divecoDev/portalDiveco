@@ -73,10 +73,6 @@ export async function unlockUserSAP(
   error?: UnlockUserError;
 }> {
   try {
-    console.log("🚀 ===== SAP WEB SERVICE: DESBLOQUEO =====");
-    console.log("👤 Usuario:", sapUser);
-    console.log("📧 Email:", email);
-
     // Importar el cliente SAP dinámicamente para evitar dependencias circulares
     const { getSAPWebServiceClient } = await import(
       "~/utils/sap-web-service-client"
@@ -85,23 +81,9 @@ export async function unlockUserSAP(
 
     // Generar el body SOAP para desbloquear usuario
     const soapBody = sapClient.generateUnlockUserSOAPBody(sapUser, email);
-    console.log("📦 Body SOAP generado:", soapBody.substring(0, 200) + "...");
-
     // Llamar al web service SAP real
-    console.log("🌐 Llamando al web service SAP...");
-    const sapResponse = await sapClient.callSOAPService(soapBody);
-
-    console.log("📡 Respuesta del web service SAP:", {
-      codigo: sapResponse.codigo,
-      mensaje: sapResponse.mensaje,
-      nombre: sapResponse.nombre,
-      success: sapResponse.success,
-      responseType: sapResponse.responseType,
-    });
-
-    // Procesar la respuesta basada en el código
+    const sapResponse = await sapClient.callSOAPService(soapBody); // Procesar la respuesta basada en el código
     if (sapResponse.success && sapResponse.codigo === 0) {
-      console.log("✅ Usuario desbloqueado exitosamente en SAP");
       return {
         success: true,
         data: {
@@ -112,7 +94,7 @@ export async function unlockUserSAP(
       };
     } else {
       // Código 1: Usuario inexistente, otros códigos: errores del sistema
-      console.log(
+      console.error(
         `❌ Error SAP - Código: ${sapResponse.codigo}, Mensaje: ${sapResponse.mensaje}`
       );
       return {

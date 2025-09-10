@@ -52,18 +52,12 @@ export const useMicrosoftGraph = () => {
     // Obtener el email del usuario desde la estructura de Amplify Auth
     const userEmail = currentUser.username;
 
-    console.log("userEmail", userEmail);
     const tenant = determineTenant(userEmail);
-
-    console.log(
-      `Obteniendo token para tenant: ${tenant}, usuario: ${userEmail}`
-    );
 
     const request = await (amplifyClient.queries as any).MicrosoftGraphToken({
       tenantName: tenant,
     });
     const response = JSON.parse(request.data);
-    console.log("response", response);
     return response.access_token;
   };
 

@@ -270,12 +270,6 @@ const statusMessage = ref({
 
 // Función para mostrar mensaje de estado
 const showStatusMessage = (message, type = "info") => {
-  console.log(
-    `🔔 ${props.citizen.displayName} - Mostrando mensaje:`,
-    message,
-    type
-  );
-
   // Cerrar mensaje anterior
   statusMessage.value.show = false;
 
@@ -328,22 +322,11 @@ const getSapUserFromEmail = async (email) => {
 // Función para guardar historial de acciones (éxito o error)
 const saveActionHistory = async (action, response, isSuccess = true) => {
   try {
-    console.log("📝 ===== GUARDANDO HISTORIAL DE OPERACIÓN =====");
-
     const currentUser = await getCurrentUser();
     const loggedUserEmail =
       currentUser?.signInDetails?.loginId ||
       currentUser?.username ||
       "usuario-desconocido";
-
-    console.log("👤 Usuario logueado:", loggedUserEmail);
-    console.log(
-      "🎯 Usuario SAP:",
-      props.citizen.sapUserData?.usuario || props.citizen.mail
-    );
-    console.log("📊 Respuesta a guardar:", response);
-    console.log("🎯 Acción:", action);
-    console.log("✅ Es éxito:", isSuccess);
 
     const historyData = {
       sapUser: props.citizen.sapUserData?.usuario || props.citizen.mail,
@@ -354,16 +337,12 @@ const saveActionHistory = async (action, response, isSuccess = true) => {
       date: new Date().toISOString(),
     };
 
-    console.log("💾 Datos del historial:", historyData);
-
     const { errors, data: historyResponse } =
       await client.models.SapUserActionHistory.create(historyData);
 
     if (errors) {
-      console.error("❌ Errores al guardar historial:", errors);
       return null;
     } else {
-      console.log("✅ Historial guardado exitosamente:", historyResponse);
       return historyResponse;
     }
   } catch (error) {
