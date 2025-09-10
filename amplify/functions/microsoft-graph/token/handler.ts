@@ -1,9 +1,13 @@
 export const handler = async (event: any) => {
   console.log("Iniciando handler de Microsoft Graph Token");
+
+  const { tenantName } = event.arguments;
+  console.log("tenantName", tenantName);
+
   try {
-    const msTenantId: string = process.env.MS_TENANT_ID || "";
-    const msClientId: string = process.env.MS_CLIENT_ID || "";
-    const msClientSecret: string = process.env.MS_CLIENT_SECRET || "";
+    const msTenantId: string = process.env.MS_NOVA_TENANT_ID || "";
+    const msClientId: string = process.env.MS_NOVA_CLIENT_ID || "";
+    const msClientSecret: string = process.env.MS_NOVA_CLIENT_SECRET || "";
 
     console.log("Iniciando obtención de token de Microsoft Graph...");
 

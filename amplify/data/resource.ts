@@ -92,6 +92,7 @@ const schema = a.schema({
    */
   MicrosoftGraphToken: a
     .query()
+    .arguments({ tenantName: a.string() })
     .returns(a.string())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(microsoftGraphToken)),

@@ -30,8 +30,9 @@ export const useMicrosoftGraph = () => {
    * @returns Promise<string> Token de acceso
    */
   const getAccessToken = async (): Promise<string> => {
-    const request = await amplifyClient.queries.MicrosoftGraphToken();
+    const request = await amplifyClient.queries.MicrosoftGraphToken("nova");
     const response = JSON.parse(request.data);
+    console.log("response", response);
     return response.access_token;
   };
 
@@ -182,7 +183,7 @@ export const useMicrosoftGraph = () => {
       }
 
       // Obtener foto del usuario
-      const photo = await getUserPhoto(userData.id);
+      const photo = await getUserPhoto(userData?.id || "");
 
       return { userData, photo };
     } catch (error: any) {
