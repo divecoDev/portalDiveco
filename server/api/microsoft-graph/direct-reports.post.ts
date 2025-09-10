@@ -18,8 +18,17 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    let tenant = "external";
+    if (userName.includes("@novafinanzas.com")) {
+      tenant = "nova";
+    } else if (userName.includes("@camasolympia.com")) {
+      tenant = "diveco";
+    }
+
     // Obtener token de acceso
-    const request = await amplifyClient.queries.MicrosoftGraphToken();
+    const request = await amplifyClient.queries.MicrosoftGraphToken({
+      tenantName: tenant,
+    });
     const response = JSON.parse(request.data);
     const accessToken = response.access_token;
     // Ahora consultamos los directReports

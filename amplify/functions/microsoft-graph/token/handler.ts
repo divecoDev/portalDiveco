@@ -1,3 +1,27 @@
+/**
+ * Obtiene la configuración del tenant basándose en el nombre
+ * @param tenantName Nombre del tenant (nova/diveco)
+ * @returns Objeto con las credenciales del tenant
+ */
+const getTenantConfig = (tenantName: string) => {
+  switch (tenantName) {
+    case "nova":
+      return {
+        tenantId: process.env.MS_NOVA_TENANT_ID || "",
+        clientId: process.env.MS_NOVA_CLIENT_ID || "",
+        clientSecret: process.env.MS_NOVA_CLIENT_SECRET || "",
+      };
+    case "diveco":
+      return {
+        tenantId: process.env.MS_TENANT_ID || "",
+        clientId: process.env.MS_CLIENT_ID || "",
+        clientSecret: process.env.MS_CLIENT_SECRET || "",
+      };
+    default:
+      throw new Error(`Tenant no válido: ${tenantName}`);
+  }
+};
+
 export const handler = async (event: any) => {
   console.log("Iniciando handler de Microsoft Graph Token");
 
@@ -5,23 +29,23 @@ export const handler = async (event: any) => {
   console.log("tenantName", tenantName);
 
   try {
-    const msTenantId: string = process.env.MS_NOVA_TENANT_ID || "";
-    const msClientId: string = process.env.MS_NOVA_CLIENT_ID || "";
-    const msClientSecret: string = process.env.MS_NOVA_CLIENT_SECRET || "";
+    // Obtener configuración del tenant
+    const tenantConfig = getTenantConfig(tenantName);
+    const { tenantId, clientId, clientSecret } = tenantConfig;
 
     console.log("Iniciando obtención de token de Microsoft Graph...");
-
-    console.log("msTenantId", msTenantId);
-    console.log("msClientId", msClientId);
-    console.log("msClientSecret", msClientSecret);
+    console.log("Tenant seleccionado:", tenantName);
+    console.log("msTenantId", tenantId);
+    console.log("msClientId", clientId);
+    console.log("msClientSecret", clientSecret ? "***" : "NOT SET");
     // Credenciales de Microsoft Graph API
-    const accessTokenUrl = `https://login.microsoftonline.com/${msTenantId}/oauth2/v2.0/token`;
+    const accessTokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
     const scope = "https://graph.microsoft.com/.default";
 
     const params = new URLSearchParams();
     params.append("grant_type", "client_credentials");
-    params.append("client_id", msClientId);
-    params.append("client_secret", msClientSecret);
+    params.append("client_id", clientId);
+    params.append("client_secret", clientSecret);
     params.append("scope", scope);
 
     const response = await fetch(accessTokenUrl, {

@@ -7,7 +7,7 @@ export const resetPassword = defineFunction({
   timeoutSeconds: 60,
   memoryMB: 1024,
   environment: {
-    SAP_URL: process.env.SAP_URL || "",
-    SAP_PASSWORD: process.env.SAP_PASSWORD || "",
+    SAP_URL: secret("SAP_URL"),
+    SAP_PASSWORD: secret("SAP_PASSWORD"),
   },
 });
