@@ -455,9 +455,8 @@ const checkSapUser = async (email) => {
 // Función para cargar fotos de todos los ciudadanos
 const loadAllUserPhotos = async (citizens) => {
   if (!citizens || citizens.length === 0) return;
-
   // Cargar fotos en paralelo para mejor rendimiento
-  const photoPromises = citizens.map((citizen) => getUserPhoto(citizen.id));
+  const photoPromises = citizens.map((citizen) => getUserPhoto(citizen.mail));
   await Promise.all(photoPromises);
 };
 

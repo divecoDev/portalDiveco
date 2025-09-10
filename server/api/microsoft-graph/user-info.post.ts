@@ -18,8 +18,6 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    console.log(`Obteniendo información del usuario: ${userName}`);
-
     let tenant = "external";
     if (userName.includes("@novafinanzas.com")) {
       tenant = "nova";
@@ -43,8 +41,6 @@ export default defineEventHandler(async (event) => {
         },
       }
     );
-
-    console.log("Respuesta de Microsoft Graph para usuario:", graphResponse);
 
     return {
       success: true,
