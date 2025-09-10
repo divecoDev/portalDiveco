@@ -20,8 +20,6 @@ export const handler: Handler = async (event) => {
 
   const response = await client.send(command);
 
-  console.log(response);
-
   return JSON.stringify({
     groups: response.Groups,
   });

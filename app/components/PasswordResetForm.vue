@@ -142,7 +142,7 @@
 <script setup>
 import { ref, computed, nextTick } from "vue";
 import { generateClient } from "aws-amplify/api";
-import { getCurrentUser, fetchAuthSession } from "aws-amplify/auth";
+import { getCurrentUser } from "aws-amplify/auth";
 import { useToast } from "#imports";
 
 // Importar el componente StatusMessage
@@ -182,8 +182,6 @@ const getUsers = async () => {
 };
 
 onMounted(async () => {
-  const session = await fetchAuthSession();
-  console.log("session", session);
   getUsers();
 });
 
@@ -217,11 +215,6 @@ const retryState = ref({
 
 // Methods
 const showStatusMessage = (message, type = "info") => {
-  console.log("🔔 ===== SHOW STATUS MESSAGE =====");
-  console.log("📝 Mensaje:", message);
-  console.log("🎨 Tipo:", type);
-  console.log("📊 Estado anterior:", JSON.stringify(statusMessage.value));
-
   // Cerrar notificación anterior si existe
   statusMessage.value.show = false;
 
@@ -232,8 +225,6 @@ const showStatusMessage = (message, type = "info") => {
       message,
       type,
     };
-
-    console.log("✅ Estado actualizado:", JSON.stringify(statusMessage.value));
 
     // Forzar re-render del componente
     nextTick(() => {

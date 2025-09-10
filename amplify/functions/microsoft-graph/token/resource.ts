@@ -10,5 +10,9 @@ export const microsoftGraphToken = defineFunction({
     MS_TENANT_ID: secret("MS_TENANT_ID"),
     MS_CLIENT_ID: secret("MS_CLIENT_ID"),
     MS_CLIENT_SECRET: secret("MS_CLIENT_SECRET"),
+    // --- Nova Finanzas ---
+    MS_NOVA_CLIENT_ID: secret("MS_NOVA_CLIENT_ID"),
+    MS_NOVA_CLIENT_SECRET: secret("MS_NOVA_CLIENT_SECRET"),
+    MS_NOVA_TENANT_ID: secret("MS_NOVA_TENANT_ID"),
   },
 });

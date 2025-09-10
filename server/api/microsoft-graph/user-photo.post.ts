@@ -19,7 +19,19 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    const request = await amplifyClient.queries.MicrosoftGraphToken();
+    let tenant = "external";
+    if (userId.includes("@novafinanzas.com")) {
+      tenant = "nova";
+    } else if (userId.includes("@camasolympia.com")) {
+      tenant = "diveco";
+    }
+
+    console.log("tenant Photo", tenant);
+    console.log("userId Photo", userId);
+
+    const request = await amplifyClient.queries.MicrosoftGraphToken({
+      tenantName: tenant,
+    });
     const response = JSON.parse(request.data);
     const accessToken = response.access_token;
 

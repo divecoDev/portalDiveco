@@ -543,7 +543,7 @@ const getGraphUserData = async (userName) => {
 // Función para cargar la foto del usuario actual
 const loadCurrentUserPhoto = async () => {
   // Usar el ID real de Microsoft Graph si está disponible
-  const userId = graphUserData.value?.id || user.value?.userId;
+  const userId = user.value?.email;
 
   if (!userId) {
     console.error("No se puede cargar foto: userId no disponible");
@@ -744,8 +744,6 @@ onMounted(async () => {
   try {
     // Obtener información del usuario actual de Amplify
     user.value = await fetchUserAttributes();
-
-    console.log("user XD", user.value);
 
     // TEMPORAL: Usar email específico para pruebas
     const testEmail = user.value.email;

@@ -309,13 +309,6 @@ const clearAutoHide = () => {
 watch(
   () => props.show,
   (newValue) => {
-    console.log("🔍 StatusMessage - show changed:", newValue);
-    console.log("🔍 StatusMessage - current props:", {
-      show: props.show,
-      message: props.message,
-      type: props.type,
-    });
-
     if (newValue) {
       startAutoHide();
     } else {

@@ -426,8 +426,6 @@ const paginatedHistory = computed(() => {
 const loadHistory = async () => {
   isLoading.value = true;
   try {
-    console.log("📋 Cargando historial de reinicios con filtros...");
-
     // Solo aplicar filtro de fecha en la base de datos (el que sabemos que funciona)
     const queryConfig = {
       limit: 5000, // Aumentar límite para obtener más datos históricos
@@ -440,10 +438,7 @@ const loadHistory = async () => {
           beginsWith: filters.value.date,
         },
       };
-      console.log("🗓️ Aplicando filtro de fecha en DB:", filters.value.date);
     }
-
-    console.log("🔍 Filtros aplicados:", queryConfig);
 
     const { errors, data: historyData } =
       await client.models.SapUserActionHistory.list(queryConfig);
@@ -454,37 +449,12 @@ const loadHistory = async () => {
     }
 
     history.value = historyData || [];
-    console.log(`✅ Historial cargado: ${history.value.length} registros`);
-    console.log("📊 Filtros activos:", {
-      sapUser: filters.value.sapUser,
-      emailOwner: filters.value.emailOwner,
-      date: filters.value.date,
-    });
-
     // Log de fechas para debug
     if (history.value.length > 0) {
       const dates = history.value
         .map((record) => record.date)
         .filter((date) => date)
         .sort();
-
-      console.log("📅 Rango de fechas en los datos:", {
-        fecha_mas_antigua: dates[0],
-        fecha_mas_reciente: dates[dates.length - 1],
-        total_fechas_unicas: new Set(dates).size,
-        muestra_fechas: dates.slice(0, 5).concat(dates.slice(-5)),
-      });
-    }
-
-    // Log de muestra de datos para debugging
-    if (history.value.length > 0) {
-      console.log("📋 Muestra de datos cargados:", {
-        primer_registro: {
-          sapUser: history.value[0].sapUser,
-          emailOwner: history.value[0].emailOwner,
-          date: history.value[0].date,
-        },
-      });
     }
   } catch (error) {
     console.error("❌ Error crítico al cargar historial:", error);

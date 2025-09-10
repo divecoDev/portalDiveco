@@ -131,8 +131,6 @@ import { ref, computed } from "vue";
 import { getCurrentUser } from "aws-amplify/auth";
 
 const currentUser = await getCurrentUser();
-
-console.log("currentUser", currentUser);
 // Definir el layout
 definePageMeta({
   layout: "default",

@@ -9,6 +9,7 @@
 
 import { ref, reactive } from "vue";
 import { generateClient } from "aws-amplify/api";
+import { getCurrentUser } from "aws-amplify/auth";
 
 export const useMicrosoftGraph = () => {
   const amplifyClient = generateClient();
@@ -26,11 +27,36 @@ export const useMicrosoftGraph = () => {
   const loadingUserData = ref(new Set<string>());
 
   /**
+   * Función utilitaria para determinar el tenant basándose en el email del usuario
+   * @param email Email del usuario
+   * @returns string Tenant a usar (nova/diveco)
+   */
+  const determineTenant = (email: string): string => {
+    if (!email) return "external"; // default fallback
+
+    if (email.includes("@novafinanzas.com")) {
+      return "nova";
+    } else if (email.includes("@camasolympia.com")) {
+      return "diveco";
+    }
+
+    return "external"; // default fallback
+  };
+
+  /**
    * Obtiene un token de acceso OAuth 2.0 usando el flujo Client Credentials
    * @returns Promise<string> Token de acceso
    */
   const getAccessToken = async (): Promise<string> => {
-    const request = await amplifyClient.queries.MicrosoftGraphToken();
+    const currentUser = await getCurrentUser();
+    // Obtener el email del usuario desde la estructura de Amplify Auth
+    const userEmail = currentUser.username;
+
+    const tenant = determineTenant(userEmail);
+
+    const request = await (amplifyClient.queries as any).MicrosoftGraphToken({
+      tenantName: tenant,
+    });
     const response = JSON.parse(request.data);
     return response.access_token;
   };
@@ -182,7 +208,7 @@ export const useMicrosoftGraph = () => {
       }
 
       // Obtener foto del usuario
-      const photo = await getUserPhoto(userData.id);
+      const photo = await getUserPhoto(userName || "");
 
       return { userData, photo };
     } catch (error: any) {
