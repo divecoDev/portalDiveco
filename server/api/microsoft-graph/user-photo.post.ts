@@ -26,9 +26,6 @@ export default defineEventHandler(async (event) => {
       tenant = "diveco";
     }
 
-    console.log("tenant Photo", tenant);
-    console.log("userId Photo", userId);
-
     const request = await amplifyClient.queries.MicrosoftGraphToken({
       tenantName: tenant,
     });
