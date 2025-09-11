@@ -96,11 +96,16 @@
                     {{ explosion.version }}
                   </h3>
                   <UBadge
-                    :color="getStatusColor(explosion.status)"
+                    :color="getStatusConfig(explosion.status).color"
                     variant="subtle"
                     size="sm"
+                    class="flex items-center gap-1"
                   >
-                    {{ explosion.status }}
+                    <UIcon
+                      :name="getStatusConfig(explosion.status).icon"
+                      class="w-3 h-3"
+                    />
+                    {{ getStatusConfig(explosion.status).label }}
                   </UBadge>
                 </div>
 
@@ -214,13 +219,13 @@ const loading = ref(true);
 const searchQuery = ref("");
 const selectedStatus = ref("");
 
-// Opciones para filtros
+// Opciones para filtros mejoradas
 const statusOptions = [
-  { label: "Todos", value: "" },
-  { label: "Activo", value: "ACTIVO" },
-  { label: "Inactivo", value: "INACTIVO" },
-  { label: "En Proceso", value: "EN_PROCESO" },
-  { label: "Completado", value: "COMPLETADO" },
+  { label: "Todos los estados", value: "" },
+  { label: "🟢 Activo", value: "ACTIVO" },
+  { label: "🔴 Inactivo", value: "INACTIVO" },
+  { label: "🟡 En Proceso", value: "EN_PROCESO" },
+  { label: "🔵 Completado", value: "COMPLETADO" },
 ];
 
 // Computed para filtrar explosiones
@@ -260,13 +265,11 @@ const fetchExplosions = async () => {
 };
 
 const viewExplosion = (explosion) => {
-  // TODO: Implementar vista detallada
-  console.log("Ver explosión:", explosion);
+  navigateTo(`/tools/explosion-materiales/view/${explosion.id}`);
 };
 
 const editExplosion = (explosion) => {
-  // TODO: Implementar edición
-  console.log("Editar explosión:", explosion);
+  navigateTo(`/tools/explosion-materiales/edit/${explosion.id}`);
 };
 
 const deleteExplosion = async (explosion) => {
@@ -295,14 +298,36 @@ const deleteExplosion = async (explosion) => {
   }
 };
 
-const getStatusColor = (status) => {
-  const colors = {
-    ACTIVO: "green",
-    INACTIVO: "red",
-    EN_PROCESO: "yellow",
-    COMPLETADO: "blue",
+const getStatusConfig = (status) => {
+  const statusConfig = {
+    ACTIVO: {
+      color: "green",
+      label: "Activo",
+      icon: "i-heroicons-check-circle",
+    },
+    INACTIVO: {
+      color: "red",
+      label: "Inactivo",
+      icon: "i-heroicons-x-circle",
+    },
+    EN_PROCESO: {
+      color: "orange",
+      label: "En Proceso",
+      icon: "i-heroicons-clock",
+    },
+    COMPLETADO: {
+      color: "blue",
+      label: "Completado",
+      icon: "i-heroicons-check-badge",
+    },
   };
-  return colors[status] || "gray";
+  return (
+    statusConfig[status] || {
+      color: "gray",
+      label: status || "Sin estado",
+      icon: "i-heroicons-question-mark-circle",
+    }
+  );
 };
 
 const formatDate = (date) => {

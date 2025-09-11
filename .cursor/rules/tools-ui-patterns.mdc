@@ -1,0 +1,330 @@
+---
+description: Reglas de estilo y UI para páginas de herramientas del portal
+globs: ["*.vue"]
+alwaysApply: true
+---
+
+# Reglas de UI y Estilo para Páginas de Herramientas
+
+Eres un experto en el desarrollo de páginas de herramientas para el Portal Diveco, siguiendo patrones específicos de UI y UX establecidos.
+
+## Estructura de Layout
+
+### Header de Página
+
+- **Contenedor principal:** `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6`
+- **Layout del header:** `flex items-center justify-between`
+- **Título principal:** `text-4xl font-bold text-gray-900 dark:text-white flex items-center`
+- **Icono del título:**
+  - Contenedor: `w-12 h-12 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl flex items-center justify-center mr-4 shadow-lg shadow-cyan-500/25`
+  - Icono: `w-7 h-7 text-white` (usar Heroicons)
+- **Descripción:** `mt-3 text-lg text-gray-600 dark:text-gray-300 ml-16`
+
+### Contenido Principal
+
+- **Contenedor:** `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6` (para listados)
+- **Contenedor:** `max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-8` (para formularios)
+
+## Sistema de Colores
+
+### Paleta Primaria
+
+- **Color principal:** Cyan (`cyan-500`, `cyan-600`, `cyan-700`)
+- **Gradientes principales:** `from-cyan-500 to-cyan-600`
+- **Gradientes hover:** `from-cyan-600 to-cyan-700`
+
+### Estados y Colores Secundarios
+
+- **Éxito:** Green (`green-500`, `green-600`)
+- **Error:** Red (`red-500`, `red-600`)
+- **Advertencia:** Yellow (`yellow-500`, `yellow-600`)
+- **Información:** Blue (`blue-500`, `blue-600`)
+- **Neutro:** Gray (`gray-500`, `gray-600`)
+
+## Componentes y Patrones
+
+### Cards y Contenedores
+
+```vue
+<!-- Card principal -->
+<div
+  class="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-md shadow-lg border border-cyan-200/20 dark:border-cyan-700/20 hover:shadow-xl hover:border-cyan-300/40 dark:hover:border-cyan-600/40 transition-all duration-300 hover:-translate-y-1"
+></div>
+```
+
+### Filtros y Búsqueda
+
+```vue
+<!-- Contenedor de filtros -->
+<div
+  class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-md shadow-lg border border-cyan-200/30 dark:border-cyan-700/30 p-4 mb-6"
+></div>
+```
+
+### Formularios
+
+#### Estructura de Formulario
+
+```vue
+<!-- Contenedor principal -->
+<div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-md shadow-xl border border-cyan-200/50 dark:border-cyan-700/50 overflow-hidden">
+  <!-- Header con gradiente -->
+  <div class="bg-gradient-to-r from-cyan-500 to-cyan-600 px-6 py-4">
+    <div class="flex items-center">
+      <UIcon name="i-heroicons-[icon-name]" class="w-6 h-6 text-white mr-3" />
+      <h2 class="text-xl font-semibold text-white">Título del Formulario</h2>
+    </div>
+  </div>
+
+  <!-- Contenido del formulario -->
+  <div class="p-6">
+    <form class="space-y-6">
+      <!-- Campos aquí -->
+    </form>
+  </div>
+</div>
+```
+
+#### Campos Destacados
+
+```vue
+<!-- Campo importante con fondo gradiente -->
+<div
+  class="bg-gradient-to-br from-cyan-50 to-cyan-100/50 dark:from-cyan-900/20 dark:to-cyan-800/20 p-4 rounded-md border border-cyan-200 dark:border-cyan-700/50 shadow-sm"
+></div>
+```
+
+#### Layout Responsivo de Campos
+
+```vue
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+```
+
+### Botones
+
+#### Botón Primario
+
+```vue
+<button
+  class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
+>
+  <UIcon name="i-heroicons-plus" class="w-5 h-5" />
+  Texto del Botón
+</button>
+```
+
+#### Estados Disabled
+
+```vue
+<button
+  :disabled="!isValid"
+  class="disabled:cursor-not-allowed disabled:opacity-75 disabled:hover:from-cyan-500 disabled:hover:to-cyan-600 disabled:hover:scale-100 disabled:hover:shadow-lg"
+></button>
+```
+
+#### Botones de Acción (Pequeños)
+
+```vue
+<UButton
+  icon="i-heroicons-eye"
+  size="sm"
+  color="cyan"
+  variant="ghost"
+  class="hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
+/>
+```
+
+## Estados de la Aplicación
+
+### Loading
+
+```vue
+<!-- Estado de carga centrado -->
+<div class="flex justify-center items-center py-12">
+  <div class="text-center">
+    <div class="w-12 h-12 border-4 border-cyan-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+    <p class="text-gray-600 dark:text-gray-300">Cargando...</p>
+  </div>
+</div>
+```
+
+### Estado Vacío
+
+```vue
+<!-- Estado sin datos -->
+<div class="text-center py-16">
+  <div class="w-32 h-32 bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30 rounded-md flex items-center justify-center mx-auto mb-8 shadow-lg">
+    <UIcon name="i-heroicons-[icon-name]" class="w-16 h-16 text-cyan-600 dark:text-cyan-400" />
+  </div>
+  <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">Título del Estado</h3>
+  <p class="text-gray-600 dark:text-gray-300 mb-8 max-w-md mx-auto">Descripción del estado</p>
+  <!-- CTA Button aquí -->
+</div>
+```
+
+### Spinner Inline
+
+```vue
+<!-- Para botones en estado de carga -->
+<div
+  class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"
+></div>
+```
+
+## Tipografía y Espaciado
+
+### Jerarquía Tipográfica
+
+- **Título principal:** `text-4xl font-bold`
+- **Subtítulo principal:** `text-2xl font-bold`
+- **Título de card:** `text-2xl font-bold text-cyan-600 dark:text-cyan-400`
+- **Texto descriptivo:** `text-lg text-gray-700 dark:text-gray-300`
+- **Texto secundario:** `text-sm text-gray-500 dark:text-gray-400`
+- **Labels:** `text-sm font-semibold`
+
+### Espaciado Estándar
+
+- **Entre secciones:** `space-y-6`, `gap-6`, `mb-6`
+- **Padding de contenedores:** `p-4`, `p-5`, `p-6`
+- **Márgenes de elementos:** `mb-3`, `mb-4`, `mb-8`
+
+## Iconografía
+
+### Convenciones de Iconos
+
+- **Usar exclusivamente Heroicons:** `i-heroicons-[icon-name]`
+- **Tamaños estándar:**
+  - Pequeño: `w-4 h-4`
+  - Medio: `w-5 h-5`
+  - Grande: `w-6 h-6`, `w-7 h-7`
+  - Extra grande: `w-16 h-16`, `w-32 h-32`
+
+### Iconos por Contexto
+
+- **Crear/Nuevo:** `i-heroicons-plus`, `i-heroicons-plus-circle`
+- **Ver/Visualizar:** `i-heroicons-eye`
+- **Editar:** `i-heroicons-pencil`
+- **Eliminar:** `i-heroicons-trash`
+- **Búsqueda:** `i-heroicons-magnifying-glass`
+- **Fecha:** `i-heroicons-calendar`
+- **Volver:** `i-heroicons-arrow-left`
+- **Versión/ID:** `i-heroicons-hashtag`
+- **Documento:** `i-heroicons-document-text`
+
+## Responsividad
+
+### Breakpoints Estándar
+
+- **Mobile:** Base (sin prefijo)
+- **Tablet:** `sm:` (640px+)
+- **Desktop:** `md:` (768px+)
+- **Large:** `lg:` (1024px+)
+
+### Patrones Responsivos
+
+```vue
+<!-- Padding responsivo -->
+class="px-4 sm:px-6 lg:px-8"
+
+<!-- Layout responsivo -->
+class="flex flex-col sm:flex-row gap-3" class="grid grid-cols-1 md:grid-cols-2
+gap-6"
+
+<!-- Ancho responsivo -->
+class="w-full sm:w-48"
+```
+
+## Interacciones y Animaciones
+
+### Transiciones Estándar
+
+```vue
+class="transition-all duration-300"
+```
+
+### Efectos Hover
+
+```vue
+<!-- Cards -->
+class="hover:shadow-xl hover:border-cyan-300/40 hover:-translate-y-1"
+
+<!-- Botones -->
+class="transform hover:scale-105 hover:shadow-xl"
+```
+
+## Patrones de Validación
+
+### Errores en Formularios
+
+```vue
+<!-- Campo con error -->
+<UInput :error="errors.fieldName" />
+
+<!-- Limpiar errores en watch -->
+watch(() => formData.value.fieldName, () => { if (errors.value.fieldName) {
+errors.value.fieldName = ""; } });
+```
+
+## SEO y Metadatos
+
+### Estructura Estándar
+
+```vue
+<script setup>
+// Meta tags para SEO
+useSeoMeta({
+  title: "Título de la Página - Portal Diveco",
+  description: "Descripción de la funcionalidad",
+});
+
+// Breadcrumbs
+const { setBreadcrumbs } = useLayoutState();
+setBreadcrumbs([
+  { title: "Inicio", href: "/" },
+  { title: "Herramientas", href: "/herramientas" },
+  { title: "Nombre de la Herramienta" },
+]);
+</script>
+```
+
+## Notificaciones
+
+### Toast Messages
+
+```vue
+// Éxito useToast().add({ title: "Operación exitosa", description: "Descripción
+del éxito", color: "green", }); // Error useToast().add({ title: "Error",
+description: "Descripción del error", color: "red", });
+```
+
+## Convenciones de Código
+
+### Estructura de Componente
+
+1. **Template:** Estructura HTML con clases de Tailwind
+2. **Script Setup:** Lógica del componente
+3. **Imports:** AWS Amplify, composables, etc.
+4. **Meta y Breadcrumbs:** SEO y navegación
+5. **Estado Reactivo:** ref, computed, reactive
+6. **Métodos:** Funciones de la lógica de negocio
+7. **Lifecycle:** onMounted, watch, etc.
+
+### Naming Conventions
+
+- **Variables de estado:** `loading`, `creating`, `formData`, `errors`
+- **Métodos CRUD:** `fetch[Entity]`, `create[Entity]`, `update[Entity]`, `delete[Entity]`
+- **Validación:** `validateForm`, `isFormValid`
+- **Formateo:** `formatDate`, `formatCurrency`, etc.
+
+## Accesibilidad
+
+### Requisitos Mínimos
+
+- **Labels descriptivos** en todos los campos
+- **Mensajes de error** claros y específicos
+- **Estados de loading** con texto descriptivo
+- **Navegación con teclado** funcional
+- **Contraste adecuado** en todos los elementos
+- **Estructura semántica** HTML correcta
+
+Sigue estos patrones consistentemente para mantener la coherencia visual y funcional en todas las páginas de herramientas del portal.
