@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="min-h-screen bg-gradient-to-br from-gray-50 to-cyan-50 dark:from-gray-900 dark:to-cyan-950"
-  >
+  <div class="0">
     <!-- Header de la página integrado -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6">
       <div class="flex items-center justify-between">
@@ -41,7 +39,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <!-- Filtros y búsqueda compactos -->
       <div
-        class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg border border-cyan-200/30 dark:border-cyan-700/30 p-4 mb-6"
+        class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-md shadow-lg border border-cyan-200/30 dark:border-cyan-700/30 p-4 mb-6"
       >
         <div class="flex flex-col sm:flex-row gap-3">
           <!-- Búsqueda -->
@@ -84,10 +82,10 @@
         <div
           v-for="explosion in filteredExplosions"
           :key="explosion.id"
-          class="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl shadow-lg border border-cyan-200/20 dark:border-cyan-700/20 hover:shadow-xl hover:border-cyan-300/40 dark:hover:border-cyan-600/40 transition-all duration-300 hover:-translate-y-1"
+          class="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-md shadow-lg border border-cyan-200/20 dark:border-cyan-700/20 hover:shadow-xl hover:border-cyan-300/40 dark:hover:border-cyan-600/40 transition-all duration-300 hover:-translate-y-1"
         >
           <div class="p-5">
-            <div class="flex items-start justify-between">
+            <div class="flex items-center justify-between">
               <div class="flex-1 flex flex-col justify-center">
                 <!-- Título: Versión (Principal) -->
                 <div class="flex items-center space-x-3 mb-3">
@@ -152,10 +150,10 @@
         </div>
       </div>
 
-      <!-- Estado vacío mejorado -->
+      <!-- Sin Explociones -->
       <div v-else class="text-center py-16">
         <div
-          class="w-32 h-32 bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-lg"
+          class="w-32 h-32 bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30 rounded-md flex items-center justify-center mx-auto mb-8 shadow-lg"
         >
           <UIcon
             name="i-heroicons-squares-2x2"

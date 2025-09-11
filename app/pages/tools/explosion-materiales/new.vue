@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="min-h-screen bg-gradient-to-br from-gray-50 to-cyan-50 dark:from-gray-900 dark:to-cyan-950"
-  >
+  <div class="">
     <!-- Header de la página integrado -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6">
       <div class="flex items-center justify-between">
@@ -43,7 +41,7 @@
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
       <!-- Formulario -->
       <div
-        class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-cyan-200/50 dark:border-cyan-700/50 overflow-hidden"
+        class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-md shadow-xl border border-cyan-200/50 dark:border-cyan-700/50 overflow-hidden"
       >
         <!-- Header del formulario con gradiente -->
         <div class="bg-gradient-to-r from-cyan-500 to-cyan-600 px-6 py-4">
@@ -61,7 +59,7 @@
               <!-- Número de Versión (Destacado) -->
               <div class="relative">
                 <div
-                  class="bg-gradient-to-br from-cyan-50 to-cyan-100/50 dark:from-cyan-900/20 dark:to-cyan-800/20 p-4 rounded-xl border border-cyan-200 dark:border-cyan-700/50 shadow-sm"
+                  class="bg-gradient-to-br from-cyan-50 to-cyan-100/50 dark:from-cyan-900/20 dark:to-cyan-800/20 p-4 rounded-md border border-cyan-200 dark:border-cyan-700/50 shadow-sm"
                 >
                   <label
                     class="block text-sm font-semibold text-cyan-700 dark:text-cyan-300 mb-2 flex items-center"
@@ -113,19 +111,6 @@
             <div
               class="flex justify-end space-x-3 pt-4 border-t border-gray-100 dark:border-gray-700"
             >
-              <NuxtLink to="/tools/explosion-materiales">
-                <UButton
-                  color="gray"
-                  variant="ghost"
-                  size="md"
-                  :disabled="creating"
-                  class="px-6"
-                >
-                  <UIcon name="i-heroicons-arrow-left" class="w-4 h-4 mr-1.5" />
-                  Cancelar
-                </UButton>
-              </NuxtLink>
-
               <button
                 type="submit"
                 :disabled="!isFormValid || creating"
