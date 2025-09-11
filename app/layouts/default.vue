@@ -91,6 +91,10 @@
         </div>
       </main>
 
+      <div class="flex justify-center items-center">
+        <img src="/logouts.png" alt="Diveco" class="w-64 h-64" />
+      </div>
+
       <AppFooter />
     </div>
   </div>
