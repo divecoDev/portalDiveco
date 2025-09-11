@@ -72,6 +72,57 @@
           </div>
         </div>
 
+        <!-- Herramienta: Explosión de Materiales -->
+        <div
+          class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+        >
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center">
+                <div
+                  class="w-12 h-12 bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-lg flex items-center justify-center"
+                >
+                  <UIcon
+                    name="i-heroicons-squares-2x2"
+                    class="w-6 h-6 text-white"
+                  />
+                </div>
+                <div class="ml-3">
+                  <h3
+                    class="text-lg font-semibold text-gray-900 dark:text-white"
+                  >
+                    Explosión de Materiales
+                  </h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Gestión de BOM
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <p class="text-gray-600 dark:text-gray-300 mb-4">
+              Gestión de explosión de materiales
+            </p>
+
+            <div class="flex items-center justify-between">
+              <div
+                class="flex items-center text-sm text-gray-500 dark:text-gray-400"
+              >
+                <UIcon name="i-heroicons-squares-plus" class="w-4 h-4 mr-1" />
+                <span>Producción</span>
+              </div>
+
+              <NuxtLink
+                to="/tools/explosion-materiales"
+                class="inline-flex items-center px-4 py-2 bg-cyan-600 text-white text-sm font-medium rounded-lg hover:bg-cyan-700 transition-colors duration-200"
+              >
+                Acceder
+                <UIcon name="i-heroicons-arrow-right" class="w-4 h-4 ml-2" />
+              </NuxtLink>
+            </div>
+          </div>
+        </div>
+
         <!-- Herramienta: Test Reset Password -->
         <div
           class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"

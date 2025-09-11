@@ -151,7 +151,7 @@ const stats = ref({
 const mainTools = computed(() => {
   const tools = [];
 
-  // Solo mostrar la herramienta de contraseñas SAP si el usuario es ADMIN o SAP-USER-ADMIN
+  // Solo mostrar herramientas si el usuario es ADMIN o SAP-USER-ADMIN
   if (hasGroup("ADMIN") || hasGroup("SAP-USER-ADMIN")) {
     tools.push({
       id: 1,
@@ -162,6 +162,18 @@ const mainTools = computed(() => {
       icon: "i-heroicons-key",
       iconColor: "text-cyan-600",
       route: "/tools/contrasenias-sap",
+      lastUpdate: "Hoy",
+      status: "active",
+    });
+
+    tools.push({
+      id: 2,
+      name: "Explosión de Materiales",
+      category: "Producción",
+      description: "Gestión de explosión de materiales",
+      icon: "i-heroicons-squares-2x2",
+      iconColor: "text-cyan-600",
+      route: "/tools/explosion-materiales",
       lastUpdate: "Hoy",
       status: "active",
     });
@@ -178,6 +190,7 @@ const navigateToTool = (route) => {
 const getModuleIcon = (toolName) => {
   const iconMap = {
     "Gestión de Contraseñas SAP": "i-heroicons-key",
+    "Explosión de Materiales": "i-heroicons-squares-2x2",
     "Gestión de Inventario": "i-heroicons-cube",
     "Reportes Financieros": "i-heroicons-chart-pie",
     "Control de Calidad": "i-heroicons-shield-check",

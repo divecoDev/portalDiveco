@@ -87,6 +87,19 @@ const schema = a.schema({
     })
     .authorization((allow) => [allow.publicApiKey()]),
 
+  /*
+    Modelo para generar eplocion de materiales
+    */
+  Boom: a
+    .model({
+      version: a.string(),
+      descripcion: a.string(),
+      username: a.string(),
+      status: a.string(),
+      aditionalData: a.json(),
+    })
+    .authorization((allow) => [allow.publicApiKey()]),
+
   /**
    * Microsoft Graph Module
    */

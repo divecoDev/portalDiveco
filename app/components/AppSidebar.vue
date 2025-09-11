@@ -528,6 +528,13 @@ const navigationSections = computed(() => {
           badge: "Nuevo",
           badgeColor: "green",
         },
+        {
+          name: "Explosión de Materiales",
+          href: "/tools/explosion-materiales",
+          icon: "i-heroicons-squares-2x2",
+          badge: "Nuevo",
+          badgeColor: "blue",
+        },
       ],
     });
   }
