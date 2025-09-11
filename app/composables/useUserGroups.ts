@@ -39,7 +39,10 @@ export const useUserGroups = () => {
 
       // Filtrar grupos excluyendo MicrosoftEntra
       return allGroups.filter(
-        (group: UserGroup) => !group.GroupName.includes("MicrosoftEntra")
+        (group: UserGroup) =>
+          !group.GroupName.includes("MicrosoftEntra") &&
+          !group.GroupName.includes("Diveco") &&
+          !group.GroupName.includes("Nova")
       );
     } catch (err) {
       const errorMessage =
@@ -73,6 +76,11 @@ export const useUserGroups = () => {
     if (groupName.includes("MicrosoftEntra")) {
       return false;
     }
+
+    if (groupName.includes("Nova")) {
+      return false;
+    }
+
     return filteredUserGroups.value.some(
       (group: UserGroup) => group.GroupName === groupName
     );
@@ -81,7 +89,10 @@ export const useUserGroups = () => {
   const hasAnyGroup = (groupNames: string[]): boolean => {
     // Filtrar nombres de grupos que contengan MicrosoftEntra
     const validGroupNames = groupNames.filter(
-      (name: string) => !name.includes("MicrosoftEntra")
+      (name: string) =>
+        !name.includes("MicrosoftEntra") &&
+        !name.includes("Nova") &&
+        !name.includes("Diveco")
     );
     if (validGroupNames.length === 0) {
       return false;
@@ -92,7 +103,10 @@ export const useUserGroups = () => {
   const hasAllGroups = (groupNames: string[]): boolean => {
     // Filtrar nombres de grupos que contengan MicrosoftEntra
     const validGroupNames = groupNames.filter(
-      (name: string) => !name.includes("MicrosoftEntra")
+      (name: string) =>
+        !name.includes("MicrosoftEntra") &&
+        !name.includes("Nova") &&
+        !name.includes("Diveco")
     );
     if (validGroupNames.length === 0) {
       return false;

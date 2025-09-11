@@ -1,6 +1,12 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
-import { groups } from "../functions/groups/resource";
+import { groups } from "../functions/admin-users/Groups/resource";
 import { resetPassword } from "../functions/reset-password/resource";
+import { users } from "../functions/admin-users/Users/resource";
+import { allGroups } from "../functions/admin-users/AllGroups/resource";
+import { assignUserToGroup } from "../functions/admin-users/AssignUserToGroup/resource";
+import { removeUserFromGroup } from "../functions/admin-users/RemoveUserFromGroup/resource";
+import { adminUserGlobalSignOut } from "../functions/admin-users/AdminUserGlobalSignOut/resource";
+import { microsoftGraphToken } from "../functions/microsoft-graph/token/resource";
 /*== STEP 1 ===============================================================
 The section below creates a Todo database table with a "content" field. Try
 adding a new "isDone" field as a boolean. The authorization rule below
@@ -32,6 +38,44 @@ const schema = a.schema({
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(resetPassword)),
 
+  ListUsers: a
+    .query()
+    .arguments({
+      limit: a.integer(),
+      paginationToken: a.string(),
+      filter: a.string(),
+    })
+    .returns(a.string())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(users)),
+
+  AllGroups: a
+    .query()
+    .returns(a.string())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(allGroups)),
+
+  AssignUserToGroup: a
+    .query()
+    .arguments({ userId: a.string(), groupName: a.string() })
+    .returns(a.string())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(assignUserToGroup)),
+
+  RemoveUserFromGroup: a
+    .query()
+    .arguments({ userId: a.string(), groupName: a.string() })
+    .returns(a.string())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(removeUserFromGroup)),
+
+  AdminUserGlobalSignOut: a
+    .query()
+    .arguments({ userId: a.string() })
+    .returns(a.string())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(adminUserGlobalSignOut)),
+
   SapUserActionHistory: a
     .model({
       sapUser: a.string(),
@@ -43,6 +87,15 @@ const schema = a.schema({
     })
     .authorization((allow) => [allow.publicApiKey()]),
 
+  /**
+   * Microsoft Graph Module
+   */
+  MicrosoftGraphToken: a
+    .query()
+    .arguments({ tenantName: a.string() })
+    .returns(a.string())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(microsoftGraphToken)),
   // Modelo para la bitacora de usarios que se les resetea la contraseña o se desbloqueo el usuario.
 });
 

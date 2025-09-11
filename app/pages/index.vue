@@ -1,5 +1,3 @@
-<script setup></script>
-
 <template>
   <div>
     <!-- Hero Section -->
@@ -130,7 +128,9 @@
 
 <script setup>
 import { ref, computed } from "vue";
+import { getCurrentUser } from "aws-amplify/auth";
 
+const currentUser = await getCurrentUser();
 // Definir el layout
 definePageMeta({
   layout: "default",
@@ -151,8 +151,8 @@ const stats = ref({
 const mainTools = computed(() => {
   const tools = [];
 
-  // Solo mostrar la herramienta de contraseñas SAP si el usuario es ADMIN
-  if (hasGroup("ADMIN")) {
+  // Solo mostrar la herramienta de contraseñas SAP si el usuario es ADMIN o SAP-USER-ADMIN
+  if (hasGroup("ADMIN") || hasGroup("SAP-USER-ADMIN")) {
     tools.push({
       id: 1,
       name: "Gestión de Contraseñas SAP",

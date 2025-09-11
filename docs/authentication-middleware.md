@@ -282,3 +282,5 @@ describe("useAuth composable", () => {
 - [AWS Cognito User Groups](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-user-groups.html)
 - [Vue 3 Composition API](https://vuejs.org/guide/extras/composition-api-faq.html)
 
+
+

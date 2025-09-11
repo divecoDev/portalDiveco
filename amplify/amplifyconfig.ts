@@ -1,7 +1,7 @@
 import { defineBackend } from "@aws-amplify/backend";
 import { auth } from "./auth/resource";
 import { data } from "./data/resource";
-import { groups } from "./functions/groups/resource";
+import { groups } from "./functions/admin-users/Groups/resource";
 import { resetPassword } from "./functions/reset-password/resource";
 
 /**

@@ -32,7 +32,7 @@
             />
 
             <h1 class="text-2xl font-bold text-white sm:text-lg">
-              Portal <span class="text-cyan-300">DIVECO</span>
+              Portal <span style="color: #2dd0f8">DIVECO</span>
             </h1>
           </div>
 
@@ -214,30 +214,62 @@
                   ? 'flex justify-center'
                   : 'flex items-center space-x-3',
               ]"
-              :title="isCompact ? userProfile.name : ''"
+              :title="
+                isCompact ? graphUserData?.displayName || userProfile.name : ''
+              "
               role="button"
               tabindex="0"
               @click="toggleUserMenu"
               @keydown.enter="toggleUserMenu"
               @keydown.space="toggleUserMenu"
             >
-              <UAvatar
-                :src="userProfile.avatar"
-                :alt="userProfile.name"
-                size="sm"
-                :class="{ 'opacity-50': isLoadingGroups }"
-              />
-              <!-- Indicador de carga -->
-              <div
-                v-if="isLoadingGroups"
-                class="absolute -top-1 -right-1 w-3 h-3 bg-cyan-400 rounded-full animate-pulse"
-              ></div>
+              <!-- Avatar con foto de Microsoft Graph -->
+              <div class="relative w-8 h-8">
+                <!-- Foto del usuario desde Microsoft Graph -->
+                <img
+                  v-if="userPhoto"
+                  :src="userPhoto"
+                  :alt="userProfile.name"
+                  class="w-8 h-8 rounded-full object-cover shadow-sm transition-opacity duration-200"
+                  :class="{
+                    'opacity-50': isLoadingGroups || loadingGraphUserData,
+                  }"
+                />
+                <!-- Fallback a iniciales si no hay foto -->
+                <div
+                  v-else
+                  :class="[
+                    'w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-opacity duration-200 bg-gradient-to-br from-cyan-500 to-blue-600 dark:from-cyan-400 dark:to-blue-500',
+                    { 'opacity-50': isLoadingGroups || loadingGraphUserData },
+                  ]"
+                >
+                  <span class="text-xs font-bold text-white">
+                    {{ getInitials(userProfile.name) }}
+                  </span>
+                </div>
+                <!-- Indicador de carga para foto -->
+                <div
+                  v-if="loadingGraphUserData"
+                  class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 rounded-full"
+                >
+                  <div
+                    class="w-2 h-2 border border-white border-t-transparent rounded-full animate-spin"
+                  ></div>
+                </div>
+                <!-- Indicador de carga para grupos -->
+                <div
+                  v-if="isLoadingGroups"
+                  class="absolute -top-1 -right-1 w-3 h-3 bg-cyan-400 rounded-full animate-pulse"
+                ></div>
+              </div>
               <div v-if="!isCompact" class="flex-1 min-w-0">
                 <p class="text-sm font-medium text-white truncate">
                   {{ userProfile.name }}
                 </p>
                 <p class="text-xs text-cyan-200 truncate">
-                  <span v-if="isLoadingGroups" class="animate-pulse"
+                  <span
+                    v-if="isLoadingGroups || loadingGraphUserData"
+                    class="animate-pulse"
                     >Cargando...</span
                   >
                   <span v-else>{{ userRole || "Ciudadano DIVECO" }}</span>
@@ -295,18 +327,6 @@
                 <div
                   class="border-t border-gray-200 dark:border-gray-700 my-1.5 mx-3"
                 ></div>
-
-                <!-- Ayuda y Soporte -->
-                <button
-                  @click="navigateTo('/ayuda')"
-                  class="w-full px-3 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors duration-150"
-                >
-                  <UIcon
-                    name="i-heroicons-question-mark-circle"
-                    class="h-4 w-4 flex-shrink-0"
-                  />
-                  <span>Ayuda y Soporte</span>
-                </button>
 
                 <!-- Separador -->
                 <div
@@ -401,7 +421,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { signOut } from "aws-amplify/auth";
-import { fetchUserAttributes } from "aws-amplify/auth";
+import { fetchUserAttributes, getCurrentUser } from "aws-amplify/auth";
 
 const userAttributes = await fetchUserAttributes();
 // Props
@@ -428,6 +448,8 @@ const {
   isLoading: isLoadingGroups,
   hasGroup,
 } = useUserGroups();
+const { getCompleteUserData, getInitials, isLoadingPhoto, getPhotoFromCache } =
+  useMicrosoftGraph();
 
 // Detectar si estamos en modo desarrollo
 const isDevelopment = computed(() => {
@@ -459,7 +481,12 @@ const openSubmenus = ref([]); // Sin submenús abiertos por defecto
 const isMobile = ref(false);
 const isUserMenuOpen = ref(false); // Control del menú de usuario
 
-// Datos del usuario
+// Estado reactivo para Microsoft Graph API
+const graphUserData = ref(null);
+const loadingGraphUserData = ref(false);
+const userPhoto = ref(null);
+
+// Datos del usuario (manteniendo compatibilidad)
 const userProfile = ref({
   name: userAttributes.email,
   role: "",
@@ -489,8 +516,8 @@ const navigationSections = computed(() => {
     },
   ];
 
-  // Solo mostrar la sección de herramientas si el usuario es ADMIN
-  if (hasGroup("ADMIN")) {
+  // Solo mostrar la sección de herramientas si el usuario es ADMIN o SAP-USER-ADMIN
+  if (hasGroup("ADMIN") || hasGroup("SAP-USER-ADMIN")) {
     sections.push({
       title: "Herramientas",
       items: [
@@ -500,6 +527,20 @@ const navigationSections = computed(() => {
           icon: "i-heroicons-key",
           badge: "Nuevo",
           badgeColor: "green",
+        },
+      ],
+    });
+  }
+
+  // Solo mostrar la sección de administración si el usuario es ADMIN
+  if (hasGroup("ADMIN")) {
+    sections.push({
+      title: "Administración",
+      items: [
+        {
+          name: "Gestión de Usuarios",
+          href: "/admin/users",
+          icon: "i-heroicons-user-group",
         },
       ],
     });
@@ -539,6 +580,34 @@ const isActiveRoute = (href) => {
 
 const hasActiveChild = (children) => {
   return children.some((child) => isActiveRoute(child.href));
+};
+
+// Función para cargar datos completos del usuario usando el composable
+const loadCompleteUserData = async (userEmail) => {
+  if (!userEmail) {
+    console.error("Email de usuario requerido");
+    return;
+  }
+
+  loadingGraphUserData.value = true;
+
+  try {
+    const { userData, photo } = await getCompleteUserData(userEmail);
+
+    if (userData) {
+      graphUserData.value = userData;
+      userProfile.value.name = userData.displayName || userAttributes.email;
+    }
+
+    if (photo) {
+      userPhoto.value = photo;
+      userProfile.value.avatar = photo;
+    }
+  } catch (error) {
+    console.error("Error cargando datos completos del usuario:", error);
+  } finally {
+    loadingGraphUserData.value = false;
+  }
 };
 
 // Métodos
@@ -586,20 +655,14 @@ const logout = async () => {
   closeUserMenu();
 
   try {
-    console.log("Cerrando sesión...");
-
     // Cerrar sesión usando Amplify Auth
     await signOut();
-
-    console.log("Sesión cerrada exitosamente");
-
     // Redireccionar a la raíz después del cierre de sesión
     await window.location.reload();
   } catch (error) {
     console.error("Error al cerrar sesión:", error);
 
     // Si hay un error, mostrar mensaje y redireccionar de todas formas
-    console.log("Redirigiendo a la raíz...");
     await navigateTo("/");
   }
 };
@@ -616,6 +679,18 @@ onMounted(async () => {
       closeUserMenu();
     }
   });
+
+  // Inicializar Microsoft Graph API
+  try {
+    const userEmail = userAttributes.email;
+
+    if (userEmail) {
+      // Cargar datos completos del usuario usando el composable
+      await loadCompleteUserData(userEmail);
+    }
+  } catch (error) {
+    console.error("Error inicializando Microsoft Graph en sidebar:", error);
+  }
 });
 
 onUnmounted(() => {

@@ -28,7 +28,7 @@ const handleMicrosoftSignIn = async () => {
 const handleNovaFinanzasSignIn = async () => {
   try {
     await signInWithRedirect({
-      provider: { custom: "MicrosoftEntraID" },
+      provider: { custom: "NovaFinanzaz" },
     });
   } catch (error) {
     console.error("Error al iniciar sesión:", error);
@@ -52,20 +52,29 @@ const handleNovaFinanzasSignIn = async () => {
       <template v-slot:footer>
         <div class="flex w-full pt-4 gap-4">
           <button
+            id="diveco-button"
+            data-testid="diveco-button"
             @click="handleMicrosoftSignIn"
-            class="group relative w-full px-8 py-4 bg-gradient-to-r from-cyan-400 to-cyan-600 text-white hover:from-cyan-500 hover:to-cyan-700 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 shadow-lg hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-cyan-300/50 overflow-hidden"
+            class="group relative w-full px-6 py-2 bg-gradient-to-r from-cyan-400 to-cyan-600 text-white hover:from-cyan-500 hover:to-cyan-700 transition-all duration-300 ease-out shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-cyan-300/50 overflow-hidden cursor-pointer"
           >
             <!-- Efecto de brillo en hover -->
             <div
-              class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"
+              class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out"
+            ></div>
+
+            <!-- Efecto de overlay sutil -->
+            <div
+              class="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300"
             ></div>
 
             <!-- Contenido del botón -->
-            <div class="relative flex items-center justify-center space-x-3">
+            <div class="relative flex items-center justify-center space-x-2">
               <!-- Ícono de Microsoft mejorado -->
-              <div class="w-6 h-6 bg-white/20 rounded-lg p-1 backdrop-blur-sm">
+              <div
+                class="w-5 h-5 bg-white/20 rounded-md p-0.5 backdrop-blur-sm group-hover:bg-white/30 transition-colors duration-300"
+              >
                 <svg
-                  class="w-4 h-4 text-white"
+                  class="w-3.5 h-3.5 text-white"
                   viewBox="0 0 24 24"
                   fill="currentColor"
                 >
@@ -76,25 +85,35 @@ const handleNovaFinanzasSignIn = async () => {
               </div>
 
               <!-- Texto del botón -->
-              <span class="font-semibold text-lg tracking-wide">Diveco</span>
+              <span
+                class="font-semibold text-base tracking-wide group-hover:tracking-wider transition-all duration-300"
+                >DIVECO</span
+              >
             </div>
           </button>
 
           <button
             @click="handleNovaFinanzasSignIn"
-            class="hidden group relative w-full px-8 py-4 bg-gradient-to-r from-cyan-400 to-cyan-600 text-white hover:from-cyan-500 hover:to-cyan-700 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 shadow-lg hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-cyan-300/50 overflow-hidden"
+            class="group relative w-full px-6 py-2 bg-gradient-to-r from-cyan-400 to-cyan-600 text-white hover:from-cyan-500 hover:to-cyan-700 transition-all duration-300 ease-out shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-cyan-300/50 overflow-hidden cursor-pointer"
           >
             <!-- Efecto de brillo en hover -->
             <div
-              class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"
+              class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out"
+            ></div>
+
+            <!-- Efecto de overlay sutil -->
+            <div
+              class="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300"
             ></div>
 
             <!-- Contenido del botón -->
-            <div class="relative flex items-center justify-center space-x-3">
+            <div class="relative flex items-center justify-center space-x-2">
               <!-- Ícono de Microsoft mejorado -->
-              <div class="w-6 h-6 bg-white/20 rounded-lg p-1 backdrop-blur-sm">
+              <div
+                class="w-5 h-5 bg-white/20 rounded-md p-0.5 backdrop-blur-sm group-hover:bg-white/30 transition-colors duration-300"
+              >
                 <svg
-                  class="w-4 h-4 text-white"
+                  class="w-3.5 h-3.5 text-white"
                   viewBox="0 0 24 24"
                   fill="currentColor"
                 >
@@ -105,7 +124,8 @@ const handleNovaFinanzasSignIn = async () => {
               </div>
 
               <!-- Texto del botón -->
-              <span class="font-semibold text-lg tracking-wide"
+              <span
+                class="font-semibold text-base tracking-wide group-hover:tracking-wider transition-all duration-300"
                 >Nova Finanzas</span
               >
             </div>

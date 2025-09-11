@@ -3,39 +3,6 @@
     class="animate-fade-in-up border border-cyan-200 dark:border-cyan-700 shadow-lg"
     :style="'box-shadow: var(--diveco-shadow);'"
   >
-    <template #header>
-      <div
-        class="flex items-center justify-between bg-gradient-to-r from-cyan-50 to-cyan-100 dark:from-cyan-900/20 dark:to-cyan-800/20 -m-6 mb-6 p-6 rounded-t-lg"
-      >
-        <div class="flex items-center">
-          <div
-            class="flex-shrink-0 p-2 bg-cyan-600 dark:bg-cyan-500 rounded-lg"
-          >
-            <UIcon name="i-heroicons-clock" class="w-6 h-6 text-white" />
-          </div>
-          <div class="ml-4">
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-              Historial de Acciones SAP
-            </h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Registro de todas las operaciones de usuarios SAP (reinicio y
-              desbloqueo)
-            </p>
-          </div>
-        </div>
-        <UButton
-          @click="refreshHistory"
-          :loading="isLoading"
-          variant="outline"
-          color="cyan"
-          size="sm"
-        >
-          <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2" />
-          Actualizar
-        </UButton>
-      </div>
-    </template>
-
     <!-- Filtros -->
     <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -81,6 +48,12 @@
       </div>
     </div>
 
+    <!-- Gráficas -->
+    <div class="flex gap-4">
+      <DailyActivityChart :history="history" />
+      <SuccessRateChart :history="history" />
+    </div>
+
     <!-- Loading State -->
     <div v-if="isLoading" class="flex justify-center items-center py-12">
       <div class="text-center">
@@ -110,8 +83,74 @@
       </p>
     </div>
 
+    <!-- Botón para expandir/colapsar tabla -->
+    <div v-else class="mb-4">
+      <!-- Resumen estadístico cuando la tabla está colapsada -->
+      <div
+        v-if="isTableCollapsed"
+        class="mb-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
+      >
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+          <div>
+            <div class="text-2xl font-bold text-cyan-600 dark:text-cyan-400">
+              {{ filteredHistory.length }}
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+              Total Registros
+            </div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+              {{ completedCount }}
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+              Completados
+            </div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-red-600 dark:text-red-400">
+              {{ errorCount }}
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+              ERRORES SERVICIO SAP
+            </div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {{ successRate }}%
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+              Tasa de Éxito
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <UButton
+        @click="isTableCollapsed = !isTableCollapsed"
+        :variant="isTableCollapsed ? 'solid' : 'outline'"
+        color="cyan"
+        size="sm"
+        class="mb-4"
+      >
+        <UIcon
+          :name="
+            isTableCollapsed
+              ? 'i-heroicons-chevron-down'
+              : 'i-heroicons-chevron-up'
+          "
+          class="w-4 h-4 mr-2"
+        />
+        {{
+          isTableCollapsed
+            ? "Ver Detalles del Historial"
+            : "Ocultar Detalles del Historial"
+        }}
+      </UButton>
+    </div>
+
     <!-- History Table -->
-    <div v-else class="overflow-x-auto">
+    <div v-if="!isTableCollapsed" class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead class="bg-gray-50 dark:bg-gray-800">
           <tr>
@@ -238,7 +277,7 @@
 
     <!-- Pagination -->
     <div
-      v-if="totalPages > 1"
+      v-if="!isTableCollapsed && totalPages > 1"
       class="flex justify-between items-center mt-6 pt-6 border-t border-gray-200 dark:border-gray-700"
     >
       <div class="text-sm text-gray-700 dark:text-gray-300">
@@ -282,6 +321,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { generateClient } from "aws-amplify/api";
+import { DailyActivityChart, SuccessRateChart } from "./charts";
 
 // Cliente de Amplify
 const client = generateClient();
@@ -293,6 +333,7 @@ const currentPage = ref(1);
 const itemsPerPage = 10;
 const showDetailsModal = ref(false);
 const selectedRecordId = ref(null);
+const isTableCollapsed = ref(true); // Tabla colapsada por defecto
 
 // Filtros
 const filters = ref({
@@ -306,6 +347,23 @@ const hasFilters = computed(() => {
   return (
     filters.value.sapUser || filters.value.emailOwner || filters.value.date
   );
+});
+
+// Contadores para el resumen estadístico
+const completedCount = computed(() => {
+  return filteredHistory.value.filter(
+    (record) => record.status === "Completado"
+  ).length;
+});
+
+const errorCount = computed(() => {
+  return filteredHistory.value.filter((record) => record.status === "Error")
+    .length;
+});
+
+const successRate = computed(() => {
+  const total = completedCount.value + errorCount.value;
+  return total > 0 ? ((completedCount.value / total) * 100).toFixed(1) : 0;
 });
 
 // Aplicar filtros adicionales en el frontend como respaldo
@@ -368,11 +426,9 @@ const paginatedHistory = computed(() => {
 const loadHistory = async () => {
   isLoading.value = true;
   try {
-    console.log("📋 Cargando historial de reinicios con filtros...");
-
     // Solo aplicar filtro de fecha en la base de datos (el que sabemos que funciona)
     const queryConfig = {
-      limit: 1000,
+      limit: 5000, // Aumentar límite para obtener más datos históricos
     };
 
     // Solo filtrar por fecha en la DB si está presente
@@ -382,10 +438,7 @@ const loadHistory = async () => {
           beginsWith: filters.value.date,
         },
       };
-      console.log("🗓️ Aplicando filtro de fecha en DB:", filters.value.date);
     }
-
-    console.log("🔍 Filtros aplicados:", queryConfig);
 
     const { errors, data: historyData } =
       await client.models.SapUserActionHistory.list(queryConfig);
@@ -396,22 +449,12 @@ const loadHistory = async () => {
     }
 
     history.value = historyData || [];
-    console.log(`✅ Historial cargado: ${history.value.length} registros`);
-    console.log("📊 Filtros activos:", {
-      sapUser: filters.value.sapUser,
-      emailOwner: filters.value.emailOwner,
-      date: filters.value.date,
-    });
-
-    // Log de muestra de datos para debugging
+    // Log de fechas para debug
     if (history.value.length > 0) {
-      console.log("📋 Muestra de datos cargados:", {
-        primer_registro: {
-          sapUser: history.value[0].sapUser,
-          emailOwner: history.value[0].emailOwner,
-          date: history.value[0].date,
-        },
-      });
+      const dates = history.value
+        .map((record) => record.date)
+        .filter((date) => date)
+        .sort();
     }
   } catch (error) {
     console.error("❌ Error crítico al cargar historial:", error);
@@ -471,7 +514,7 @@ const formatActionType = (accion) => {
 };
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
   loadHistory();
 });
 </script>

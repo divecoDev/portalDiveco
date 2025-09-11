@@ -7,8 +7,6 @@ const request = await client.queries.ResetPassword({
   sapUser: "GT_GORTIZ",
   email: "gerson.ortiz.gt@camasolympia.com",
 });
-
-console.log(request);
 </script>
 
 <template>
