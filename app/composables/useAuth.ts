@@ -2,10 +2,7 @@ import { ref, computed, readonly } from "vue";
 import { getCurrentUser } from "aws-amplify/auth";
 import { useUserGroups } from "./useUserGroups";
 import {
-  ROLES,
   PERMISSIONS,
-  hasPermission,
-  canAccessRoute,
   getHighestRole,
   getRoleDisplayName,
 } from "~/config/roles";
@@ -171,6 +168,3 @@ export const useAuth = () => {
     init,
   };
 };
-
-
-
