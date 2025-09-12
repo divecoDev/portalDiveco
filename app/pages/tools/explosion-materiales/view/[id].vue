@@ -12,10 +12,10 @@
             >
               <UIcon name="i-heroicons-eye" class="w-7 h-7 text-white" />
             </div>
-            Detalles de Explosión
+            {{ explosion?.version || "" }}
           </h1>
           <p class="mt-3 text-lg text-gray-600 dark:text-gray-300 ml-16">
-            Información detallada de la explosión de materiales
+            {{ explosion?.descripcion || "" }}
           </p>
         </div>
 
@@ -48,185 +48,16 @@
       </div>
     </div>
 
-    <!-- Estado de carga inicial -->
-    <div v-if="loading" class="flex justify-center items-center py-12">
-      <div class="text-center">
-        <div
-          class="w-12 h-12 border-4 border-cyan-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"
-        ></div>
-        <p class="text-gray-600 dark:text-gray-300">
-          Cargando datos de la explosión...
-        </p>
-      </div>
-    </div>
-
-    <!-- Error si no se encuentra la explosión -->
-    <div v-else-if="!explosion" class="text-center py-16">
-      <div
-        class="w-32 h-32 bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/30 dark:to-red-800/30 rounded-md flex items-center justify-center mx-auto mb-8 shadow-lg"
-      >
-        <UIcon
-          name="i-heroicons-exclamation-triangle"
-          class="w-16 h-16 text-red-600 dark:text-red-400"
-        />
-      </div>
-      <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-        Explosión no encontrada
-      </h3>
-      <p class="text-gray-600 dark:text-gray-300 mb-8 max-w-md mx-auto">
-        No se pudo encontrar la explosión de materiales solicitada
-      </p>
-      <NuxtLink to="/tools/explosion-materiales">
-        <UButton icon="i-heroicons-arrow-left" color="cyan" variant="solid">
-          Volver al Listado
-        </UButton>
-      </NuxtLink>
-    </div>
-
-    <!-- Contenido principal -->
-    <div v-else class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-      <!-- Card principal con información de la explosión -->
-      <div
-        class="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-md shadow-xl border border-cyan-200/20 dark:border-cyan-700/20 overflow-hidden"
-      >
-        <!-- Header con gradiente -->
-        <div class="bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-4">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center">
-              <UIcon
-                name="i-heroicons-hashtag"
-                class="w-6 h-6 text-white mr-3"
-              />
-              <div>
-                <h2 class="text-2xl font-bold text-white">
-                  Versión {{ explosion.version }}
-                </h2>
-                <p class="text-cyan-100 text-sm">
-                  {{ explosion.descripcion }}
-                </p>
-              </div>
-            </div>
-            <div class="text-right">
-              <UBadge
-                :color="getStatusConfig(explosion.status).color"
-                variant="solid"
-                size="md"
-                class="px-3 py-1 flex items-center gap-1.5"
-              >
-                <UIcon
-                  :name="getStatusConfig(explosion.status).icon"
-                  class="w-4 h-4"
-                />
-                {{ getStatusConfig(explosion.status).label }}
-              </UBadge>
-            </div>
-          </div>
-        </div>
-
-        <!-- Información detallada -->
-        <div class="p-4">
-          <!-- Grid compacto con información adicional -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Usuario -->
-            <div
-              class="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md text-center"
-            >
-              <UIcon
-                name="i-heroicons-user"
-                class="w-5 h-5 text-gray-600 dark:text-gray-400 mx-auto mb-1"
-              />
-              <div
-                class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1"
-              >
-                Usuario
-              </div>
-              <div
-                class="text-sm font-semibold text-gray-900 dark:text-white truncate"
-              >
-                {{ explosion.username || "No especificado" }}
-              </div>
-            </div>
-
-            <!-- Fecha de creación -->
-            <div
-              class="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md text-center"
-            >
-              <UIcon
-                name="i-heroicons-calendar"
-                class="w-5 h-5 text-gray-600 dark:text-gray-400 mx-auto mb-1"
-              />
-              <div
-                class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1"
-              >
-                Creado
-              </div>
-              <div class="text-xs font-semibold text-gray-900 dark:text-white">
-                {{ formatDateCompact(explosion.createdAt) }}
-              </div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">
-                {{ formatRelativeDate(explosion.createdAt) }}
-              </div>
-            </div>
-          </div>
-
-          <!-- Descripción completa -->
-          <div class="mt-4 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md">
-            <div class="flex items-center mb-2">
-              <UIcon
-                name="i-heroicons-document-text"
-                class="w-4 h-4 text-gray-600 dark:text-gray-400 mr-2"
-              />
-              <span class="text-sm font-medium text-gray-600 dark:text-gray-400"
-                >Descripción</span
-              >
-            </div>
-            <p class="text-gray-900 dark:text-white font-medium">
-              {{ explosion.descripcion }}
-            </p>
-          </div>
-
-          <!-- Acciones disponibles -->
-          <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div class="flex items-center justify-between">
-              <span class="text-sm font-medium text-gray-600 dark:text-gray-400"
-                >Acciones:</span
-              >
-
-              <div class="flex items-center space-x-2">
-                <NuxtLink
-                  :to="`/tools/explosion-materiales/edit/${explosion.id}`"
-                >
-                  <UButton
-                    icon="i-heroicons-pencil"
-                    color="blue"
-                    variant="outline"
-                    size="sm"
-                  >
-                    Editar
-                  </UButton>
-                </NuxtLink>
-
-                <UButton
-                  icon="i-heroicons-trash"
-                  color="red"
-                  variant="outline"
-                  size="sm"
-                  @click="deleteExplosion"
-                >
-                  Eliminar
-                </UButton>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div
+      class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-md shadow-xl border border-cyan-200/50 dark:border-cyan-700/50 overflow-hidden"
+    >
+      <BoomProcess :explosion="explosion" />
     </div>
   </div>
 </template>
 
 <script setup>
 import { generateClient } from "aws-amplify/data";
-
 // Cliente de Amplify
 const client = generateClient();
 

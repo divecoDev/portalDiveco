@@ -2,6 +2,10 @@ import { defineBackend } from "@aws-amplify/backend";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { auth } from "./auth/resource";
 import { data } from "./data/resource";
+import { storage } from "./storage/resource";
+/**
+ * Imports functions
+ */
 import { groups } from "./functions/admin-users/Groups/resource";
 import { resetPassword } from "./functions/reset-password/resource";
 import { users } from "./functions/admin-users/Users/resource";
@@ -17,6 +21,7 @@ import { microsoftGraphToken } from "./functions/microsoft-graph/token/resource"
 export const backend = defineBackend({
   auth,
   data,
+  storage,
   groups,
   resetPassword,
   users,
