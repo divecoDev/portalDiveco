@@ -128,9 +128,7 @@
 
 <script setup>
 import { ref, computed } from "vue";
-import { getCurrentUser } from "aws-amplify/auth";
 
-const currentUser = await getCurrentUser();
 // Definir el layout
 definePageMeta({
   layout: "default",
@@ -140,13 +138,6 @@ definePageMeta({
 const { hasGroup, isLoading: isLoadingGroups } = useUserGroups();
 
 // Datos reactivos
-const stats = ref({
-  activeUsers: "156",
-  availableTools: "12",
-  reportsGenerated: "2,847",
-  averageTime: "2.3m",
-});
-
 // Herramientas principales con control de acceso
 const mainTools = computed(() => {
   const tools = [];
