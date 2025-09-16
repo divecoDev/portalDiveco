@@ -59,7 +59,7 @@ const goNext = () => {
   if (canGoNext.value && stepper.value?.hasNext) {
     stepper.value.next();
     // Scroll al inicio de la página
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 185, behavior: "smooth" });
   }
 };
 
@@ -67,7 +67,7 @@ const goPrev = () => {
   if (canGoPrev.value && stepper.value?.hasPrev) {
     stepper.value.prev();
     // Scroll al inicio de la página
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 185, behavior: "smooth" });
   }
 };
 
@@ -121,6 +121,7 @@ const handleCoberturaUpdate = (data) => {
     <!-- Controles de navegación -->
     <div class="flex justify-between items-center pt-4">
       <UButton
+        class="cursor-pointer"
         :disabled="!canGoPrev"
         icon="i-heroicons-arrow-left"
         @click="goPrev"
@@ -133,6 +134,7 @@ const handleCoberturaUpdate = (data) => {
       </div>
 
       <UButton
+        class="cursor-pointer"
         :disabled="!canGoNext"
         icon="i-heroicons-arrow-right"
         @click="goNext"

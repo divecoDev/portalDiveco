@@ -140,7 +140,7 @@ watch(
         </div>
 
         <div class="h-[400px] overflow-auto">
-          <table class="w-full table-auto">
+          <table class="w-full table-auto bg-gray-50">
             <thead class="sticky top-0 bg-cyan-500 text-white">
               <tr>
                 <th
