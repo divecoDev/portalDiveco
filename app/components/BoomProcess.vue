@@ -124,9 +124,7 @@ const handleCoberturaUpdate = (data) => {
         :disabled="!canGoPrev"
         icon="i-heroicons-arrow-left"
         @click="goPrev"
-      >
-        Anterior
-      </UButton>
+      />
 
       <div class="text-center">
         <span class="font-bold text-gray-500 dark:text-gray-400">
@@ -138,18 +136,7 @@ const handleCoberturaUpdate = (data) => {
         :disabled="!canGoNext"
         icon="i-heroicons-arrow-right"
         @click="goNext"
-      >
-        <template v-if="currentStep === 0">
-          {{ isPlanVentasValid ? "Continuar" : "Cargar plan de ventas" }}
-        </template>
-        <template v-else-if="currentStep === 1">
-          {{ isExistenciasValid ? "Continuar" : "Cargar existencias" }}
-        </template>
-        <template v-else-if="currentStep === 2">
-          {{ isCoberturaValid ? "Procesar" : "Cargar días de cobertura" }}
-        </template>
-        <template v-else> Finalizar </template>
-      </UButton>
+      />
     </div>
 
     <!-- Mensaje de validación -->

@@ -221,3 +221,11 @@
     break-inside: avoid;
   }
 }
+
+.bg-primary {
+  background-color: var(--diveco-primary);
+}
+
+.text-primary {
+  color: var(--diveco-primary);
+}
