@@ -73,7 +73,7 @@ const stepperItems = ref([
   {
     slot: "carga-de-insumos",
     title: "Carga de insumos",
-    icon: "i-heroicons-chart-bar",
+    icon: "i-heroicons-circle-stack",
   },
   {
     slot: "generar-plan-de-produccion",
