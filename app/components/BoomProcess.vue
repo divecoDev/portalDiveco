@@ -1,5 +1,6 @@
 <script setup>
 import PlanVentasStep from "./boom/PlanVentasStep.vue";
+import ExistenciasStep from "./boom/ExistenciasStep.vue";
 
 // Estado para los pasos del stepper
 const items = ref([
@@ -101,22 +102,10 @@ const handleCoberturaUpdate = (data) => {
       </template>
 
       <template #existencias>
-        <div class="text-center py-12">
-          <div
-            class="w-24 h-24 bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30 rounded-md flex items-center justify-center mx-auto mb-4 shadow-lg"
-          >
-            <UIcon
-              name="i-heroicons-shopping-cart"
-              class="w-12 h-12 text-cyan-600 dark:text-cyan-400"
-            />
-          </div>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Existencias
-          </h3>
-          <p class="text-gray-600 dark:text-gray-300">
-            Componente en desarrollo
-          </p>
-        </div>
+        <ExistenciasStep
+          v-model="existenciasData"
+          @update:modelValue="handleExistenciasUpdate"
+        />
       </template>
 
       <template #cobertura>
