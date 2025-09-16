@@ -40,8 +40,6 @@ const handleCoberturaUpdate = (data) => {
 
 <template>
   <div>
-    <h1 class="text-2xl font-bold mb-4">Carga de insumos</h1>
-
     <UStepper color="neutral" :items="items" class="w-full">
       <template #plan-de-ventas>
         <PlanVentasStep
