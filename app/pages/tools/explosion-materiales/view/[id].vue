@@ -51,7 +51,15 @@
     <div
       class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-md shadow-xl border border-cyan-200/50 dark:border-cyan-700/50 overflow-hidden"
     >
-      <BoomProcess :explosion="explosion" />
+      <UStepper :items="stepperItems" color="neutral" class="w-full">
+        <template #carga-de-insumos>
+          <div
+            class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+          >
+            <BoomProcess :explosion="explosion" />
+          </div>
+        </template>
+      </UStepper>
     </div>
   </div>
 </template>
@@ -60,6 +68,29 @@
 import { generateClient } from "aws-amplify/data";
 // Cliente de Amplify
 const client = generateClient();
+
+const stepperItems = ref([
+  {
+    slot: "carga-de-insumos",
+    title: "Carga de insumos",
+    icon: "i-heroicons-chart-bar",
+  },
+  {
+    slot: "generar-plan-de-produccion",
+    title: "Generar plan de producción",
+    icon: "i-heroicons-beaker",
+  },
+  {
+    slot: "validacion-de-aprovisionamiento",
+    title: "Validacion de Aprovisionamiento",
+    icon: "i-heroicons-shield-check",
+  },
+  {
+    slot: "explocionar",
+    title: "Explocionar",
+    icon: "i-heroicons-bolt",
+  },
+]);
 
 // Obtener ID de la ruta
 const route = useRoute();

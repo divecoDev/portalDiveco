@@ -74,11 +74,6 @@ const handleFileChangePlanVentas = async (e) => {
   }
 };
 
-// Función para abrir el modal
-const openModal = () => {
-  isModalOpen.value = true;
-};
-
 // Limpiar datos
 const clearData = () => {
   planVentas.value = [];
