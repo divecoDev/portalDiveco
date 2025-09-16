@@ -1,6 +1,7 @@
 <script setup>
 import PlanVentasStep from "./boom/PlanVentasStep.vue";
 import ExistenciasStep from "./boom/ExistenciasStep.vue";
+import CoberturaStep from "./boom/CoberturaStep.vue";
 
 // Estado para los pasos del stepper
 const items = ref([
@@ -35,6 +36,7 @@ const stepper = ref();
 // Computed para validaciones de cada paso
 const isPlanVentasValid = computed(() => planVentasData.value.length > 0);
 const isExistenciasValid = computed(() => existenciasData.value.length > 0);
+const isCoberturaValid = computed(() => coberturaData.value.length > 0);
 
 // Computed para controlar la navegación
 const canGoNext = computed(() => {
@@ -44,7 +46,7 @@ const canGoNext = computed(() => {
     case 1: // Existencias
       return isExistenciasValid.value;
     case 2: // Cobertura
-      return false; // Último paso
+      return isCoberturaValid.value;
     default:
       return false;
   }
@@ -109,22 +111,10 @@ const handleCoberturaUpdate = (data) => {
       </template>
 
       <template #cobertura>
-        <div class="text-center py-12">
-          <div
-            class="w-24 h-24 bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30 rounded-md flex items-center justify-center mx-auto mb-4 shadow-lg"
-          >
-            <UIcon
-              name="i-heroicons-shield-check"
-              class="w-12 h-12 text-cyan-600 dark:text-cyan-400"
-            />
-          </div>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Cobertura
-          </h3>
-          <p class="text-gray-600 dark:text-gray-300">
-            Componente en desarrollo
-          </p>
-        </div>
+        <CoberturaStep
+          v-model="coberturaData"
+          @update:modelValue="handleCoberturaUpdate"
+        />
       </template>
     </UStepper>
 
@@ -133,15 +123,13 @@ const handleCoberturaUpdate = (data) => {
       <UButton
         :disabled="!canGoPrev"
         icon="i-heroicons-arrow-left"
-        variant="outline"
-        color="gray"
         @click="goPrev"
       >
         Anterior
       </UButton>
 
       <div class="text-center">
-        <span class="text-sm text-gray-500 dark:text-gray-400">
+        <span class="font-bold text-gray-500 dark:text-gray-400">
           Paso {{ currentStep + 1 }} de {{ items.length }}
         </span>
       </div>
@@ -149,8 +137,6 @@ const handleCoberturaUpdate = (data) => {
       <UButton
         :disabled="!canGoNext"
         icon="i-heroicons-arrow-right"
-        trailing
-        color="cyan"
         @click="goNext"
       >
         <template v-if="currentStep === 0">
@@ -159,13 +145,16 @@ const handleCoberturaUpdate = (data) => {
         <template v-else-if="currentStep === 1">
           {{ isExistenciasValid ? "Continuar" : "Cargar existencias" }}
         </template>
+        <template v-else-if="currentStep === 2">
+          {{ isCoberturaValid ? "Procesar" : "Cargar días de cobertura" }}
+        </template>
         <template v-else> Finalizar </template>
       </UButton>
     </div>
 
     <!-- Mensaje de validación -->
     <div
-      v-if="!canGoNext && currentStep < items.length - 1"
+      v-if="!canGoNext"
       class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-md p-4"
     >
       <div class="flex items-center">
@@ -181,6 +170,10 @@ const handleCoberturaUpdate = (data) => {
           <template v-else-if="currentStep === 1">
             Debes cargar los datos de existencias para continuar al siguiente
             paso.
+          </template>
+          <template v-else-if="currentStep === 2">
+            Debes cargar los datos de días de cobertura para procesar la
+            explosión de materiales.
           </template>
         </p>
       </div>

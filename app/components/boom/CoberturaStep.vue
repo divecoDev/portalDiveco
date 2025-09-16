@@ -1,5 +1,5 @@
 <script setup>
-import ExistenciasUploadModal from "./ExistenciasUploadModal.vue";
+import CoberturaUploadModal from "./CoberturaUploadModal.vue";
 
 // Props para comunicación con el componente padre
 const props = defineProps({
@@ -13,24 +13,18 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue"]);
 
 // Estado local del componente
-const existencias = ref(props.modelValue);
+const cobertura = ref(props.modelValue);
 const fileName = ref("");
 
-// Headers específicos de existencias
+// Headers específicos de días de cobertura
 const headers = ref([
   "version",
   "centro",
-  "almacen",
-  "material",
   "periodo",
   "mes",
-  "libre_u",
-  "no_liberado",
-  "bloqueado",
-  "devolucion",
-  "traslados",
-  "calidad",
-  "bloqueado_eM",
+  "dias_habiles_mes_planta",
+  "dias_coberturas_mes",
+  "dias_habiles_venta",
 ]);
 
 // Estado del modal
@@ -46,7 +40,7 @@ const handleDataLoaded = (payload) => {
     return;
   }
 
-  existencias.value = data;
+  cobertura.value = data;
   fileName.value = loadedFileName;
 
   // Emitir el cambio al componente padre
@@ -55,27 +49,27 @@ const handleDataLoaded = (payload) => {
 
 // Manejar limpieza de datos desde el modal
 const handleFileCleared = () => {
-  existencias.value = [];
+  cobertura.value = [];
   fileName.value = "";
   emit("update:modelValue", []);
 };
 
 // Limpiar datos (método directo desde el botón de eliminar)
 const clearData = () => {
-  existencias.value = [];
+  cobertura.value = [];
   fileName.value = "";
   emit("update:modelValue", []);
 };
 
 // Computed para validar si hay datos
-const hasData = computed(() => existencias.value.length > 0);
-const totalRecords = computed(() => existencias.value.length);
+const hasData = computed(() => cobertura.value.length > 0);
+const totalRecords = computed(() => cobertura.value.length);
 
 // Watch para sincronizar con props
 watch(
   () => props.modelValue,
   (newValue) => {
-    existencias.value = newValue;
+    cobertura.value = newValue;
   },
   { deep: true },
 );
@@ -90,15 +84,15 @@ watch(
       <div class="flex items-center justify-between">
         <div class="flex items-center">
           <UIcon
-            name="i-heroicons-shopping-cart"
+            name="i-heroicons-shield-check"
             class="w-6 h-6 text-cyan-600 dark:text-cyan-400 mr-3"
           />
           <div>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-              Existencias
+              Días de Cobertura
             </h3>
             <p class="text-sm text-gray-600 dark:text-gray-300">
-              Carga el archivo Excel con los datos de existencias
+              Carga el archivo Excel con los datos de días de cobertura
             </p>
           </div>
         </div>
@@ -124,14 +118,14 @@ watch(
       </div>
     </div>
 
-    <!-- Tabla de datos de existencias -->
+    <!-- Tabla de datos de cobertura -->
     <div class="space-y-6">
       <div
         v-if="hasData"
         class="bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
       >
         <div class="bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-3">
-          <h4 class="text-white font-semibold">Datos de Existencias</h4>
+          <h4 class="text-white font-semibold">Datos de Días de Cobertura</h4>
         </div>
 
         <div class="h-[400px] overflow-auto">
@@ -149,7 +143,7 @@ watch(
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               <tr
-                v-for="(row, index) in existencias"
+                v-for="(row, index) in cobertura"
                 :key="index"
                 class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150"
               >
@@ -173,7 +167,7 @@ watch(
         class="w-24 h-24 bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30 rounded-md flex items-center justify-center mx-auto mb-4 shadow-lg"
       >
         <UIcon
-          name="i-heroicons-shopping-cart"
+          name="i-heroicons-shield-check"
           class="w-12 h-12 text-cyan-600 dark:text-cyan-400"
         />
       </div>
@@ -182,12 +176,12 @@ watch(
       </h3>
       <p class="text-gray-600 dark:text-gray-300 mb-4">
         Utiliza el botón "Cargar archivo" en el header para seleccionar un
-        archivo Excel con los datos de existencias
+        archivo Excel con los datos de días de cobertura
       </p>
     </div>
 
     <!-- Modal de carga de archivo -->
-    <ExistenciasUploadModal
+    <CoberturaUploadModal
       v-model:is-open="isModalOpen"
       @data-loaded="handleDataLoaded"
       @file-cleared="handleFileCleared"

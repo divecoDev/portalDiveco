@@ -12,26 +12,15 @@ const props = defineProps({
 // Emits para comunicación con el componente padre
 const emit = defineEmits(["update:isOpen", "data-loaded", "file-cleared"]);
 
-// Headers específicos del plan de ventas
+// Headers específicos de días de cobertura
 const headers = ref([
-  "SSOUR",
-  "VRSIO",
-  "SPMON",
-  "SPTAG",
-  "SPWOC",
-  "SPBUP",
-  "PMNUX",
-  "WENUX",
-  "VSNDA",
-  "PERIV",
-  "VWDAT",
-  "BASME",
-  "ABSAT",
-  "PRODU",
-  "LAGRI",
-  "LAGRZ",
-  "REICH",
-  "REICZ",
+  "version",
+  "centro",
+  "periodo",
+  "mes",
+  "dias_habiles_mes_planta",
+  "dias_coberturas_mes",
+  "dias_habiles_venta",
 ]);
 
 // Estado local del componente
@@ -81,17 +70,17 @@ const validateHeaders = (fileHeaders) => {
 };
 
 // Manejo del cambio de archivo
-const handleFileChangePlanVentas = async (e) => {
-  const filePlanVentas = e.target.files[0];
+const handleFileChangeCobertura = async (e) => {
+  const fileCobertura = e.target.files[0];
 
-  if (!filePlanVentas) return;
+  if (!fileCobertura) return;
 
-  fileName.value = filePlanVentas.name;
+  fileName.value = fileCobertura.name;
   validationError.value = "";
   isLoading.value = true;
 
   try {
-    const data = await readXlsxFile(filePlanVentas);
+    const data = await readXlsxFile(fileCobertura);
 
     if (data.length === 0) {
       validationError.value = "El archivo está vacío o no contiene datos válidos.";
@@ -142,7 +131,7 @@ const clearData = () => {
   validationError.value = "";
 
   // Limpiar el input file
-  const fileInput = document.getElementById("file-input-plan-ventas-modal");
+  const fileInput = document.getElementById("file-input-cobertura-modal");
   if (fileInput) {
     fileInput.value = "";
   }
@@ -158,7 +147,7 @@ const retryFileSelection = () => {
   validationError.value = "";
 
   // Limpiar el input file
-  const fileInput = document.getElementById("file-input-plan-ventas-modal");
+  const fileInput = document.getElementById("file-input-cobertura-modal");
   if (fileInput) {
     fileInput.value = "";
     fileInput.click(); // Abrir selector de archivos
@@ -176,7 +165,7 @@ watch(
       isLoading.value = false;
 
       // Limpiar el input file
-      const fileInput = document.getElementById("file-input-plan-ventas-modal");
+      const fileInput = document.getElementById("file-input-cobertura-modal");
       if (fileInput) {
         fileInput.value = "";
       }
@@ -186,7 +175,7 @@ watch(
 </script>
 
 <template>
-  <UModal v-model:open="isModalOpen" title="Cargar plan de ventas">
+  <UModal v-model:open="isModalOpen" title="Cargar días de cobertura">
     <template #body>
       <div class="space-y-6">
         <!-- Sección de carga de archivo -->
@@ -194,16 +183,16 @@ watch(
           <div class="space-y-4">
             <p class="text-sm text-gray-600 dark:text-gray-300">
               Selecciona un archivo Excel (.xlsx o .xls) que contenga los datos
-              del plan de ventas.
+              de días de cobertura.
             </p>
 
             <!-- Input de archivo -->
             <div class="relative">
               <input
                 type="file"
-                id="file-input-plan-ventas-modal"
+                id="file-input-cobertura-modal"
                 accept=".xlsx,.xls"
-                @change="handleFileChangePlanVentas"
+                @change="handleFileChangeCobertura"
                 :disabled="isLoading"
                 class="w-full p-6 text-center rounded-md font-semibold border-2 border-dashed border-cyan-300 bg-cyan-50 dark:bg-cyan-900/20 dark:border-cyan-700 hover:border-cyan-400 dark:hover:border-cyan-600 transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               />
@@ -280,9 +269,8 @@ watch(
                 <div class="text-sm text-blue-800 dark:text-blue-200">
                   <p class="font-semibold mb-1">Formato esperado:</p>
                   <p>
-                    El archivo debe contener las columnas: SSOUR, VRSIO, SPMON,
-                    SPTAG, SPWOC, SPBUP, PMNUX, WENUX, VSNDA, PERIV, VWDAT,
-                    BASME, ABSAT, PRODU, LAGRI, LAGRZ, REICH, REICZ
+                    El archivo debe contener las columnas: version, centro, periodo,
+                    mes, dias_habiles_mes_planta, dias_coberturas_mes, dias_habiles_venta
                   </p>
                 </div>
               </div>
