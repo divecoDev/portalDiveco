@@ -28,7 +28,7 @@ export interface ApiResponse<T> {
  * Desbloquea un usuario SAP
  */
 export async function unlockUser(
-  request: UnlockUserRequest
+  request: UnlockUserRequest,
 ): Promise<ApiResponse<UnlockUserResponse>> {
   try {
     console.log("🚀 ===== SERVICIO: INICIO DESBLOQUEO =====");
@@ -48,7 +48,7 @@ export async function unlockUser(
       {
         method: "POST",
         body: request,
-      }
+      },
     );
 
     console.log("📡 ===== RESPUESTA DEL ENDPOINT =====");

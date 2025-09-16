@@ -1,5 +1,6 @@
 <script setup>
 import PlanVentasStep from "./boom/PlanVentasStep.vue";
+
 // Estado para los pasos del stepper
 const items = ref([
   {
@@ -24,6 +25,49 @@ const planVentasData = ref([]);
 const existenciasData = ref([]);
 const coberturaData = ref([]);
 
+// Estado para el paso actual
+const currentStep = ref(0);
+
+// Referencia al stepper para controlar la navegación
+const stepper = ref();
+
+// Computed para validaciones de cada paso
+const isPlanVentasValid = computed(() => planVentasData.value.length > 0);
+const isExistenciasValid = computed(() => existenciasData.value.length > 0);
+
+// Computed para controlar la navegación
+const canGoNext = computed(() => {
+  switch (currentStep.value) {
+    case 0: // Plan de ventas
+      return isPlanVentasValid.value;
+    case 1: // Existencias
+      return isExistenciasValid.value;
+    case 2: // Cobertura
+      return false; // Último paso
+    default:
+      return false;
+  }
+});
+
+const canGoPrev = computed(() => currentStep.value > 0);
+
+// Métodos de navegación
+const goNext = () => {
+  if (canGoNext.value && stepper.value?.hasNext) {
+    stepper.value.next();
+    // Scroll al inicio de la página
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+};
+
+const goPrev = () => {
+  if (canGoPrev.value && stepper.value?.hasPrev) {
+    stepper.value.prev();
+    // Scroll al inicio de la página
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+};
+
 // Handlers para actualizar los datos desde los componentes hijos
 const handlePlanVentasUpdate = (data) => {
   planVentasData.value = data;
@@ -39,8 +83,16 @@ const handleCoberturaUpdate = (data) => {
 </script>
 
 <template>
-  <div>
-    <UStepper color="neutral" :items="items" class="w-full">
+  <div class="space-y-6">
+    <!-- Stepper con navegación deshabilitada -->
+    <UStepper
+      ref="stepper"
+      v-model="currentStep"
+      :items="items"
+      color="primary"
+      disabled
+      class="w-full"
+    >
       <template #plan-de-ventas>
         <PlanVentasStep
           v-model="planVentasData"
@@ -86,5 +138,63 @@ const handleCoberturaUpdate = (data) => {
         </div>
       </template>
     </UStepper>
+
+    <!-- Controles de navegación -->
+    <div class="flex justify-between items-center pt-4">
+      <UButton
+        :disabled="!canGoPrev"
+        icon="i-heroicons-arrow-left"
+        variant="outline"
+        color="gray"
+        @click="goPrev"
+      >
+        Anterior
+      </UButton>
+
+      <div class="text-center">
+        <span class="text-sm text-gray-500 dark:text-gray-400">
+          Paso {{ currentStep + 1 }} de {{ items.length }}
+        </span>
+      </div>
+
+      <UButton
+        :disabled="!canGoNext"
+        icon="i-heroicons-arrow-right"
+        trailing
+        color="cyan"
+        @click="goNext"
+      >
+        <template v-if="currentStep === 0">
+          {{ isPlanVentasValid ? "Continuar" : "Cargar plan de ventas" }}
+        </template>
+        <template v-else-if="currentStep === 1">
+          {{ isExistenciasValid ? "Continuar" : "Cargar existencias" }}
+        </template>
+        <template v-else> Finalizar </template>
+      </UButton>
+    </div>
+
+    <!-- Mensaje de validación -->
+    <div
+      v-if="!canGoNext && currentStep < items.length - 1"
+      class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-md p-4"
+    >
+      <div class="flex items-center">
+        <UIcon
+          name="i-heroicons-information-circle"
+          class="w-5 h-5 text-amber-600 dark:text-amber-400 mr-2"
+        />
+        <p class="text-sm text-amber-800 dark:text-amber-200">
+          <template v-if="currentStep === 0">
+            Debes cargar los datos del plan de ventas para continuar al
+            siguiente paso.
+          </template>
+          <template v-else-if="currentStep === 1">
+            Debes cargar los datos de existencias para continuar al siguiente
+            paso.
+          </template>
+        </p>
+      </div>
+    </div>
   </div>
 </template>

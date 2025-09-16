@@ -18,7 +18,7 @@ export const useUserGroups = () => {
   // Computed property para filtrar grupos excluyendo MicrosoftEntra
   const filteredUserGroups = computed(() => {
     return userGroups.value.filter(
-      (group: UserGroup) => !group.GroupName.includes("MicrosoftEntra")
+      (group: UserGroup) => !group.GroupName.includes("MicrosoftEntra"),
     );
   });
 
@@ -42,7 +42,7 @@ export const useUserGroups = () => {
         (group: UserGroup) =>
           !group.GroupName.includes("MicrosoftEntra") &&
           !group.GroupName.includes("Diveco") &&
-          !group.GroupName.includes("Nova")
+          !group.GroupName.includes("Nova"),
       );
     } catch (err) {
       const errorMessage =
@@ -82,7 +82,7 @@ export const useUserGroups = () => {
     }
 
     return filteredUserGroups.value.some(
-      (group: UserGroup) => group.GroupName === groupName
+      (group: UserGroup) => group.GroupName === groupName,
     );
   };
 
@@ -92,7 +92,7 @@ export const useUserGroups = () => {
       (name: string) =>
         !name.includes("MicrosoftEntra") &&
         !name.includes("Nova") &&
-        !name.includes("Diveco")
+        !name.includes("Diveco"),
     );
     if (validGroupNames.length === 0) {
       return false;
@@ -106,7 +106,7 @@ export const useUserGroups = () => {
       (name: string) =>
         !name.includes("MicrosoftEntra") &&
         !name.includes("Nova") &&
-        !name.includes("Diveco")
+        !name.includes("Diveco"),
     );
     if (validGroupNames.length === 0) {
       return false;

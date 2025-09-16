@@ -113,7 +113,7 @@ watch(
         fileInput.value = "";
       }
     }
-  }
+  },
 );
 </script>
 

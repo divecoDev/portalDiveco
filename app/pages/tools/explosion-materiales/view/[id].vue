@@ -132,7 +132,7 @@ const fetchExplosion = async () => {
 const deleteExplosion = async () => {
   if (
     confirm(
-      "¿Estás seguro de que deseas eliminar esta explosión de materiales? Esta acción no se puede deshacer."
+      "¿Estás seguro de que deseas eliminar esta explosión de materiales? Esta acción no se puede deshacer.",
     )
   ) {
     try {

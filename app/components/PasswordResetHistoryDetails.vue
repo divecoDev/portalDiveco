@@ -392,7 +392,7 @@ watch(
     if (newId && props.modelValue) {
       loadDetails();
     }
-  }
+  },
 );
 
 watch(
@@ -406,7 +406,7 @@ watch(
       error.value = null;
       logsExpanded.value = false;
     }
-  }
+  },
 );
 
 // Métodos

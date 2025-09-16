@@ -130,7 +130,7 @@ export const useLayoutState = () => {
   const currentYear = computed(() => new Date().getFullYear());
 
   const hasUnreadNotifications = computed(() =>
-    notifications.value.some((n) => n.unread)
+    notifications.value.some((n) => n.unread),
   );
 
   const isOnline = computed(() => appState.value.online);
@@ -218,7 +218,7 @@ export const useLayoutState = () => {
     try {
       const route = useRoute();
       const currentItem = navigationItems.find(
-        (item) => item.to === route.path
+        (item) => item.to === route.path,
       );
       return currentItem?.label || "Página";
     } catch (error) {
@@ -251,7 +251,7 @@ export const useLayoutState = () => {
         isDark.value = savedTheme === "dark";
       } else {
         isDark.value = window.matchMedia(
-          "(prefers-color-scheme: dark)"
+          "(prefers-color-scheme: dark)",
         ).matches;
       }
       document.documentElement.classList.toggle("dark", isDark.value);
@@ -296,7 +296,7 @@ export const useLayoutState = () => {
           closeSidebar();
           closeMobileMenu();
           updateActivity();
-        }
+        },
       );
     } catch (error) {
       // Si useRoute no está disponible, no configuramos el watcher

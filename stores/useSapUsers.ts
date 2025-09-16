@@ -79,11 +79,11 @@ export const useSapUsersStore = defineStore("sapUsers", {
           this.lastFetch = Date.now();
 
           console.log(
-            `✅ Store SAP Users: ${response.data.length} usuarios cargados exitosamente`
+            `✅ Store SAP Users: ${response.data.length} usuarios cargados exitosamente`,
           );
           console.log(
             "📊 Usuarios únicos por correo:",
-            new Set(response.data.map((u) => u.correo)).size
+            new Set(response.data.map((u) => u.correo)).size,
           );
 
           return {
@@ -171,7 +171,7 @@ export const useSapUsersStore = defineStore("sapUsers", {
         return await this.fetchUsers();
       } else {
         console.log(
-          "📋 Store SAP Users: Store ya inicializado con datos válidos"
+          "📋 Store SAP Users: Store ya inicializado con datos válidos",
         );
         return { success: true, fromCache: true };
       }

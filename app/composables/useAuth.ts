@@ -60,7 +60,7 @@ export const useAuth = () => {
           userPermissions.value.push(
             "view_reports",
             "manage_users",
-            "view_analytics"
+            "view_analytics",
           );
         }
         if (isUser.value) {
@@ -95,7 +95,7 @@ export const useAuth = () => {
         permission.routes.some((permissionRoute) => {
           // Convertir rutas con parámetros a regex para comparación
           const routeRegex = new RegExp(
-            "^" + permissionRoute.replace(/:[^/]+/g, "[^/]+") + "$"
+            "^" + permissionRoute.replace(/:[^/]+/g, "[^/]+") + "$",
           );
           return routeRegex.test(route);
         })

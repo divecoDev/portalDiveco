@@ -382,7 +382,7 @@ const getSapUserFromEmail = async (email) => {
     const users = response.data;
 
     const sapUser = users.find(
-      (user) => user.correo?.toLowerCase() === email?.toLowerCase()
+      (user) => user.correo?.toLowerCase() === email?.toLowerCase(),
     );
 
     return sapUser;
@@ -437,7 +437,7 @@ const handleSelfPasswordReset = async () => {
 
     showStatusMessage(
       `Iniciando reinicio de contraseña para ${displayName.value}...`,
-      "info"
+      "info",
     );
 
     const response = await client.queries.ResetPassword({
@@ -455,12 +455,12 @@ const handleSelfPasswordReset = async () => {
       const resetData = parsedData.data;
       showStatusMessage(
         `Contraseña reiniciada exitosamente: ${resetData.mensaje || "Operación completada"}`,
-        "success"
+        "success",
       );
       await saveActionHistory("reset", resetData);
     } else {
       throw new Error(
-        parsedData?.mensaje || "Error en el servicio de reinicio"
+        parsedData?.mensaje || "Error en el servicio de reinicio",
       );
     }
   } catch (error) {
@@ -486,7 +486,7 @@ const handleSelfUnlock = async () => {
 
     showStatusMessage(
       `Iniciando desbloqueo de usuario para ${displayName.value}...`,
-      "info"
+      "info",
     );
 
     const response = await client.queries.ResetPassword({
@@ -504,12 +504,12 @@ const handleSelfUnlock = async () => {
       const unlockData = parsedData.data;
       showStatusMessage(
         `Usuario desbloqueado exitosamente: ${unlockData.mensaje || "Operación completada"}`,
-        "success"
+        "success",
       );
       await saveActionHistory("unlock", unlockData);
     } else {
       throw new Error(
-        parsedData?.mensaje || "Error en el servicio de desbloqueo"
+        parsedData?.mensaje || "Error en el servicio de desbloqueo",
       );
     }
   } catch (error) {

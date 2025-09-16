@@ -281,6 +281,3 @@ describe("useAuth composable", () => {
 - [Documentación de Nuxt 3 Middleware](https://nuxt.com/docs/guide/directory-structure/middleware)
 - [AWS Cognito User Groups](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-user-groups.html)
 - [Vue 3 Composition API](https://vuejs.org/guide/extras/composition-api-faq.html)
-
-
-

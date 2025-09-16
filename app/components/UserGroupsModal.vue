@@ -260,7 +260,7 @@ const loadAllGroups = async () => {
     const response = JSON.parse(request.data);
     // Filtrar grupos que NO contengan "MicrosoftEntra" en el nombre
     const filteredGroups = response.groups.filter(
-      (group) => !group.GroupName.includes("MicrosoftEntra")
+      (group) => !group.GroupName.includes("MicrosoftEntra"),
     );
 
     groups.value = filteredGroups;
@@ -284,7 +284,7 @@ const loadSelectedUserGroups = async () => {
     const response = JSON.parse(request.data);
     // Filtrar grupos que NO contengan "MicrosoftEntra" en el nombre
     const filteredUserGroups = response.groups.filter(
-      (group) => !group.GroupName.includes("MicrosoftEntra")
+      (group) => !group.GroupName.includes("MicrosoftEntra"),
     );
 
     selectedUserGroups.value = filteredUserGroups;
@@ -326,7 +326,7 @@ const formatDate = (dateString) => {
 
 const isGroupAssignedToUser = (groupName) => {
   return selectedUserGroups.value.some(
-    (userGroup) => userGroup.GroupName === groupName
+    (userGroup) => userGroup.GroupName === groupName,
   );
 };
 
@@ -385,7 +385,7 @@ watch(
       // Cargar grupos del usuario seleccionado cuando se abre el modal
       loadSelectedUserGroups();
     }
-  }
+  },
 );
 
 // Watcher para cuando cambie el usuario seleccionado
@@ -396,7 +396,7 @@ watch(
       // Recargar grupos si el usuario cambia y el modal está abierto
       loadSelectedUserGroups();
     }
-  }
+  },
 );
 </script>
 

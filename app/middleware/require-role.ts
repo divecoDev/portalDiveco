@@ -48,7 +48,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     const rolesText =
       requiredRoles.length === 1 ? requiredRoles[0] : requiredRoles.join(" o ");
     console.log(
-      `Usuario autenticado y tiene rol ${rolesText}, acceso permitido`
+      `Usuario autenticado y tiene rol ${rolesText}, acceso permitido`,
     );
     return;
   } catch (error) {

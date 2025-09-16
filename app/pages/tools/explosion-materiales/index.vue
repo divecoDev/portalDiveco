@@ -237,13 +237,13 @@ const filteredExplosions = computed(() => {
     filtered = filtered.filter(
       (explosion) =>
         explosion.version?.toLowerCase().includes(query) ||
-        explosion.descripcion?.toLowerCase().includes(query)
+        explosion.descripcion?.toLowerCase().includes(query),
     );
   }
 
   if (selectedStatus.value) {
     filtered = filtered.filter(
-      (explosion) => explosion.status === selectedStatus.value
+      (explosion) => explosion.status === selectedStatus.value,
     );
   }
 
@@ -275,7 +275,7 @@ const editExplosion = (explosion) => {
 const deleteExplosion = async (explosion) => {
   if (
     confirm(
-      "¿Estás seguro de que deseas eliminar esta explosión de materiales?"
+      "¿Estás seguro de que deseas eliminar esta explosión de materiales?",
     )
   ) {
     try {

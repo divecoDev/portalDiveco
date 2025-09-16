@@ -187,7 +187,7 @@ onMounted(async () => {
 
 const changeSapUserSelected = () => {
   const searchUser = users.value.find(
-    (user) => user.usuario === form.value.sapUser
+    (user) => user.usuario === form.value.sapUser,
   );
   sapUserSelected.value = searchUser;
   form.value.email = searchUser.correo;
@@ -241,7 +241,7 @@ const closeStatusMessage = () => {
 const saveResetPasswordHistory = async (
   sapUser,
   response,
-  isSuccess = true
+  isSuccess = true,
 ) => {
   try {
     console.log("📝 ===== GUARDANDO HISTORIAL DE REINICIO =====");
@@ -305,7 +305,7 @@ const submitPasswordReset = async () => {
   // Mostrar mensaje de inicio
   showStatusMessage(
     `Iniciando proceso de reinicio para usuario ${form.value.sapUser}`,
-    "info"
+    "info",
   );
 
   try {
@@ -349,7 +349,7 @@ const submitPasswordReset = async () => {
 
       console.log(
         "✅ Notificación mostrada, verificando estado:",
-        statusMessage.value
+        statusMessage.value,
       );
 
       // Fallback con useToast para verificar que funciona
@@ -430,7 +430,7 @@ const submitPasswordReset = async () => {
       await saveResetPasswordHistory(
         form.value.sapUser,
         response.errors,
-        false
+        false,
       );
 
       // Error del servicio
@@ -479,7 +479,7 @@ const submitPasswordReset = async () => {
         codigo: codigo,
         mensaje: errorMessage,
       },
-      false
+      false,
     );
 
     // Emitir error

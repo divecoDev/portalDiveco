@@ -81,7 +81,7 @@ watch(
   (newValue) => {
     planVentas.value = newValue;
   },
-  { deep: true }
+  { deep: true },
 );
 </script>
 

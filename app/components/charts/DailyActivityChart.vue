@@ -45,7 +45,7 @@ ChartJS.register(
   LineElement,
   PointElement,
   CategoryScale,
-  LinearScale
+  LinearScale,
 );
 
 // Props
@@ -68,7 +68,7 @@ const chartData = computed(() => {
       (record) =>
         record.accion === "RESET_PASSWORD" &&
         record.status === "Completado" &&
-        record.date
+        record.date,
     )
     .forEach((record) => {
       const date = new Date(record.date).toISOString().split("T")[0]; // YYYY-MM-DD
@@ -81,7 +81,7 @@ const chartData = computed(() => {
       (record) =>
         record.accion === "UNLOCK_USER" &&
         record.status === "Completado" &&
-        record.date
+        record.date,
     )
     .forEach((record) => {
       const date = new Date(record.date).toISOString().split("T")[0]; // YYYY-MM-DD
@@ -105,7 +105,7 @@ const chartData = computed(() => {
   });
 
   const resetPasswordData = sortedDates.map(
-    (date) => resetPasswordCounts[date] || 0
+    (date) => resetPasswordCounts[date] || 0,
   );
   const unlockUserData = sortedDates.map((date) => unlockUserCounts[date] || 0);
 

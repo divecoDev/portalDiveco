@@ -352,7 +352,7 @@ const hasFilters = computed(() => {
 // Contadores para el resumen estadístico
 const completedCount = computed(() => {
   return filteredHistory.value.filter(
-    (record) => record.status === "Completado"
+    (record) => record.status === "Completado",
   ).length;
 });
 
@@ -377,7 +377,7 @@ const filteredHistory = computed(() => {
         record.sapUser &&
         record.sapUser
           .toLowerCase()
-          .includes(filters.value.sapUser.toLowerCase())
+          .includes(filters.value.sapUser.toLowerCase()),
     );
   }
 
@@ -387,7 +387,7 @@ const filteredHistory = computed(() => {
         record.emailOwner &&
         record.emailOwner
           .toLowerCase()
-          .includes(filters.value.emailOwner.toLowerCase())
+          .includes(filters.value.emailOwner.toLowerCase()),
     );
   }
 
@@ -414,7 +414,7 @@ const startIndex = computed(() => {
 const endIndex = computed(() => {
   return Math.min(
     startIndex.value + itemsPerPage,
-    filteredHistory.value.length
+    filteredHistory.value.length,
   );
 });
 

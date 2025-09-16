@@ -69,7 +69,7 @@ export const useMicrosoftGraph = () => {
   const getUserData = async (userName: string): Promise<any> => {
     if (!userName) {
       console.error(
-        "userName es requerido para obtener datos de Microsoft Graph"
+        "userName es requerido para obtener datos de Microsoft Graph",
       );
       return null;
     }

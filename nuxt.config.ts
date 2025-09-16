@@ -2,7 +2,11 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
 
-  modules: ["@nuxt/ui", "@pinia/nuxt", "@nuxt/test-utils/module"],
+  modules: [
+    "@nuxt/ui",
+    "@pinia/nuxt",
+    "@nuxt/test-utils/module",
+  ],
 
   css: ["@/assets/css/main.css"],
 
@@ -15,4 +19,5 @@ export default defineNuxtConfig({
     msClientId: "",
     msClientSecret: "",
   },
+
 });

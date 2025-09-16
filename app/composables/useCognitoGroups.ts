@@ -31,7 +31,7 @@ export const useCognitoGroups = () => {
       if (attributes["custom:groups"]) {
         console.log(
           "🎯 Grupos encontrados en custom:groups:",
-          attributes["custom:groups"]
+          attributes["custom:groups"],
         );
         groups = Array.isArray(attributes["custom:groups"])
           ? attributes["custom:groups"]
@@ -50,7 +50,7 @@ export const useCognitoGroups = () => {
       if (groups.length === 0 && attributes["cognito:groups"]) {
         console.log(
           "🎯 Grupos encontrados en cognito:groups:",
-          attributes["cognito:groups"]
+          attributes["cognito:groups"],
         );
         groups = Array.isArray(attributes["cognito:groups"])
           ? attributes["cognito:groups"]
@@ -77,7 +77,7 @@ export const useCognitoGroups = () => {
             if (accessTokenGroups) {
               console.log(
                 "🎯 Grupos encontrados en Access Token:",
-                accessTokenGroups
+                accessTokenGroups,
               );
               groups = Array.isArray(accessTokenGroups)
                 ? accessTokenGroups
@@ -98,7 +98,7 @@ export const useCognitoGroups = () => {
               if (idTokenGroups) {
                 console.log(
                   "🎯 Grupos encontrados en ID Token:",
-                  idTokenGroups
+                  idTokenGroups,
                 );
                 groups = Array.isArray(idTokenGroups)
                   ? idTokenGroups

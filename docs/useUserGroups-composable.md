@@ -90,12 +90,12 @@ const isAdmin = computed(() => hasGroup("Admin"));
 
 // Verificar si tiene permisos de gestión
 const hasManagementAccess = computed(() =>
-  hasAnyGroup(["Admin", "Manager", "Supervisor"])
+  hasAnyGroup(["Admin", "Manager", "Supervisor"]),
 );
 
 // Verificar si tiene todos los permisos necesarios
 const hasFullAccess = computed(() =>
-  hasAllGroups(["Admin", "User", "Premium"])
+  hasAllGroups(["Admin", "User", "Premium"]),
 );
 </script>
 ```

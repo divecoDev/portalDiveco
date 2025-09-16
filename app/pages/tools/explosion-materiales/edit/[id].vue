@@ -387,7 +387,7 @@ watch(
     if (errors.value.descripcion) {
       errors.value.descripcion = "";
     }
-  }
+  },
 );
 
 watch(
@@ -396,7 +396,7 @@ watch(
     if (errors.value.version) {
       errors.value.version = "";
     }
-  }
+  },
 );
 
 // Cargar datos al montar el componente
