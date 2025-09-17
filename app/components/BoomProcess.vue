@@ -2,6 +2,7 @@
 import PlanVentasStep from "./boom/PlanVentasStep.vue";
 import ExistenciasStep from "./boom/ExistenciasStep.vue";
 import CoberturaStep from "./boom/CoberturaStep.vue";
+import GuardarStep from "./boom/GuardarStep.vue";
 
 // Estado para los pasos del stepper
 const items = ref([
@@ -21,7 +22,7 @@ const items = ref([
     icon: "i-heroicons-shield-check",
   },
   {
-    slot: "Guardar",
+    slot: "guardar",
     title: "Guardar",
     icon: "i-heroicons-cloud-arrow-up",
   }
@@ -76,18 +77,10 @@ const goPrev = () => {
   }
 };
 
-// Handlers para actualizar los datos desde los componentes hijos
-const handlePlanVentasUpdate = (data) => {
-  planVentasData.value = data;
-};
+// Los datos se actualizan automáticamente con v-model
+// No necesitamos handlers manuales
 
-const handleExistenciasUpdate = (data) => {
-  existenciasData.value = data;
-};
-
-const handleCoberturaUpdate = (data) => {
-  coberturaData.value = data;
-};
+// Los datos se mantienen reactivos automáticamente
 </script>
 
 <template>
@@ -103,22 +96,31 @@ const handleCoberturaUpdate = (data) => {
     >
       <template #plan-de-ventas>
         <PlanVentasStep
+          :key="`plan-ventas-${planVentasData.length}`"
           v-model="planVentasData"
-          @update:modelValue="handlePlanVentasUpdate"
         />
       </template>
 
       <template #existencias>
         <ExistenciasStep
+          :key="`existencias-${existenciasData.length}`"
           v-model="existenciasData"
-          @update:modelValue="handleExistenciasUpdate"
         />
       </template>
 
       <template #cobertura>
         <CoberturaStep
+          :key="`cobertura-${coberturaData.length}`"
           v-model="coberturaData"
-          @update:modelValue="handleCoberturaUpdate"
+        />
+      </template>
+
+      <template #guardar>
+        <GuardarStep
+          :key="`guardar-${planVentasData.length}-${existenciasData.length}-${coberturaData.length}`"
+          :plan-ventas-data="planVentasData"
+          :existencias-data="existenciasData"
+          :cobertura-data="coberturaData"
         />
       </template>
     </UStepper>
@@ -139,7 +141,7 @@ const handleCoberturaUpdate = (data) => {
       </div>
 
       <UButton
-        v-if="currentStep != 4"
+        v-if="currentStep < items.length - 1"
         class="cursor-pointer"
         :disabled="!canGoNext"
         icon="i-heroicons-arrow-right"

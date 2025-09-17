@@ -14,6 +14,7 @@ import { assignUserToGroup } from "./functions/admin-users/AssignUserToGroup/res
 import { removeUserFromGroup } from "./functions/admin-users/RemoveUserFromGroup/resource";
 import { adminUserGlobalSignOut } from "./functions/admin-users/AdminUserGlobalSignOut/resource";
 import { microsoftGraphToken } from "./functions/microsoft-graph/token/resource";
+import { saveSalePlan } from "./functions/boom/saveSalePlan/resource";
 /**
  * Configuración del backend de Amplify
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
@@ -29,6 +30,7 @@ export const backend = defineBackend({
   assignUserToGroup,
   removeUserFromGroup,
   adminUserGlobalSignOut,
+  saveSalePlan,
 });
 
 const resetPasswordLambda = backend.resetPassword.resources.lambda;
@@ -41,6 +43,17 @@ const resetPasswordPolicy = new iam.PolicyStatement({
   resources: ["*"],
 });
 resetPasswordLambda.addToRolePolicy(resetPasswordPolicy);
+
+const saveSalePlanLambda = backend.saveSalePlan.resources.lambda;
+const saveSalePlanPolicy = new iam.PolicyStatement({
+  actions: [
+    "ec2:CreateNetworkInterface",
+    "ec2:DescribeNetworkInterfaces",
+    "ec2:DeleteNetworkInterface"],
+  resources: ["*"],
+});
+saveSalePlanLambda.addToRolePolicy(saveSalePlanPolicy);
+
 
 /// add resePasswordLambda to  VPC
 
