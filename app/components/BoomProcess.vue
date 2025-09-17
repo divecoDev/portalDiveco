@@ -20,6 +20,11 @@ const items = ref([
     title: "Cobertura",
     icon: "i-heroicons-shield-check",
   },
+  {
+    slot: "Guardar",
+    title: "Guardar",
+    icon: "i-heroicons-cloud-arrow-up",
+  }
 ]);
 
 // Estado para los datos de cada paso
@@ -134,38 +139,12 @@ const handleCoberturaUpdate = (data) => {
       </div>
 
       <UButton
+        v-if="currentStep != 4"
         class="cursor-pointer"
         :disabled="!canGoNext"
         icon="i-heroicons-arrow-right"
         @click="goNext"
       />
     </div>
-
-    <!-- Mensaje de validación -->
-    <div
-      v-if="!canGoNext"
-      class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-md p-4"
-    >
-      <div class="flex items-center">
-        <UIcon
-          name="i-heroicons-information-circle"
-          class="w-5 h-5 text-amber-600 dark:text-amber-400 mr-2"
-        />
-        <p class="text-sm text-amber-800 dark:text-amber-200">
-          <template v-if="currentStep === 0">
-            Debes cargar los datos del plan de ventas para continuar al
-            siguiente paso.
-          </template>
-          <template v-else-if="currentStep === 1">
-            Debes cargar los datos de existencias para continuar al siguiente
-            paso.
-          </template>
-          <template v-else-if="currentStep === 2">
-            Debes cargar los datos de días de cobertura para procesar la
-            explosión de materiales.
-          </template>
-        </p>
-      </div>
-    </div>
-  </div>
+</div>
 </template>
