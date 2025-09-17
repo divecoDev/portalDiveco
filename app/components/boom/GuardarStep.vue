@@ -145,92 +145,89 @@ const getStatusIcon = (step, status) => {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- Header del paso -->
+  <div class="space-y-4">
+    <!-- Header compacto -->
     <div
-      class="bg-gradient-to-r from-cyan-50 to-cyan-100/50 dark:from-cyan-900/20 dark:to-cyan-800/20 p-4 rounded-md border border-cyan-200 dark:border-cyan-700/50 shadow-sm"
+      class="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-md shadow-lg border border-cyan-200/20 dark:border-cyan-700/20 overflow-hidden"
     >
-      <div class="flex items-center justify-between">
-        <div class="flex items-center">
-          <UIcon
-            name="i-heroicons-cloud-arrow-up"
-            class="w-6 h-6 text-cyan-600 dark:text-cyan-400 mr-3"
-          />
-          <div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-              Guardar Documentos
-            </h3>
-            <p class="text-sm text-gray-600 dark:text-gray-300">
-              Procesar y guardar los datos cargados en los pasos anteriores
-            </p>
+      <div class="bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <UIcon
+              name="i-heroicons-cloud-arrow-up"
+              class="w-5 h-5 text-white mr-3"
+            />
+            <div>
+              <h3 class="text-lg font-semibold text-white">
+                Guardar Documentos
+              </h3>
+              <p class="text-xs text-cyan-100">
+                Procesar y guardar los datos cargados
+              </p>
+            </div>
           </div>
-        </div>
-        <div class="flex items-center space-x-2">
-          <span
-            v-if="allStepsProcessed"
-            class="text-sm text-green-600 dark:text-green-400 font-medium"
-          >
-            ✓ Completado
-          </span>
-          <span
-            v-else-if="isProcessing"
-            class="text-sm text-cyan-600 dark:text-cyan-400 font-medium"
-          >
-            Procesando...
-          </span>
+          <div class="flex items-center">
+            <div
+              v-if="allStepsProcessed"
+              class="flex items-center bg-green-500/20 px-2 py-1 rounded-full"
+            >
+              <UIcon name="i-heroicons-check-circle" class="w-4 h-4 text-green-200 mr-1" />
+              <span class="text-xs text-green-200 font-medium">Completado</span>
+            </div>
+            <div
+              v-else-if="isProcessing"
+              class="flex items-center bg-white/20 px-2 py-1 rounded-full"
+            >
+              <div class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></div>
+              <span class="text-xs text-white font-medium">Procesando...</span>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Lista de pasos -->
-    <div class="space-y-4">
-      <div
-        v-for="step in steps"
-        :key="step.id"
-        class="bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 p-4"
-      >
-        <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-4">
-            <!-- Icono principal del paso -->
-            <div class="flex-shrink-0">
-              <div
-                class="w-12 h-12 bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30 rounded-md flex items-center justify-center shadow-sm"
-              >
-                <UIcon
-                  :name="step.icon"
-                  class="w-6 h-6 text-cyan-600 dark:text-cyan-400"
-                />
+      <!-- Grid de pasos más compacto -->
+      <div class="p-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div
+            v-for="step in steps"
+            :key="step.id"
+            class="bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-700/50 dark:to-gray-600/50 rounded-md border border-gray-200/50 dark:border-gray-600/50 p-3 transition-all duration-300 hover:shadow-md hover:border-cyan-300/40 dark:hover:border-cyan-600/40"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center space-x-2">
+                <div
+                  class="w-8 h-8 bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30 rounded-md flex items-center justify-center shadow-sm"
+                >
+                  <UIcon
+                    :name="step.icon"
+                    class="w-4 h-4 text-cyan-600 dark:text-cyan-400"
+                  />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h4 class="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                    {{ step.title }}
+                  </h4>
+                </div>
               </div>
-            </div>
 
-            <!-- Información del paso -->
-            <div class="flex-1">
-              <h4 class="text-lg font-semibold text-gray-900 dark:text-white">
-                {{ step.title }}
-              </h4>
-              <p class="text-sm text-gray-600 dark:text-gray-300">
-                {{ step.description }}
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {{ step.data?.length || 0 }} registros cargados
-              </p>
-            </div>
-          </div>
-
-          <!-- Estado del paso -->
-          <div class="flex items-center space-x-3">
-            <div class="flex items-center space-x-2">
-              <!-- Icono de estado -->
+              <!-- Icono de estado compacto -->
               <UIcon
                 :name="getStatusIcon(step, getStepStatus(step))"
                 :class="[
-                  getIconClasses(getStepStatus(step)),
-                  getStepStatus(step) === 'processing' ? 'animate-spin' : ''
+                  'w-5 h-5 flex-shrink-0',
+                  getStepStatus(step) === 'empty' ? 'text-gray-400' : '',
+                  getStepStatus(step) === 'pending' ? 'text-amber-500' : '',
+                  getStepStatus(step) === 'processing' ? 'text-cyan-500 animate-spin' : '',
+                  getStepStatus(step) === 'completed' ? 'text-green-500' : ''
                 ]"
               />
+            </div>
 
-              <!-- Texto de estado -->
-              <span class="text-sm font-medium">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-gray-600 dark:text-gray-300">
+                {{ step.data?.length || 0 }} registros
+              </span>
+              <span class="font-medium">
                 <template v-if="getStepStatus(step) === 'empty'">
                   <span class="text-gray-500">Sin datos</span>
                 </template>
@@ -250,17 +247,16 @@ const getStatusIcon = (step, status) => {
       </div>
     </div>
 
-    <!-- Botón de acción -->
-    <div class="flex justify-center pt-6">
+    <!-- Sección de acciones compacta -->
+    <div class="flex flex-col items-center space-y-3">
+      <!-- Botón de acción -->
       <UButton
         v-if="!allStepsProcessed"
         :disabled="!allStepsHaveData || isProcessing"
         :loading="isProcessing"
-        size="lg"
-        color="cyan"
         icon="i-heroicons-cloud-arrow-up"
         @click="guardarDocumentos"
-        class="px-8 py-3"
+        class="rounded-md inline-flex items-center px-6 py-2 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-75 disabled:hover:from-cyan-500 disabled:hover:to-cyan-600 disabled:hover:scale-100 disabled:hover:shadow-lg"
       >
         <template v-if="isProcessing">
           Guardando documentos...
@@ -273,59 +269,35 @@ const getStatusIcon = (step, status) => {
         </template>
       </UButton>
 
-      <!-- Mensaje de éxito -->
+      <!-- Mensaje de éxito compacto -->
       <div
         v-else
-        class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700/50 rounded-md p-4"
+        class="bg-gradient-to-r from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-700/50 rounded-md px-4 py-2"
       >
-        <div class="flex items-center justify-center">
+        <div class="flex items-center">
           <UIcon
             name="i-heroicons-check-circle"
-            class="w-6 h-6 text-green-600 dark:text-green-400 mr-2"
+            class="w-5 h-5 text-green-600 dark:text-green-400 mr-2"
           />
-          <span class="text-green-800 dark:text-green-200 font-medium">
-            Todos los documentos han sido guardados exitosamente
+          <span class="text-sm text-green-800 dark:text-green-200 font-medium">
+            Documentos guardados exitosamente
           </span>
         </div>
       </div>
-    </div>
 
-    <!-- Información adicional -->
-    <div
-      v-if="!allStepsHaveData && !isProcessing"
-      class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-md p-4"
-    >
-      <div class="flex items-center">
-        <UIcon
-          name="i-heroicons-information-circle"
-          class="w-5 h-5 text-amber-600 dark:text-amber-400 mr-2"
-        />
-        <p class="text-sm text-amber-800 dark:text-amber-200">
-          Asegúrate de haber cargado los datos en todos los pasos anteriores antes de proceder con el guardado.
-        </p>
-      </div>
-    </div>
-
-    <!-- Panel de debug (solo en desarrollo) -->
-    <div
-      v-if="isDev"
-      class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4 mt-6"
-    >
-      <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">
-        🐛 Debug - Props recibidas:
-      </h4>
-      <div class="space-y-1 text-xs text-gray-600 dark:text-gray-400">
-        <div>Plan de Ventas: {{ props.planVentasData?.length || 0 }} registros</div>
-        <div>Existencias: {{ props.existenciasData?.length || 0 }} registros</div>
-        <div>Cobertura: {{ props.coberturaData?.length || 0 }} registros</div>
-        <div class="mt-2 font-semibold">
-          Todos tienen datos: {{ allStepsHaveData ? '✅ Sí' : '❌ No' }}
-        </div>
-        <div class="mt-2 text-xs">
-          <div>🔍 Debug detallado:</div>
-          <div v-for="step in steps" :key="step.id" class="ml-2">
-            {{ step.title }}: {{ step.data?.length || 0 }} | Array: {{ Array.isArray(step.data) }} | Valid: {{ step.data && Array.isArray(step.data) && step.data.length > 0 }}
-          </div>
+      <!-- Información adicional compacta -->
+      <div
+        v-if="!allStepsHaveData && !isProcessing"
+        class="bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-amber-900/20 dark:to-amber-800/20 border border-amber-200 dark:border-amber-700/50 rounded-md px-3 py-2"
+      >
+        <div class="flex items-center">
+          <UIcon
+            name="i-heroicons-information-circle"
+            class="w-4 h-4 text-amber-600 dark:text-amber-400 mr-2 flex-shrink-0"
+          />
+          <p class="text-xs text-amber-800 dark:text-amber-200">
+            Carga los datos en todos los pasos antes de proceder
+          </p>
         </div>
       </div>
     </div>
