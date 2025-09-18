@@ -51,12 +51,182 @@
     <div
       class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6 bg-cyan-50/40 dark:bg-gray-800/80 backdrop-blur-sm rounded-md shadow-xl border border-cyan-200/50 dark:border-cyan-700/50 overflow-hidden"
     >
-      <UStepper :items="stepperItems" color="neutral" class="w-full">
+      <UStepper
+        v-if="availableSteps.length > 0"
+        ref="mainStepper"
+        v-model="currentMainStep"
+        :items="availableSteps"
+        color="primary"
+        class="w-full"
+      >
+
         <template #carga-de-insumos>
           <div
             class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
           >
-            <BoomProcess :explosion="explosion" />
+            <BoomProcess
+              :explosion="explosion"
+              @boom-process-completed="handleBoomProcessCompleted"
+            />
+          </div>
+        </template>
+
+        <template #generar-plan-de-produccion>
+          <div
+            class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+          >
+                                      <div class="text-center py-12">
+               <div
+                 :class="[
+                   'w-32 h-32 rounded-md flex items-center justify-center mx-auto mb-8 shadow-lg relative transition-all duration-500',
+                   completedSteps['generar-plan-de-produccion']
+                     ? 'bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30'
+                     : 'bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30'
+                 ]"
+               >
+                 <UIcon
+                   name="i-heroicons-beaker"
+                   :class="[
+                     'w-16 h-16 transition-all duration-500',
+                     completedSteps['generar-plan-de-produccion']
+                       ? 'text-green-600 dark:text-green-400'
+                       : 'text-cyan-600 dark:text-cyan-400'
+                   ]"
+                 />
+                 <div v-if="completedSteps['generar-plan-de-produccion']" class="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                   <UIcon name="i-heroicons-check" class="w-5 h-5 text-white" />
+                 </div>
+               </div>
+               <h3
+                 :class="[
+                   'text-2xl font-bold mb-8 transition-all duration-500',
+                   completedSteps['generar-plan-de-produccion']
+                     ? 'text-green-600 dark:text-green-400'
+                     : 'text-gray-900 dark:text-white'
+                 ]"
+               >
+                 Generar Plan de Producción
+               </h3>
+                             <UButton
+                 v-if="!completedSteps['generar-plan-de-produccion']"
+                 icon="i-heroicons-play"
+                 size="lg"
+                 color="cyan"
+                 class="rounded-md inline-flex items-center px-6 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
+                 @click="completePlanProduccion"
+               >
+                 Generar Plan
+               </UButton>
+               <div v-else class="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-xl animate-pulse">
+                 <UIcon name="i-heroicons-check" class="w-8 h-8 text-white" />
+               </div>
+            </div>
+          </div>
+        </template>
+
+        <template #validacion-de-aprovisionamiento>
+          <div
+            class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+          >
+                                      <div class="text-center py-12">
+               <div
+                 :class="[
+                   'w-32 h-32 rounded-md flex items-center justify-center mx-auto mb-8 shadow-lg relative transition-all duration-500',
+                   completedSteps['validacion-de-aprovisionamiento']
+                     ? 'bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30'
+                     : 'bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30'
+                 ]"
+               >
+                 <UIcon
+                   name="i-heroicons-shield-check"
+                   :class="[
+                     'w-16 h-16 transition-all duration-500',
+                     completedSteps['validacion-de-aprovisionamiento']
+                       ? 'text-green-600 dark:text-green-400'
+                       : 'text-cyan-600 dark:text-cyan-400'
+                   ]"
+                 />
+                 <div v-if="completedSteps['validacion-de-aprovisionamiento']" class="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                   <UIcon name="i-heroicons-check" class="w-5 h-5 text-white" />
+                 </div>
+               </div>
+               <h3
+                 :class="[
+                   'text-2xl font-bold mb-8 transition-all duration-500',
+                   completedSteps['validacion-de-aprovisionamiento']
+                     ? 'text-green-600 dark:text-green-400'
+                     : 'text-gray-900 dark:text-white'
+                 ]"
+               >
+                 Validación de Aprovisionamiento
+               </h3>
+                              <UButton
+                 v-if="!completedSteps['validacion-de-aprovisionamiento']"
+                 icon="i-heroicons-check"
+                 size="lg"
+                 color="cyan"
+                 class="rounded-md inline-flex items-center px-6 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
+                 @click="completeValidacionAprovisionamiento"
+               >
+                 Validar Aprovisionamiento
+               </UButton>
+               <div v-else class="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-xl animate-pulse">
+                 <UIcon name="i-heroicons-check" class="w-8 h-8 text-white" />
+               </div>
+            </div>
+          </div>
+        </template>
+
+        <template #explocionar>
+          <div
+            class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+          >
+                                      <div class="text-center py-12">
+               <div
+                 :class="[
+                   'w-32 h-32 rounded-md flex items-center justify-center mx-auto mb-8 shadow-lg relative transition-all duration-500',
+                   completedSteps['explocionar']
+                     ? 'bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30'
+                     : 'bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30'
+                 ]"
+               >
+                 <UIcon
+                   name="i-heroicons-bolt"
+                   :class="[
+                     'w-16 h-16 transition-all duration-500',
+                     completedSteps['explocionar']
+                       ? 'text-green-600 dark:text-green-400'
+                       : 'text-cyan-600 dark:text-cyan-400'
+                   ]"
+                 />
+                 <div v-if="completedSteps['explocionar']" class="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                   <UIcon name="i-heroicons-check" class="w-5 h-5 text-white" />
+                 </div>
+               </div>
+               <h3
+                 :class="[
+                   'text-2xl font-bold mb-8 transition-all duration-500',
+                   completedSteps['explocionar']
+                     ? 'text-green-600 dark:text-green-400'
+                     : 'text-gray-900 dark:text-white'
+                 ]"
+               >
+                 Explosión de Materiales
+               </h3>
+                              <UButton
+                 v-if="!completedSteps['explocionar']"
+                 icon="i-heroicons-bolt"
+                 size="lg"
+                 color="cyan"
+                 class="rounded-md inline-flex items-center px-6 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
+                 @click="completeExplosion"
+               >
+                 Ejecutar Explosión
+               </UButton>
+               <div v-else class="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-xl animate-pulse">
+                 <UIcon name="i-heroicons-check" class="w-8 h-8 text-white" />
+               </div>
+            </div>
           </div>
         </template>
       </UStepper>
@@ -115,6 +285,23 @@ setBreadcrumbs([
 const loading = ref(true);
 const explosion = ref(null);
 
+// Estado para el stepper principal
+const currentMainStep = ref(0);
+const mainStepper = ref();
+
+// Computed para verificar si el stepper está listo
+const isStepperReady = computed(() => {
+  return mainStepper.value && typeof mainStepper.value.next === 'function';
+});
+
+// Estado para controlar qué pasos están completados
+const completedSteps = ref({
+  'carga-de-insumos': false,
+  'generar-plan-de-produccion': false,
+  'validacion-de-aprovisionamiento': false,
+  'explocionar': false
+});
+
 // Métodos
 const fetchExplosion = async () => {
   try {
@@ -155,6 +342,127 @@ const deleteExplosion = async () => {
       });
     }
   }
+};
+
+// Método para manejar cuando el proceso BOOM se completa
+const handleBoomProcessCompleted = async () => {
+  // Marcar el primer paso como completado
+  completedSteps.value['carga-de-insumos'] = true;
+
+  // Esperar a que el DOM se actualice
+  await nextTick();
+
+  // Avanzar al siguiente paso del stepper principal
+  if (isStepperReady.value && mainStepper.value.hasNext) {
+    try {
+      mainStepper.value.next();
+      // Scroll suave hacia el stepper
+      setTimeout(() => {
+        window.scrollTo({ top: 200, behavior: "smooth" });
+      }, 100);
+
+      // Mostrar notificación de éxito
+      useToast().add({
+        title: "Proceso completado",
+        description: "Los datos se han guardado exitosamente. Continuando al siguiente paso...",
+        color: "green",
+        timeout: 4000
+      });
+    } catch (error) {
+      console.warn("Error al avanzar stepper:", error);
+    }
+  }
+};
+
+// Computed para determinar qué pasos están disponibles
+const availableSteps = computed(() => {
+  return stepperItems.value.map((item, index) => {
+    let disabled = false;
+
+    // El primer paso siempre está disponible
+    if (index === 0) {
+      disabled = false;
+    }
+    // Los siguientes pasos dependen del anterior
+    else if (index === 1) {
+      disabled = !completedSteps.value['carga-de-insumos'];
+    }
+    else if (index === 2) {
+      disabled = !completedSteps.value['generar-plan-de-produccion'];
+    }
+    else if (index === 3) {
+      disabled = !completedSteps.value['validacion-de-aprovisionamiento'];
+    }
+
+    return {
+      ...item,
+      disabled
+    };
+  });
+});
+
+// Métodos para completar cada paso
+const completePlanProduccion = async () => {
+  completedSteps.value['generar-plan-de-produccion'] = true;
+
+  // Esperar a que el DOM se actualice
+  await nextTick();
+
+  // Avanzar al siguiente paso si es posible
+  if (isStepperReady.value && mainStepper.value.hasNext) {
+    try {
+      mainStepper.value.next();
+      setTimeout(() => {
+        window.scrollTo({ top: 200, behavior: "smooth" });
+      }, 100);
+    } catch (error) {
+      console.warn("Error al avanzar stepper:", error);
+    }
+  }
+
+  useToast().add({
+    title: "Plan generado",
+    description: "El plan de producción se ha generado exitosamente",
+    color: "green",
+    timeout: 3000
+  });
+};
+
+const completeValidacionAprovisionamiento = async () => {
+  completedSteps.value['validacion-de-aprovisionamiento'] = true;
+
+  // Esperar a que el DOM se actualice
+  await nextTick();
+
+  // Avanzar al siguiente paso si es posible
+  if (isStepperReady.value && mainStepper.value.hasNext) {
+    try {
+      mainStepper.value.next();
+      setTimeout(() => {
+        window.scrollTo({ top: 200, behavior: "smooth" });
+      }, 100);
+    } catch (error) {
+      console.warn("Error al avanzar stepper:", error);
+    }
+  }
+
+  useToast().add({
+    title: "Validación completada",
+    description: "La validación de aprovisionamiento se ha completado exitosamente",
+    color: "green",
+    timeout: 3000
+  });
+};
+
+const completeExplosion = () => {
+  completedSteps.value['explocionar'] = true;
+
+  useToast().add({
+    title: "Explosión completada",
+    description: "La explosión de materiales se ha ejecutado exitosamente",
+    color: "green",
+    timeout: 3000
+  });
 };
 
 const getStatusConfig = (status) => {

@@ -4,6 +4,9 @@ import ExistenciasStep from "./boom/ExistenciasStep.vue";
 import CoberturaStep from "./boom/CoberturaStep.vue";
 import GuardarStep from "./boom/GuardarStep.vue";
 
+// Emits para comunicarse con el componente padre
+const emit = defineEmits(['boom-process-completed']);
+
 // Estado para los pasos del stepper
 const items = ref([
   {
@@ -77,6 +80,11 @@ const goPrev = () => {
   }
 };
 
+// Método para manejar cuando el proceso de guardado se completa
+const handleBoomProcessCompleted = () => {
+  emit('boom-process-completed');
+};
+
 // Los datos se actualizan automáticamente con v-model
 // No necesitamos handlers manuales
 
@@ -121,6 +129,7 @@ const goPrev = () => {
           :plan-ventas-data="planVentasData"
           :existencias-data="existenciasData"
           :cobertura-data="coberturaData"
+          @all-steps-completed="handleBoomProcessCompleted"
         />
       </template>
     </UStepper>

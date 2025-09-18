@@ -15,6 +15,9 @@ const props = defineProps({
   },
 });
 
+// Emits para comunicarse con el componente padre
+const emit = defineEmits(['all-steps-completed']);
+
 // Estado para el proceso de guardado
 const isProcessing = ref(false);
 const processedSteps = ref({
@@ -65,6 +68,16 @@ const allStepsHaveData = computed(() => {
 // Computed para verificar si todos los pasos están procesados
 const allStepsProcessed = computed(() => {
   return Object.values(processedSteps.value).every(processed => processed);
+});
+
+// Watcher para emitir evento cuando todos los pasos se completen
+watch(allStepsProcessed, (newValue) => {
+  if (newValue) {
+    // Emitir evento después de un pequeño delay para asegurar que la UI se actualice
+    nextTick(() => {
+      emit('all-steps-completed');
+    });
+  }
 });
 
 // Función para simular el proceso de guardado
