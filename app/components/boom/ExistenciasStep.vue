@@ -180,10 +180,6 @@ watch(
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
         Sin datos cargados
       </h3>
-      <p class="text-gray-600 dark:text-gray-300 mb-4">
-        Utiliza el botón "Cargar archivo" en el header para seleccionar un
-        archivo Excel con los datos de existencias
-      </p>
     </div>
 
     <!-- Modal de carga de archivo -->
