@@ -15,6 +15,7 @@ import { removeUserFromGroup } from "./functions/admin-users/RemoveUserFromGroup
 import { adminUserGlobalSignOut } from "./functions/admin-users/AdminUserGlobalSignOut/resource";
 import { microsoftGraphToken } from "./functions/microsoft-graph/token/resource";
 import { saveSalePlan } from "./functions/boom/saveSalePlan/resource";
+import { runPipeline } from "./functions/boom/runPipeline/resource";
 /**
  * Configuración del backend de Amplify
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
@@ -31,6 +32,7 @@ export const backend = defineBackend({
   removeUserFromGroup,
   adminUserGlobalSignOut,
   saveSalePlan,
+  runPipeline,
 });
 
 const resetPasswordLambda = backend.resetPassword.resources.lambda;
