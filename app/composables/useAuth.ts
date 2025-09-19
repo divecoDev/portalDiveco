@@ -44,8 +44,13 @@ export const useAuth = () => {
       currentUser.value = user;
       isAuthenticated.value = true;
 
-      // Cargar grupos del usuario
-      await fetchUserGroups();
+      // Intentar cargar grupos del usuario (puede fallar para usuarios con contraseña)
+      try {
+        await fetchUserGroups();
+      } catch (groupError) {
+        console.warn("🔐 Usuario autenticado sin grupos de Cognito:", groupError?.message);
+        // Continuar sin grupos - usuario básico autenticado
+      }
 
       // Obtener el rol principal
       userRole.value = getUserRole();
@@ -53,6 +58,10 @@ export const useAuth = () => {
       // Determinar permisos basados en el rol
       if (isAdmin.value) {
         userPermissions.value = ["*"]; // Todos los permisos
+      } else if (userGroups.value.length === 0) {
+        // Usuario sin grupos - permisos básicos
+        console.info("🔐 Usuario autenticado sin grupos - asignando permisos básicos");
+        userPermissions.value = ["view_dashboard", "edit_profile"];
       } else {
         userPermissions.value = [];
         // Agregar permisos específicos según el rol

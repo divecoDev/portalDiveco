@@ -45,12 +45,20 @@ export const useUserGroups = () => {
           !group.GroupName.includes("Nova"),
       );
     } catch (err) {
+      // Manejo específico para usuarios sin grupos (autenticados con contraseña)
+      if (err?.name === "UserUnAuthenticatedException" ||
+          err?.message?.includes("User needs to be authenticated")) {
+        console.warn("🔐 Usuario autenticado sin grupos de Cognito (probablemente autenticado con contraseña)");
+        error.value = null; // No tratamos esto como un error
+        return [];
+      }
+
       const errorMessage =
         err instanceof Error
           ? err.message
           : "Error desconocido al obtener grupos";
       error.value = errorMessage;
-      console.error("Error al obtener grupos del usuario:", err);
+      console.error("❌ Error al obtener grupos del usuario:", err);
       return [];
     } finally {
       isLoading.value = false;

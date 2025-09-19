@@ -604,14 +604,42 @@ const loadCompleteUserData = async (userEmail) => {
     if (userData) {
       graphUserData.value = userData;
       userProfile.value.name = userData.displayName || userAttributes.email;
+    } else {
+      // Fallback para usuarios sin acceso a Microsoft Graph
+      console.info("🔐 Usando datos básicos de Cognito para usuario sin Microsoft Graph");
+      userProfile.value.name = userAttributes.email || "Usuario";
     }
 
     if (photo) {
       userPhoto.value = photo;
       userProfile.value.avatar = photo;
+    } else {
+      // Generar iniciales como fallback
+      const initials = userProfile.value.name
+        .split(" ")
+        .map(n => n.charAt(0))
+        .slice(0, 2)
+        .join("")
+        .toUpperCase();
+      userProfile.value.initials = initials || "??";
     }
   } catch (error) {
-    console.error("Error cargando datos completos del usuario:", error);
+    // Manejo específico para usuarios sin Microsoft Graph
+    if (error?.message === "NO_GRAPH_ACCESS" ||
+        error?.message?.includes("Cannot read properties of null")) {
+      console.info("🔐 Usuario sin acceso a Microsoft Graph - usando datos básicos de Cognito");
+      userProfile.value.name = userAttributes.email || "Usuario";
+      const initials = userProfile.value.name
+        .split("@")[0] // Usar parte antes del @ para iniciales
+        .split(".")
+        .map(n => n.charAt(0))
+        .slice(0, 2)
+        .join("")
+        .toUpperCase();
+      userProfile.value.initials = initials || "??";
+    } else {
+      console.error("❌ Error cargando datos completos del usuario:", error);
+    }
   } finally {
     loadingGraphUserData.value = false;
   }
