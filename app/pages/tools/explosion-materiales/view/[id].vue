@@ -64,9 +64,9 @@
           <div
             class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
           >
-            <BoomProcess
+            <CargaInsumosProcess
               :explosion="explosion"
-              @boom-process-completed="handleBoomProcessCompleted"
+              @carga-insumos-completed="handleBoomProcessCompleted"
             />
           </div>
         </template>

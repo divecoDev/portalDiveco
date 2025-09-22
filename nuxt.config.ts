@@ -20,4 +20,9 @@ export default defineNuxtConfig({
     msClientSecret: "",
   },
 
+   pinia: {
+    storesDirs: ['./stores/**'],
+  },
+
+
 });

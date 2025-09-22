@@ -1,0 +1,149 @@
+<script setup>
+import PlanVentasStep from "./boom/PlanVentasStep.vue";
+import ExistenciasStep from "./boom/ExistenciasStep.vue";
+import CoberturaStep from "./boom/CoberturaStep.vue";
+import GuardarStep from "./boom/GuardarStep.vue";
+import { useCargaInsumosProcessStore } from "../../stores/useCargaInsumosProcess";
+
+// Emits para comunicarse con el componente padre
+const emit = defineEmits(['carga-insumos-completed']);
+
+// Usar el store de Carga de Insumos
+const cargaInsumosStore = useCargaInsumosProcessStore();
+
+// Inicializar el store al montar el componente
+onMounted(async () => {
+  await cargaInsumosStore.initialize();
+});
+
+// Referencia al stepper para controlar la navegación
+const stepper = ref();
+
+// Computed para obtener datos reactivos del store
+const items = computed(() => cargaInsumosStore.stepItems);
+const currentStep = computed({
+  get: () => cargaInsumosStore.currentStep,
+  set: (value) => cargaInsumosStore.goToStep(value)
+});
+
+// Computed para validaciones desde el store
+const isPlanVentasValid = computed(() => cargaInsumosStore.isPlanVentasValid);
+const isExistenciasValid = computed(() => cargaInsumosStore.isExistenciasValid);
+const isCoberturaValid = computed(() => cargaInsumosStore.isCoberturaValid);
+const canGoNext = computed(() => cargaInsumosStore.canGoNext);
+const canGoPrev = computed(() => cargaInsumosStore.canGoPrev);
+
+// Computed para los datos de cada paso desde el store
+const planVentasData = computed({
+  get: () => cargaInsumosStore.planVentas.data,
+  set: (value) => cargaInsumosStore.updatePlanVentasData(value)
+});
+
+const existenciasData = computed({
+  get: () => cargaInsumosStore.existencias.data,
+  set: (value) => cargaInsumosStore.updateExistenciasData(value)
+});
+
+const coberturaData = computed({
+  get: () => cargaInsumosStore.cobertura.data,
+  set: (value) => cargaInsumosStore.updateCoberturaData(value)
+});
+
+// Métodos de navegación usando el store
+const goNext = () => {
+  if (cargaInsumosStore.goToNextStep() && stepper.value?.hasNext) {
+    stepper.value.next();
+    // Scroll al inicio de la página
+    window.scrollTo({ top: 185, behavior: "smooth" });
+  }
+};
+
+const goPrev = () => {
+  if (cargaInsumosStore.goToPrevStep() && stepper.value?.hasPrev) {
+    stepper.value.prev();
+    // Scroll al inicio de la página
+    window.scrollTo({ top: 185, behavior: "smooth" });
+  }
+};
+
+// Método para manejar cuando el proceso de carga se completa
+const handleCargaInsumosCompleted = () => {
+  emit('carga-insumos-completed');
+};
+
+// Watcher para sincronizar el stepper con el store
+watch(() => cargaInsumosStore.currentStep, (newStep) => {
+  if (stepper.value && stepper.value.modelValue !== newStep) {
+    stepper.value.modelValue = newStep;
+  }
+});
+</script>
+
+<template>
+  <div class="space-y-6">
+    <!-- Stepper con navegación deshabilitada -->
+    <UStepper
+      ref="stepper"
+      v-model="currentStep"
+      :items="items"
+      color="primary"
+      disabled
+      class="w-full"
+    >
+      <template #plan-de-ventas>
+        <PlanVentasStep
+          :key="`plan-ventas-${cargaInsumosStore.planVentas.data.length}-${cargaInsumosStore.planVentas.loadedAt?.getTime()}`"
+          v-model="planVentasData"
+        />
+      </template>
+
+      <template #existencias>
+        <ExistenciasStep
+          :key="`existencias-${cargaInsumosStore.existencias.data.length}-${cargaInsumosStore.existencias.loadedAt?.getTime()}`"
+          v-model="existenciasData"
+        />
+      </template>
+
+      <template #cobertura>
+        <CoberturaStep
+          :key="`cobertura-${cargaInsumosStore.cobertura.data.length}-${cargaInsumosStore.cobertura.loadedAt?.getTime()}`"
+          v-model="coberturaData"
+        />
+      </template>
+
+      <template #guardar>
+        <GuardarStep
+          :key="`guardar-${cargaInsumosStore.dataStats.total}-${cargaInsumosStore.lastSaved?.getTime()}`"
+          :plan-ventas-data="cargaInsumosStore.planVentas.data"
+          :existencias-data="cargaInsumosStore.existencias.data"
+          :cobertura-data="cargaInsumosStore.cobertura.data"
+          @all-steps-completed="handleCargaInsumosCompleted"
+        />
+      </template>
+    </UStepper>
+
+    <!-- Controles de navegación -->
+    <div class="flex justify-between items-center pt-4">
+      <UButton
+        class="cursor-pointer"
+        :disabled="!canGoPrev"
+        icon="i-heroicons-arrow-left"
+        @click="goPrev"
+      />
+
+      <div class="text-center">
+        <span class="font-bold text-gray-500 dark:text-gray-400">
+          Paso {{ currentStep + 1 }} de {{ items.length }}
+        </span>
+      </div>
+
+      <UButton
+        v-if="currentStep < items.length - 1"
+        class="cursor-pointer"
+        :disabled="!canGoNext"
+        icon="i-heroicons-arrow-right"
+        @click="goNext"
+      />
+    </div>
+</div>
+</template>
