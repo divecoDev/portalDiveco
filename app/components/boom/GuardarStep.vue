@@ -1,4 +1,6 @@
 <script setup>
+import { useCargaInsumosProcessStore } from './../stores/useCargaInsumosProcess'
+
 // Props para recibir los datos de los pasos anteriores
 const props = defineProps({
   planVentasData: {
@@ -18,13 +20,12 @@ const props = defineProps({
 // Emits para comunicarse con el componente padre
 const emit = defineEmits(['all-steps-completed']);
 
-// Estado para el proceso de guardado
-const isProcessing = ref(false);
-const processedSteps = ref({
-  planVentas: false,
-  existencias: false,
-  cobertura: false,
-});
+// Usar el store de Carga de Insumos
+const cargaInsumosStore = useCargaInsumosProcessStore()
+
+// Estado para el proceso de guardado (usar el store)
+const isProcessing = computed(() => cargaInsumosStore.isProcessing)
+const processedSteps = computed(() => cargaInsumosStore.processedSteps)
 
 // Verificar si estamos en modo desarrollo
 const isDev = import.meta.dev;
@@ -67,7 +68,7 @@ const allStepsHaveData = computed(() => {
 
 // Computed para verificar si todos los pasos están procesados
 const allStepsProcessed = computed(() => {
-  return Object.values(processedSteps.value).every(processed => processed);
+  return cargaInsumosStore.allStepsProcessed;
 });
 
 // Watcher para emitir evento cuando todos los pasos se completen
@@ -80,33 +81,59 @@ watch(allStepsProcessed, (newValue) => {
   }
 });
 
-// Función para simular el proceso de guardado
+// Función para guardar los documentos usando el store
 const guardarDocumentos = async () => {
   if (!allStepsHaveData.value || isProcessing.value) return;
 
-  isProcessing.value = true;
-
-  // Resetear estados
-  processedSteps.value = {
-    planVentas: false,
-    existencias: false,
-    cobertura: false,
-  };
-
   try {
-    // Simular proceso para cada paso con delay
-    for (const step of steps.value) {
-      if (step.data && step.data.length > 0) {
-        // Simular tiempo de procesamiento (2 segundos por paso)
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        processedSteps.value[step.id] = true;
-      }
+    // Cargar los datos en el store antes de procesarlos
+    if (props.planVentasData && props.planVentasData.length > 0) {
+      cargaInsumosStore.planVentas.data = props.planVentasData;
+      cargaInsumosStore.planVentas.fileName = 'plan_ventas.xlsx';
+      cargaInsumosStore.planVentas.loadedAt = new Date();
+      cargaInsumosStore.planVentas.isValid = true;
+    }
+
+    if (props.existenciasData && props.existenciasData.length > 0) {
+      cargaInsumosStore.existencias.data = props.existenciasData;
+      cargaInsumosStore.existencias.fileName = 'existencias.xlsx';
+      cargaInsumosStore.existencias.loadedAt = new Date();
+      cargaInsumosStore.existencias.isValid = true;
+    }
+
+    if (props.coberturaData && props.coberturaData.length > 0) {
+      cargaInsumosStore.cobertura.data = props.coberturaData;
+      cargaInsumosStore.cobertura.fileName = 'cobertura.xlsx';
+      cargaInsumosStore.cobertura.loadedAt = new Date();
+      cargaInsumosStore.cobertura.isValid = true;
+    }
+
+    // Procesar los documentos usando el store (esto enviará a MySQL)
+    console.log('🚀 Iniciando guardado de documentos...');
+    const result = await cargaInsumosStore.processDocuments();
+
+    if (result.success) {
+      console.log('✅ Documentos guardados exitosamente');
+      useToast().add({
+        title: 'Éxito',
+        description: 'Documentos guardados exitosamente en la base de datos',
+        color: 'green',
+      });
+    } else {
+      console.error('❌ Error al guardar documentos:', result.error);
+      useToast().add({
+        title: 'Error',
+        description: `Error al guardar documentos: ${result.error}`,
+        color: 'red',
+      });
     }
   } catch (error) {
-    console.error('Error al guardar documentos:', error);
-    // Aquí podrías agregar manejo de errores
-  } finally {
-    isProcessing.value = false;
+    console.error('❌ Error al guardar documentos:', error);
+    useToast().add({
+      title: 'Error',
+      description: `Error inesperado: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+      color: 'red',
+    });
   }
 };
 
@@ -115,12 +142,22 @@ const getStepStatus = (step) => {
   if (!step.data || step.data.length === 0) {
     return 'empty';
   }
-  if (isProcessing.value && !step.processed) {
-    return 'processing';
-  }
-  if (step.processed) {
+
+  // Obtener el progreso del store para este tipo
+  const progress = cargaInsumosStore.processedSteps[step.id];
+
+  if (progress === true) {
     return 'completed';
   }
+
+  if (typeof progress === 'number' && progress > 0 && progress < 1) {
+    return 'processing';
+  }
+
+  if (isProcessing.value) {
+    return 'processing';
+  }
+
   return 'pending';
 };
 
@@ -248,12 +285,32 @@ const getStatusIcon = (step, status) => {
                   <span class="text-amber-600 dark:text-amber-400">Pendiente</span>
                 </template>
                 <template v-else-if="getStepStatus(step) === 'processing'">
-                  <span class="text-cyan-600 dark:text-cyan-400">Procesando...</span>
+                  <template v-if="typeof cargaInsumosStore.processedSteps[step.id] === 'number'">
+                    <span class="text-cyan-600 dark:text-cyan-400">
+                      {{ Math.round(cargaInsumosStore.processedSteps[step.id] * 100) }}%
+                    </span>
+                  </template>
+                  <template v-else>
+                    <span class="text-cyan-600 dark:text-cyan-400">Procesando...</span>
+                  </template>
                 </template>
                 <template v-else-if="getStepStatus(step) === 'completed'">
                   <span class="text-green-600 dark:text-green-400">Completado</span>
                 </template>
               </span>
+            </div>
+
+            <!-- Barra de progreso para pasos en procesamiento -->
+            <div
+              v-if="getStepStatus(step) === 'processing' && typeof cargaInsumosStore.processedSteps[step.id] === 'number'"
+              class="mt-2"
+            >
+              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1">
+                <div
+                  class="bg-gradient-to-r from-cyan-500 to-cyan-600 h-1 rounded-full transition-all duration-300"
+                  :style="{ width: `${cargaInsumosStore.processedSteps[step.id] * 100}%` }"
+                ></div>
+              </div>
             </div>
           </div>
         </div>

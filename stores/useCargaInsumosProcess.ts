@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { generateClient } from "aws-amplify/api";
 
 // Tipos para los datos del proceso de Carga de Insumos
 export interface CargaInsumosStepData {
@@ -53,6 +54,18 @@ export interface CargaInsumosProcessState {
   autoSave: boolean;
   lastSaved: Date | null;
 }
+
+// Función para obtener el cliente de Amplify (lazy loading)
+const getAmplifyClient = () => {
+  try {
+    const client = generateClient();
+    console.log('🔧 Cliente de Amplify Gen 2 generado:', client);
+    return client;
+  } catch (error) {
+    console.error('❌ Error generando cliente de Amplify:', error);
+    throw error;
+  }
+};
 
 export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
   state: (): CargaInsumosProcessState => ({
@@ -166,7 +179,15 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
      * Verificar si todos los pasos están procesados
      */
     allStepsProcessed: (state) => {
-      return Object.values(state.processedSteps).every(processed => processed);
+      return Object.values(state.processedSteps).every(processed => {
+        // Un paso está completado si es true o si es un número >= 1
+        if (typeof processed === 'boolean') {
+          return processed;
+        } else if (typeof processed === 'number') {
+          return processed >= 1;
+        }
+        return false;
+      });
     },
 
     /**
@@ -198,9 +219,20 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
      * Obtener el progreso del proceso actual
      */
     processProgress: (state) => {
-      const stepsCompleted = Object.values(state.processedSteps).filter(Boolean).length;
-      const totalSteps = Object.keys(state.processedSteps).length;
-      return Math.round((stepsCompleted / totalSteps) * 100);
+      const steps = Object.values(state.processedSteps);
+      const totalSteps = steps.length;
+
+      // Sumar el progreso de cada paso (puede ser decimal entre 0 y 1, o true/false)
+      const totalProgress = steps.reduce((sum, stepProgress) => {
+        if (typeof stepProgress === 'boolean') {
+          return sum + (stepProgress ? 1 : 0);
+        } else if (typeof stepProgress === 'number') {
+          return sum + Math.min(1, Math.max(0, stepProgress)); // Clamp entre 0 y 1
+        }
+        return sum;
+      }, 0);
+
+      return Math.round((totalProgress / totalSteps) * 100);
     },
 
     /**
@@ -378,7 +410,7 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
     },
 
     /**
-     * Procesar y guardar documentos
+     * Procesar y guardar documentos usando procesamiento por lotes
      */
     async processDocuments() {
       if (!this.allStepsHaveData || this.isProcessing) {
@@ -397,29 +429,29 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
       };
 
       try {
-        console.log("🚀 Carga Insumos Store: Iniciando procesamiento de documentos...");
+        console.log("🚀 Carga Insumos Store: Iniciando procesamiento por lotes...");
 
-        // Simular procesamiento de cada paso
-        const steps = ['planVentas', 'existencias', 'cobertura'] as const;
+        const documentId = `carga-insumos-${Date.now()}`;
+        const batchId = `batch-${Date.now()}`;
 
-        for (const step of steps) {
-          console.log(`⏳ Carga Insumos Store: Procesando ${step}...`);
+        console.log(`📄 Document ID: ${documentId}`);
+        console.log(`🏷️ Batch ID: ${batchId}`);
 
-          // Simular tiempo de procesamiento
-          await new Promise(resolve => setTimeout(resolve, 2000));
+        // Procesar cada tipo de datos por lotes secuencialmente
+        await this.processBatches('planVentas', this.planVentas.data, this.planVentas.fileName, documentId, batchId);
+        await this.processBatches('existencias', this.existencias.data, this.existencias.fileName, documentId, batchId);
+        await this.processBatches('cobertura', this.cobertura.data, this.cobertura.fileName, documentId, batchId);
 
-          this.processedSteps[step] = true;
-        }
+        // Crear documento local con los metadatos
+        const document = await this.createDocument(`Carga de Insumos - ${new Date().toLocaleString()}`);
 
-        // Crear documento con los datos procesados
-        const document = await this.createDocument();
-
-        console.log("✅ Carga Insumos Store: Documentos procesados exitosamente");
+        console.log("✅ Carga Insumos Store: Todos los lotes procesados exitosamente");
 
         return {
           success: true,
           documentId: document.id,
-          message: "Documentos procesados y guardados exitosamente"
+          sqlDocumentId: documentId,
+          message: "Documentos procesados y guardados exitosamente en RDS"
         };
 
       } catch (error) {
@@ -434,6 +466,204 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
       } finally {
         this.isProcessing = false;
       }
+    },
+
+    /**
+     * Transformar arrays de datos a objetos con propiedades nombradas
+     */
+    transformDataToObjects(tipo: 'planVentas' | 'existencias' | 'cobertura', data: any[]): any[] {
+      if (!data || data.length === 0) return [];
+
+      return data.map(row => {
+        // Si ya es un objeto, devolverlo tal como está
+        if (!Array.isArray(row)) return row;
+
+        // Transformar según el tipo
+        switch (tipo) {
+          case 'planVentas':
+            return {
+              ssour: row[0] || null,
+              vrsio: row[1] || null,
+              spmon: row[2] || null,
+              sptag: row[3] || null,
+              spwoc: row[4] || null,
+              spbup: row[5] || null,
+              pmnux: row[6] || null,
+              wenux: row[7] || null,
+              vsnda: row[8] || null,
+              periv: row[9] || null,
+              vwdat: row[10] || null,
+              basme: row[11] || null,
+              absat: row[12] || null,
+              produ: row[13] || null,
+              lagri: row[14] || null,
+              lagrz: row[15] || null,
+              reich: row[16] || null,
+              reicz: row[17] || null,
+            };
+
+          case 'existencias':
+            return {
+              version: row[0] || null,
+              centro: row[1] || null,
+              almacen: row[2] || null,
+              material: row[3] || null,
+              periodo: row[4] || null,
+              mes: row[5] || null,
+              libre_u: row[6] || 0,
+              no_liberado: row[7] || 0,
+              bloqueado: row[8] || 0,
+              devolucion: row[9] || 0,
+              traslados: row[10] || 0,
+              calidad: row[11] || 0,
+              bloqueado_em: row[12] || 0,
+            };
+
+          case 'cobertura':
+            return {
+              version: row[0] || null,
+              centro: row[1] || null,
+              periodo: row[2] || null,
+              mes: row[3] || null,
+              dias_habiles_mes_planta: row[4] || 0,
+              dias_coberturas_mes: row[5] || 0,
+              dias_habiles_venta: row[6] || 0,
+            };
+
+          default:
+            return row;
+        }
+      });
+    },
+
+    /**
+     * Procesar datos por lotes para un tipo específico
+     */
+    async processBatches(tipo: 'planVentas' | 'existencias' | 'cobertura', data: any[], fileName: string, documentId: string, batchId: string) {
+      if (!data || data.length === 0) {
+        console.log(`⚠️ No hay datos para procesar en ${tipo}`);
+        this.processedSteps[tipo] = true;
+        return;
+      }
+
+      // Determinar tamaño de lote según el tipo de datos
+      const batchSizes = {
+        planVentas: 200,  // Plan de ventas tiene más campos, lotes más pequeños
+        existencias: 400, // Existencias tiene campos numéricos, lotes medianos
+        cobertura: 500    // Cobertura tiene menos campos, lotes más grandes
+      };
+
+      const batchSize = batchSizes[tipo];
+      const totalBatches = Math.ceil(data.length / batchSize);
+
+      console.log(`📊 Procesando ${data.length} registros de ${tipo} en ${totalBatches} lotes de ${batchSize} registros c/u`);
+
+      // Transformar datos de arrays a objetos
+      const transformedData = this.transformDataToObjects(tipo, data);
+      console.log(`🔄 Datos transformados de arrays a objetos para ${tipo}`);
+      console.log(`📊 Total de registros transformados: ${transformedData.length}`);
+      console.log(`📋 Los datos se enviarán como JSON string para mejor compatibilidad`);
+
+      // Procesar lotes secuencialmente
+      for (let i = 0; i < totalBatches; i++) {
+        const batchData = transformedData.slice(i * batchSize, (i + 1) * batchSize);
+
+        console.log(`🔄 Procesando lote ${i + 1}/${totalBatches} de ${tipo} (${batchData.length} registros)`);
+
+        // Log de muestra del primer registro transformado para debug
+        if (i === 0 && batchData.length > 0) {
+          console.log(`📋 Muestra del primer registro de ${tipo}:`, batchData[0]);
+        }
+
+        const payload = {
+          tipo,
+          data: batchData,
+          metadata: {
+            fileName: fileName || `${tipo}_${new Date().toISOString()}`,
+            loadedAt: this[tipo].loadedAt?.toISOString() || new Date().toISOString(),
+            documentId,
+            batchId: `${batchId}-${tipo}-${i}`,
+            batchIndex: i,
+            totalBatches
+          }
+        };
+
+        try {
+          console.log(`🔍 DEBUG: Iniciando try block para lote ${i + 1}/${totalBatches}`);
+
+          // Obtener cliente de Amplify de forma lazy
+          const client = getAmplifyClient();
+
+          // Verificar que el cliente esté disponible
+          if (!client) {
+            throw new Error('Cliente de Amplify no está configurado correctamente');
+          }
+          console.log(`✅ DEBUG: Cliente disponible`);
+
+          // Verificar que client.mutations existe
+          if (!client.mutations) {
+            throw new Error('client.mutations no está disponible');
+          }
+          console.log(`✅ DEBUG: client.mutations disponible`);
+
+          // Verificar que la mutation específica existe
+          if (!client.mutations.saveCargaInsumosBatch) {
+            throw new Error('saveCargaInsumosBatch mutation no encontrada');
+          }
+          console.log(`✅ DEBUG: mutation saveCargaInsumosBatch encontrada`);
+
+          // Llamar a la mutation de Amplify Gen 2 (sin tipado como en el proyecto)
+          // Convertir los datos a JSON string para evitar problemas de serialización
+          console.log(`🔄 Enviando lote ${i + 1}/${totalBatches} a Amplify...`);
+          console.log(`📋 Tamaño del payload:`, JSON.stringify(batchData).length, 'caracteres');
+
+          const { data } = await (client as any).mutations.saveCargaInsumosBatch({
+            tipo,
+            data: JSON.stringify(batchData),
+            metadata: JSON.stringify(payload.metadata)
+          });
+
+          console.log(`📡 Respuesta raw de Amplify:`, data);
+          console.log(`📊 Tipo de data:`, typeof data);
+
+          // Verificar si la respuesta es válida
+          if (!data) {
+            throw new Error(`Respuesta nula de Amplify para lote ${i + 1}/${totalBatches}`);
+          }
+
+          // Parsear la respuesta de Amplify (la data ya viene como string)
+          const result = typeof data === 'string' ? JSON.parse(data) : data;
+
+          console.log(`📋 Resultado parseado:`, result);
+
+          if (!result.success) {
+            throw new Error(`Error en lote ${i + 1}/${totalBatches}: ${result.message || 'Error desconocido'}`);
+          }
+
+          // Actualizar progreso (número decimal entre 0 y 1)
+          const progress = (i + 1) / totalBatches;
+          (this.processedSteps as any)[tipo] = progress;
+
+          console.log(`✅ Lote ${i + 1}/${totalBatches} de ${tipo} procesado exitosamente (${result.processedRecords || batchData.length} registros)`);
+
+          // Pequeña pausa entre lotes para no saturar la base de datos
+          if (i < totalBatches - 1) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+
+        } catch (error) {
+          console.error(`❌ DEBUG: Error completo:`, error);
+          console.error(`❌ DEBUG: Error tipo:`, typeof error);
+          console.error(`❌ DEBUG: Error mensaje:`, error instanceof Error ? error.message : 'No es instancia de Error');
+          console.error(`❌ DEBUG: Error stack:`, error instanceof Error ? error.stack : 'No stack disponible');
+          console.error(`❌ Error procesando lote ${i + 1}/${totalBatches} de ${tipo}:`, error);
+          throw new Error(`Error en lote ${i + 1}/${totalBatches} de ${tipo}: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+        }
+      }
+
+      // Marcar como completado (true = 100%)
+      (this.processedSteps as any)[tipo] = true;
+      console.log(`🎉 Completado procesamiento de ${tipo}: ${data.length} registros en ${totalBatches} lotes`);
     },
 
     /**
@@ -540,7 +770,7 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
 
         this.persistDocuments();
 
-        console.log(`🗑️ Carga Insumos Store: Documento eliminado - ${document.name}`);
+        console.log(`🗑️ Carga Insumos Store: Documento eliminado - ${document?.name || documentId}`);
         return true;
       }
 

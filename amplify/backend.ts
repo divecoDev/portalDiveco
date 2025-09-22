@@ -16,6 +16,7 @@ import { adminUserGlobalSignOut } from "./functions/admin-users/AdminUserGlobalS
 import { microsoftGraphToken } from "./functions/microsoft-graph/token/resource";
 import { saveSalePlan } from "./functions/boom/saveSalePlan/resource";
 import { runPipeline } from "./functions/boom/runPipeline/resource";
+import { cargaInsumosSaveBatch } from "./functions/carga-insumos/saveBatch/resource";
 /**
  * Configuración del backend de Amplify
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
@@ -33,6 +34,7 @@ export const backend = defineBackend({
   adminUserGlobalSignOut,
   saveSalePlan,
   runPipeline,
+  cargaInsumosSaveBatch,
 });
 
 const resetPasswordLambda = backend.resetPassword.resources.lambda;
@@ -55,7 +57,6 @@ const saveSalePlanPolicy = new iam.PolicyStatement({
   resources: ["*"],
 });
 saveSalePlanLambda.addToRolePolicy(saveSalePlanPolicy);
-
 
 /// add resePasswordLambda to  VPC
 

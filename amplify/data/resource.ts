@@ -7,6 +7,7 @@ import { assignUserToGroup } from "../functions/admin-users/AssignUserToGroup/re
 import { removeUserFromGroup } from "../functions/admin-users/RemoveUserFromGroup/resource";
 import { adminUserGlobalSignOut } from "../functions/admin-users/AdminUserGlobalSignOut/resource";
 import { microsoftGraphToken } from "../functions/microsoft-graph/token/resource";
+import { cargaInsumosSaveBatch } from "../functions/carga-insumos/saveBatch/resource";
 /*== STEP 1 ===============================================================
 The section below creates a Todo database table with a "content" field. Try
 adding a new "isDone" field as a boolean. The authorization rule below
@@ -109,7 +110,21 @@ const schema = a.schema({
     .returns(a.string())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(microsoftGraphToken)),
-  // Modelo para la bitacora de usarios que se les resetea la contraseña o se desbloqueo el usuario.
+ /**
+  *  Carga de Insumos - Procesamiento por lotes
+  */
+  saveCargaInsumosBatch: a
+    .mutation()
+    .arguments({
+      tipo: a.string().required(),
+      data: a.json().required(),
+      metadata: a.json().required(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+
+
+    .handler(a.handler.function(cargaInsumosSaveBatch)),
 });
 
 export type Schema = ClientSchema<typeof schema>;
