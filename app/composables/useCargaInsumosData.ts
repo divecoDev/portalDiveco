@@ -178,9 +178,11 @@ export const useCargaInsumosData = () => {
   };
 
   /**
-   * Verificar si hay datos cargados
+   * Verificar si hay datos cargados (ya sean datos específicos o resumen con registros)
    */
-  const hasData = computed(() => data.value.length > 0);
+  const hasData = computed(() => {
+    return data.value.length > 0 || (summary.value && summary.value.totalRecords > 0);
+  });
 
   /**
    * Obtener estadísticas de los datos cargados
