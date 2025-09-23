@@ -64,7 +64,59 @@
           <div
             class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
           >
+            <!-- Header con controles -->
+            <div class="flex items-center justify-between mb-6">
+              <div class="flex items-center">
+                <div
+                  class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-cyan-500/25"
+                >
+                  <UIcon name="i-heroicons-circle-stack" class="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    Carga de Insumos
+                  </h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-300">
+                    {{ hasSavedData ? 'Datos cargados y guardados' : 'Proceso de carga de datos' }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Botones de acción -->
+              <div class="flex items-center space-x-3">
+                <UButton
+                  v-if="hasSavedData"
+                  icon="i-heroicons-arrow-path"
+                  size="sm"
+                  color="gray"
+                  variant="outline"
+                  @click="refreshSavedData"
+                  :loading="checkingSavedData"
+                >
+                  Actualizar
+                </UButton>
+
+                <UButton
+                  v-if="hasSavedData"
+                  icon="i-heroicons-plus"
+                  size="sm"
+                  color="cyan"
+                  @click="showCargaProcess = !showCargaProcess"
+                >
+                  {{ showCargaProcess ? 'Ver Datos' : 'Cargar Más' }}
+                </UButton>
+              </div>
+            </div>
+
+            <!-- Mostrar datos guardados si existen, sino mostrar proceso de carga -->
+            <CargaInsumosDataView
+              v-if="hasSavedData && !showCargaProcess"
+              :document-id="explosion?.id"
+              :explosion-id="explosionId"
+            />
+
             <CargaInsumosProcess
+              v-if="!hasSavedData || showCargaProcess"
               :explosion="explosion"
               @carga-insumos-completed="handleBoomProcessCompleted"
             />
@@ -319,8 +371,14 @@
 
 <script setup>
 import { generateClient } from "aws-amplify/data";
+import { useCargaInsumosData } from "~/composables/useCargaInsumosData";
+import CargaInsumosDataView from "~/components/CargaInsumosDataView.vue";
+
 // Cliente de Amplify
 const client = generateClient();
+
+// Composable para consultar datos de carga de insumos
+const { getSummary, hasData } = useCargaInsumosData();
 
 const stepperItems = ref([
   {
@@ -367,6 +425,13 @@ setBreadcrumbs([
 // Estado reactivo
 const loading = ref(true);
 const explosion = ref(null);
+const checkingSavedData = ref(false);
+const showCargaProcess = ref(false);
+
+// Computed para verificar si hay datos guardados
+const hasSavedData = computed(() => {
+  return completedSteps.value['carga-de-insumos'] && hasData.value;
+});
 
 // Estado para el stepper principal
 const currentMainStep = ref(0);
@@ -423,12 +488,56 @@ const fetchExplosion = async () => {
     loading.value = true;
     const { data } = await client.models.Boom.get({ id: explosionId });
     explosion.value = data;
+
+    // Verificar si hay datos guardados para esta explosión
+    await checkForSavedData();
   } catch (error) {
     console.error("Error al cargar explosión:", error);
     explosion.value = null;
   } finally {
     loading.value = false;
   }
+};
+
+const checkForSavedData = async () => {
+  if (!explosion.value?.id) return;
+
+  try {
+    checkingSavedData.value = true;
+    console.log('🔍 Verificando datos guardados para explosión:', explosion.value.id);
+
+    // Intentar obtener un resumen para ver si hay datos
+    const response = await getSummary();
+
+    if (response.success && response.summary && response.summary.totalRecords > 0) {
+      console.log('✅ Se encontraron datos guardados:', response.summary);
+      console.log('📊 Resumen de datos:', {
+        totalDocuments: response.summary.totalDocuments,
+        totalRecords: response.summary.totalRecords,
+        types: response.summary.types
+      });
+      // Si hay datos, marcar como completado el primer paso
+      completedSteps.value['carga-de-insumos'] = true;
+    } else {
+      console.log('📭 No se encontraron datos guardados');
+      console.log('🔍 Respuesta recibida:', response);
+    }
+  } catch (error) {
+    console.error('❌ Error verificando datos guardados:', error);
+  } finally {
+    checkingSavedData.value = false;
+  }
+};
+
+const refreshSavedData = async () => {
+  await checkForSavedData();
+
+  useToast().add({
+    title: "Datos actualizados",
+    description: "Los datos de carga de insumos se han actualizado",
+    color: "green",
+    timeout: 2000
+  });
 };
 
 const deleteExplosion = async () => {

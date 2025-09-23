@@ -17,6 +17,7 @@ import { microsoftGraphToken } from "./functions/microsoft-graph/token/resource"
 import { saveSalePlan } from "./functions/boom/saveSalePlan/resource";
 import { runPipeline } from "./functions/boom/runPipeline/resource";
 import { cargaInsumosSaveBatch } from "./functions/carga-insumos/saveBatch/resource";
+import { cargaInsumosGetData } from "./functions/carga-insumos/getData/resource";
 /**
  * Configuración del backend de Amplify
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
@@ -35,6 +36,7 @@ export const backend = defineBackend({
   saveSalePlan,
   runPipeline,
   cargaInsumosSaveBatch,
+  cargaInsumosGetData,
 });
 
 const resetPasswordLambda = backend.resetPassword.resources.lambda;
@@ -102,6 +104,17 @@ const adminUserGlobalSignOutPolicy = new iam.PolicyStatement({
   resources: ["*"],
 });
 adminUserGlobalSignOutLambda.addToRolePolicy(adminUserGlobalSignOutPolicy);
+
+const cargaInsumosGetDataLambda = backend.cargaInsumosGetData.resources.lambda;
+const cargaInsumosGetDataPolicy = new iam.PolicyStatement({
+  actions: [
+    "ec2:CreateNetworkInterface",
+    "ec2:DescribeNetworkInterfaces",
+    "ec2:DeleteNetworkInterface",
+  ],
+  resources: ["*"],
+});
+cargaInsumosGetDataLambda.addToRolePolicy(cargaInsumosGetDataPolicy);
 
 /*
  * CREACION DE API REST
