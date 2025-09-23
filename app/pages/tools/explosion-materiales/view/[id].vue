@@ -95,16 +95,6 @@
                 >
                   Actualizar
                 </UButton>
-
-                <UButton
-                  v-if="hasSavedData"
-                  icon="i-heroicons-plus"
-                  size="sm"
-                  color="cyan"
-                  @click="showCargaProcess = !showCargaProcess"
-                >
-                  {{ showCargaProcess ? 'Ver Datos' : 'Cargar Más' }}
-                </UButton>
               </div>
             </div>
 

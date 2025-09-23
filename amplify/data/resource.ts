@@ -99,6 +99,14 @@ const schema = a.schema({
       username: a.string(),
       status: a.string(),
       aditionalData: a.json(),
+      PiepelineRunIdMaestros: a.string(),
+      PiepelineRunIdPlanVentas: a.string(),
+      PiepelineRunIdPlanDemandas: a.string(),
+      PiepelineRunIdExplocion: a.string(),
+      SyncMaestrosStatus: a.string(),
+      SyncSalesPlanStatus: a.string(),
+      SyncDemandPlanStatus: a.string(),
+      ExecuteBoomStatus: a.string(),
     })
     .authorization((allow) => [allow.publicApiKey()]),
 
