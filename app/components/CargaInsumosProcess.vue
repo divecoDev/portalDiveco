@@ -24,14 +24,8 @@ onMounted(async () => {
   await cargaInsumosStore.initialize();
 
   // Establecer el boom_id en el store
-  console.log(`🔍 CargaInsumosProcess: props.explosion:`, props.explosion);
-  console.log(`🔍 CargaInsumosProcess: props.explosion?.id:`, props.explosion?.id);
-
   if (props.explosion?.id) {
-    console.log(`🔍 CargaInsumosProcess: Llamando setBoomId con:`, props.explosion.id);
     cargaInsumosStore.setBoomId(props.explosion.id);
-  } else {
-    console.log(`❌ CargaInsumosProcess: No se pudo establecer boomId - explosion o explosion.id no disponible`);
   }
 });
 
@@ -99,9 +93,7 @@ watch(() => cargaInsumosStore.currentStep, (newStep) => {
 
 // Watcher para detectar cambios en la prop explosion
 watch(() => props.explosion, (newExplosion) => {
-  console.log(`🔍 CargaInsumosProcess: Prop explosion cambió:`, newExplosion);
   if (newExplosion?.id) {
-    console.log(`🔍 CargaInsumosProcess: Estableciendo boomId desde watcher:`, newExplosion.id);
     cargaInsumosStore.setBoomId(newExplosion.id);
   }
 }, { immediate: true });

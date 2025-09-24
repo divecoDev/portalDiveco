@@ -680,7 +680,6 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
       // Usar boom_id como document_id para mantener consistencia
       const documentId = this.boomId || `carga-insumos-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-      console.log(`🎯 Boom ID en createDocument: ${this.boomId}`);
       console.log(`📄 Document ID en createDocument: ${documentId}`);
 
       const document: CargaInsumosDocument = {
@@ -894,7 +893,6 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
     setBoomId(boomId: string) {
       this.boomId = boomId;
       console.log(`🎯 Carga Insumos Store: Boom ID establecido - ${boomId}`);
-      console.log(`🎯 Carga Insumos Store: Verificación - boomId actual: ${this.boomId}`);
     },
 
     /**
