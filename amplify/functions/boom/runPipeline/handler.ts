@@ -2,8 +2,7 @@ import {DataFactoryManagementClient} from "@azure/arm-datafactory";
 import { DefaultAzureCredential } from "@azure/identity";
 
 export const handler = async (event: any) => {
-
-  const pipelineName = event.pipelineName || "";
+  const pipelineName = event.arguments.pipelineName || "";
 
   const resourceGroupName = "ADF";
   const subscriptionId = process.env.AZURE_SUBSCRIPTION_ID || "";

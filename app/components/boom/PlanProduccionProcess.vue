@@ -88,11 +88,28 @@
           <div v-if="proceso.duracion" class="text-xs text-gray-400">
             {{ proceso.duracion }}
           </div>
+          <!-- ID de ejecución del pipeline -->
+          <div v-if="proceso.executionId" class="text-xs text-blue-600 dark:text-blue-400 font-mono">
+            ID: {{ proceso.executionId }}
+          </div>
           <!-- Spinner para procesos en ejecución -->
           <div
             v-if="proceso.status === 'ejecutando'"
             class="w-4 h-4 border-2 border-cyan-600 border-t-transparent rounded-full animate-spin mt-1 ml-auto"
           ></div>
+          <!-- Botón para ejecutar proceso individual -->
+          <UButton
+            v-if="proceso.status !== 'completado'"
+            icon="i-heroicons-play"
+            size="sm"
+            color="cyan"
+            variant="ghost"
+            class="mt-2 hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
+            :disabled="proceso.status === 'ejecutando' || isCompleted"
+            @click="runSingleProcess(proceso.id)"
+          >
+            Ejecutar
+          </UButton>
         </div>
       </div>
     </div>
@@ -135,11 +152,20 @@
 </template>
 
 <script setup>
+import { generateClient } from "aws-amplify/data";
+
+// Cliente de Amplify
+const client = generateClient();
+
 // Props
 const props = defineProps({
   isCompleted: {
     type: Boolean,
     default: false
+  },
+  explosionId: {
+    type: String,
+    default: ''
   }
 });
 
@@ -150,13 +176,14 @@ const emit = defineEmits(['plan-completed']);
 const planProduccionIniciado = ref(false);
 const procesosProduccion = ref([
   {
-    id: 'sincronizar-maestros',
-    nombre: 'Sincronizar Maestros',
-    descripcion: 'Sincronización de datos maestros del sistema',
+    id: 'sincronizar-insumos',
+    nombre: 'Sincronizar Insumos',
+    descripcion: 'Ejecución del pipeline de extracción de insumos',
     status: 'pendiente', // pendiente, ejecutando, completado, error
     duracion: null,
     inicioTiempo: null,
-    finTiempo: null
+    finTiempo: null,
+    executionId: null // ID de ejecución del pipeline
   },
   {
     id: 'sincronizar-plan-ventas',
@@ -183,12 +210,19 @@ const iniciarPlanProduccion = async () => {
   planProduccionIniciado.value = true;
 
   // Ejecutar procesos secuencialmente
-  await ejecutarProceso('sincronizar-maestros');
+  await ejecutarProceso('sincronizar-insumos');
   await ejecutarProceso('sincronizar-plan-ventas');
   await ejecutarProceso('calcular-plan-demanda');
 
   // Emitir evento de completado
   emit('plan-completed');
+};
+
+const runSingleProcess = async (procesoId) => {
+  const proceso = procesosProduccion.value.find(p => p.id === procesoId);
+  if (!proceso || proceso.status === 'completado' || proceso.status === 'ejecutando') return;
+  await ejecutarProceso(procesoId);
+  checkAndEmitCompleted();
 };
 
 const ejecutarProceso = async (procesoId) => {
@@ -200,21 +234,26 @@ const ejecutarProceso = async (procesoId) => {
   proceso.inicioTiempo = new Date();
 
   try {
-    // Simular tiempo de ejecución (en producción aquí iría la llamada real al API)
-    const tiempoEjecucion = Math.random() * 3000 + 2000; // Entre 2-5 segundos
-    await new Promise(resolve => setTimeout(resolve, tiempoEjecucion));
+    // Manejar específicamente el proceso de sincronización de insumos
+    if (procesoId === 'sincronizar-insumos') {
+      await ejecutarPipelineInsumos(proceso);
+    } else {
+      // Simular tiempo de ejecución para otros procesos (en producción aquí iría la llamada real al API)
+      const tiempoEjecucion = Math.random() * 3000 + 2000; // Entre 2-5 segundos
+      await new Promise(resolve => setTimeout(resolve, tiempoEjecucion));
 
-    // Marcar como completado
-    proceso.status = 'completado';
-    proceso.finTiempo = new Date();
-    proceso.duracion = calcularDuracion(proceso.inicioTiempo, proceso.finTiempo);
+      // Marcar como completado
+      proceso.status = 'completado';
+      proceso.finTiempo = new Date();
+      proceso.duracion = calcularDuracion(proceso.inicioTiempo, proceso.finTiempo);
 
-    useToast().add({
-      title: "Proceso completado",
-      description: `${proceso.nombre} ejecutado exitosamente`,
-      color: "green",
-      timeout: 2000
-    });
+      useToast().add({
+        title: "Proceso completado",
+        description: `${proceso.nombre} ejecutado exitosamente`,
+        color: "green",
+        timeout: 2000
+      });
+    }
   } catch (error) {
     // Marcar como error
     proceso.status = 'error';
@@ -231,6 +270,72 @@ const ejecutarProceso = async (procesoId) => {
   }
 };
 
+const ejecutarPipelineInsumos = async (proceso) => {
+  try {
+    console.log('🚀 Ejecutando pipeline EjecutarExtraccionInsumos...');
+
+    // Llamar a la mutación runPipeline
+    const { data } = await client.mutations.runPipeline({
+      pipelineName: "EjecutarExtraccionInsumos"
+    });
+
+    console.log('📋 Respuesta del pipeline:', data);
+
+    // Posibles formatos devueltos por la API:
+    // 1) data.runPipeline = string con JSON: '{"runId":"..."}'
+    // 2) data.runPipeline = { runId: '...' }
+    // 3) data = { runId: '...' }
+    let runId = null;
+    const raw = data?.runPipeline ?? data;
+
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        runId = parsed?.runId ?? null;
+      } catch (e) {
+        console.warn('No se pudo parsear runPipeline string:', e);
+      }
+    } else if (raw && typeof raw === 'object') {
+      runId = raw?.runId ?? raw?.data?.runId ?? null;
+    }
+
+    if (runId) {
+      proceso.executionId = runId;
+      proceso.status = 'ejecutando'; // Mantener en ejecución; se finalizará por polling/evento externo
+
+      // Persistir en Boom el runId y el estado "En Proceso" si hay explosionId
+      try {
+        if (props.explosionId) {
+          await client.models.Boom.update({
+            id: props.explosionId,
+            PiepelineRunIdInsumos: runId,
+            SyncMaestrosStatus: 'En Proceso'
+          });
+          console.log('📝 Boom actualizado con runId y estado En Proceso');
+        } else {
+          console.warn('explosionId no provisto; no se puede persistir runId en Boom');
+        }
+      } catch (persistErr) {
+        console.warn('No se pudo actualizar Boom con el runId:', persistErr);
+      }
+
+      useToast().add({
+        title: "Pipeline iniciado",
+        description: `Pipeline ${proceso.nombre} iniciado. ID: ${runId}`,
+        color: "blue",
+        timeout: 3000
+      });
+
+      console.log(`✅ Pipeline iniciado con runId: ${runId}`);
+    } else {
+      throw new Error('No se recibió runId válido del pipeline');
+    }
+  } catch (error) {
+    console.error('❌ Error ejecutando pipeline de insumos:', error);
+    throw error;
+  }
+};
+
 const calcularDuracion = (inicio, fin) => {
   const diferencia = fin - inicio;
   const segundos = Math.floor(diferencia / 1000);
@@ -243,6 +348,34 @@ const calcularDuracion = (inicio, fin) => {
     return `${minutos}m ${segundosRestantes}s`;
   }
 };
+
+const checkAndEmitCompleted = () => {
+  const allCompleted = procesosProduccion.value.every(p => p.status === 'completado');
+  if (allCompleted) emit('plan-completed');
+};
+
+// Cargar estado inicial desde Boom para reflejar ejecución en curso
+onMounted(async () => {
+  try {
+    if (!props.explosionId) return;
+    const { data } = await client.models.Boom.get({ id: props.explosionId });
+    if (!data) return;
+
+    const proceso = procesosProduccion.value.find(p => p.id === 'sincronizar-insumos');
+    if (!proceso) return;
+
+    const runIdPrevio = data && data.PiepelineRunIdInsumos ? data.PiepelineRunIdInsumos : null;
+    const statusSync = data && data.SyncMaestrosStatus ? data.SyncMaestrosStatus : null;
+    if (runIdPrevio && statusSync && String(statusSync).toUpperCase().includes('PROCESO')) {
+      proceso.executionId = runIdPrevio;
+      proceso.status = 'ejecutando';
+      planProduccionIniciado.value = true;
+      console.log('🔄 Estado inicial: sincronización de insumos en ejecución, runId:', runIdPrevio);
+    }
+  } catch (e) {
+    console.warn('No se pudo cargar estado inicial de Boom:', e);
+  }
+});
 
 // Métodos para manejar estilos y estados de los procesos
 const getProcesoStatusClass = (status) => {
