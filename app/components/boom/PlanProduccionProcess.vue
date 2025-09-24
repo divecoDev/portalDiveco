@@ -1,12 +1,12 @@
 <template>
   <div
-    class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+    class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
   >
     <!-- Header del proceso -->
-    <div class="text-center mb-8">
+    <div class="text-center mb-4">
       <div
         :class="[
-          'w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg relative transition-all duration-500',
+          'w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-md relative transition-all duration-500',
           isCompleted
             ? 'bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30'
             : 'bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30'
@@ -15,19 +15,19 @@
         <UIcon
           name="i-heroicons-beaker"
           :class="[
-            'w-10 h-10 transition-all duration-500',
+            'w-6 h-6 transition-all duration-500',
             isCompleted
               ? 'text-green-600 dark:text-green-400'
               : 'text-cyan-600 dark:text-cyan-400'
           ]"
         />
-        <div v-if="isCompleted" class="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-          <UIcon name="i-heroicons-check" class="w-4 h-4 text-white" />
+        <div v-if="isCompleted" class="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center shadow-md animate-pulse">
+          <UIcon name="i-heroicons-check" class="w-2.5 h-2.5 text-white" />
         </div>
       </div>
       <h3
         :class="[
-          'text-2xl font-bold mb-2 transition-all duration-500',
+          'text-lg font-bold mb-1 transition-all duration-500',
           isCompleted
             ? 'text-green-600 dark:text-green-400'
             : 'text-gray-900 dark:text-white'
@@ -35,27 +35,27 @@
       >
         Generar Plan de Producción
       </h3>
-      <p class="text-gray-600 dark:text-gray-300 mb-6">
+      <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">
         Ejecutar procesos necesarios para generar el plan de producción
       </p>
     </div>
 
     <!-- Lista de procesos -->
-    <div class="space-y-4 mb-8">
+    <div class="space-y-2 mb-4">
       <div
         v-for="proceso in procesosProduccion"
         :key="proceso.id"
         :class="[
-          'flex items-center justify-between p-4 rounded-lg border transition-all duration-300',
+          'flex items-center justify-between p-3 rounded-lg border transition-all duration-300',
           getProcesoStatusClass(proceso.status)
         ]"
       >
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-2">
           <!-- Número de orden secuencial -->
           <div class="flex flex-col items-center">
             <div
               :class="[
-                'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300',
+                'w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300',
                 puedeEjecutarProceso(proceso.id) && proceso.status === 'pendiente'
                   ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300'
                   : proceso.status === 'completado'
@@ -72,57 +72,57 @@
           <!-- Icono de estado -->
           <div
             :class="[
-              'w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300',
+              'w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300',
               getProcesoIconClass(proceso.status)
             ]"
           >
             <UIcon
               :name="getProcesoIcon(proceso.status)"
-              class="w-4 h-4"
+              class="w-3 h-3"
             />
           </div>
 
           <!-- Información del proceso -->
-          <div>
-            <h4 class="font-semibold text-gray-900 dark:text-white">
+          <div class="flex-1 min-w-0">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white truncate">
               {{ proceso.nombre }}
             </h4>
-            <p class="text-sm text-gray-500 dark:text-gray-400">
+            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
               {{ proceso.descripcion }}
             </p>
           </div>
         </div>
 
-        <!-- Estado y duración -->
-        <div class="text-right">
-          <div
-            :class="[
-              'text-sm font-medium mb-1',
-              getProcesoTextClass(proceso.status)
-            ]"
-          >
-            {{ getProcesoStatusLabel(proceso.status) }}
+        <!-- Estado y ID de ejecución -->
+        <div class="text-right flex flex-col items-end space-y-1">
+          <div class="flex items-center space-x-2">
+            <div
+              :class="[
+                'text-xs font-medium',
+                getProcesoTextClass(proceso.status)
+              ]"
+            >
+              {{ getProcesoStatusLabel(proceso.status) }}
+            </div>
+            <!-- ID de ejecución del pipeline -->
+            <div v-if="proceso.executionId" class="flex items-center space-x-1 text-xs text-blue-600 dark:text-blue-400 font-mono">
+              <UIcon name="i-heroicons-bolt" class="w-3 h-3" />
+              <span>{{ proceso.executionId.slice(-8) }}</span>
+            </div>
+            <!-- Spinner para procesos en ejecución -->
+            <div
+              v-if="proceso.status === 'ejecutando'"
+              class="w-3 h-3 border-2 border-cyan-600 border-t-transparent rounded-full animate-spin"
+            ></div>
           </div>
-          <div v-if="proceso.duracion" class="text-xs text-gray-400">
-            {{ proceso.duracion }}
-          </div>
-          <!-- ID de ejecución del pipeline -->
-          <div v-if="proceso.executionId" class="text-xs text-blue-600 dark:text-blue-400 font-mono">
-            ID: {{ proceso.executionId }}
-          </div>
-          <!-- Spinner para procesos en ejecución -->
-          <div
-            v-if="proceso.status === 'ejecutando'"
-            class="w-4 h-4 border-2 border-cyan-600 border-t-transparent rounded-full animate-spin mt-1 ml-auto"
-          ></div>
           <!-- Botón para ejecutar proceso individual -->
           <UButton
             v-if="proceso.status === 'pendiente' || proceso.status === 'error'"
             icon="i-heroicons-play"
-            size="sm"
+            size="xs"
             color="cyan"
             variant="ghost"
-            class="mt-2 hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
+            class="hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
             :disabled="proceso.status === 'ejecutando' || isCompleted || !puedeEjecutarProceso(proceso.id)"
             @click="runSingleProcess(proceso.id)"
           >
@@ -132,7 +132,7 @@
           <!-- Indicador de dependencia no cumplida -->
           <div
             v-if="proceso.status === 'pendiente' && !puedeEjecutarProceso(proceso.id)"
-            class="mt-2 text-xs text-orange-600 dark:text-orange-400"
+            class="text-xs text-orange-600 dark:text-orange-400"
           >
             Esperando proceso anterior
           </div>
@@ -141,10 +141,10 @@
           <UButton
             v-else-if="proceso.status === 'completado'"
             icon="i-heroicons-arrow-path"
-            size="sm"
+            size="xs"
             color="green"
             variant="ghost"
-            class="mt-2 hover:bg-green-50 dark:hover:bg-green-900/20"
+            class="hover:bg-green-50 dark:hover:bg-green-900/20"
             @click="reEjecutarDesdeCompletado(proceso.id)"
           >
             Re-ejecutar
@@ -158,30 +158,30 @@
       <UButton
         v-if="!todosLosProcesosCompletados && !ejecucionGlobalEnProgreso"
         icon="i-heroicons-play"
-        size="lg"
+        size="md"
         color="cyan"
-        class="rounded-md inline-flex items-center px-6 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
+        class="rounded-md inline-flex items-center px-4 py-2 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
         @click="iniciarPlanProduccion"
       >
         {{ planProduccionIniciado ? 'Continuar Procesos' : 'Iniciar Procesos' }}
       </UButton>
 
       <div v-else-if="ejecucionGlobalEnProgreso" class="text-center">
-        <div class="w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-        <p class="text-gray-600 dark:text-gray-300 mb-2">
+        <div class="w-6 h-6 border-3 border-cyan-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
           Ejecutando procesos secuencialmente...
         </p>
 
         <!-- Barra de progreso -->
-        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4">
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mb-2">
           <div
-            class="bg-gradient-to-r from-cyan-500 to-cyan-600 h-2 rounded-full transition-all duration-500"
+            class="bg-gradient-to-r from-cyan-500 to-cyan-600 h-1.5 rounded-full transition-all duration-500"
             :style="{ width: `${progresoProcesos.porcentaje}%` }"
           ></div>
         </div>
 
         <!-- Información de progreso -->
-        <div class="text-sm text-gray-500 dark:text-gray-400 mb-3">
+        <div class="text-xs text-gray-500 dark:text-gray-400 mb-2">
           {{ progresoProcesos.completados }} de {{ progresoProcesos.total }} procesos completados
           <span v-if="progresoProcesos.enEjecucion > 0" class="text-cyan-600 dark:text-cyan-400">
             ({{ progresoProcesos.enEjecucion }} ejecutándose)
@@ -189,11 +189,11 @@
         </div>
 
         <!-- Lista de procesos con estado visual -->
-        <div class="text-sm text-gray-500 dark:text-gray-400">
-          <div v-for="proceso in procesosProduccion" :key="proceso.id" class="flex items-center justify-center space-x-2 mb-1">
+        <div class="text-xs text-gray-500 dark:text-gray-400">
+          <div v-for="proceso in procesosProduccion" :key="proceso.id" class="flex items-center justify-center space-x-1 mb-0.5">
             <div
               :class="[
-                'w-2 h-2 rounded-full',
+                'w-1.5 h-1.5 rounded-full',
                 proceso.status === 'completado' ? 'bg-green-500' :
                 proceso.status === 'ejecutando' ? 'bg-cyan-500 animate-pulse' :
                 'bg-gray-300'
@@ -205,15 +205,15 @@
       </div>
 
       <div v-else-if="todosLosProcesosCompletados" class="text-center">
-        <div class="flex items-center justify-center mb-4">
-          <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-xl">
-            <UIcon name="i-heroicons-check" class="w-8 h-8 text-white" />
+        <div class="flex items-center justify-center mb-3">
+          <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg">
+            <UIcon name="i-heroicons-check" class="w-6 h-6 text-white" />
           </div>
-          <div class="ml-4 text-left">
-            <p class="text-lg font-semibold text-green-600 dark:text-green-400">
+          <div class="ml-3 text-left">
+            <p class="text-sm font-semibold text-green-600 dark:text-green-400">
               Plan de Producción Generado
             </p>
-            <p class="text-sm text-gray-600 dark:text-gray-300">
+            <p class="text-xs text-gray-600 dark:text-gray-300">
               Todos los procesos completados exitosamente
             </p>
           </div>
@@ -222,7 +222,7 @@
         <!-- Botón para resetear y ejecutar nuevamente -->
         <UButton
           icon="i-heroicons-arrow-path"
-          size="md"
+          size="sm"
           color="green"
           variant="outline"
           class="hover:bg-green-50 dark:hover:bg-green-900/20"
@@ -486,14 +486,7 @@ const ejecutarPipeline = async (proceso, config) => {
 const calcularDuracion = (inicio, fin) => {
   const diferencia = fin - inicio;
   const segundos = Math.floor(diferencia / 1000);
-
-  if (segundos < 60) {
-    return `${segundos}s`;
-  } else {
-    const minutos = Math.floor(segundos / 60);
-    const segundosRestantes = segundos % 60;
-    return `${minutos}m ${segundosRestantes}s`;
-  }
+  return `${segundos}s`;
 };
 
 const checkAndEmitCompleted = () => {
