@@ -99,7 +99,7 @@
           ></div>
           <!-- Botón para ejecutar proceso individual -->
           <UButton
-            v-if="proceso.status !== 'completado'"
+            v-if="proceso.status === 'pendiente' || proceso.status === 'error'"
             icon="i-heroicons-play"
             size="sm"
             color="cyan"
@@ -109,6 +109,19 @@
             @click="runSingleProcess(proceso.id)"
           >
             Ejecutar
+          </UButton>
+
+          <!-- Botón para re-ejecutar desde completado -->
+          <UButton
+            v-else-if="proceso.status === 'completado'"
+            icon="i-heroicons-arrow-path"
+            size="sm"
+            color="green"
+            variant="ghost"
+            class="mt-2 hover:bg-green-50 dark:hover:bg-green-900/20"
+            @click="reEjecutarDesdeCompletado"
+          >
+            Re-ejecutar
           </UButton>
         </div>
       </div>
@@ -174,6 +187,7 @@ const emit = defineEmits(['plan-completed']);
 
 // Estado reactivo
 const planProduccionIniciado = ref(false);
+const pollingInterval = ref(null);
 const procesosProduccion = ref([
   {
     id: 'sincronizar-insumos',
@@ -309,7 +323,7 @@ const ejecutarPipelineInsumos = async (proceso) => {
           await client.models.Boom.update({
             id: props.explosionId,
             PiepelineRunIdInsumos: runId,
-            SyncMaestrosStatus: 'En Proceso'
+            SyncInsumosStatus: 'En Proceso'
           });
           console.log('📝 Boom actualizado con runId y estado En Proceso');
         } else {
@@ -327,6 +341,9 @@ const ejecutarPipelineInsumos = async (proceso) => {
       });
 
       console.log(`✅ Pipeline iniciado con runId: ${runId}`);
+
+      // Consultar el estado del pipeline después de iniciarlo
+      await consultarEstadoPipeline(runId);
     } else {
       throw new Error('No se recibió runId válido del pipeline');
     }
@@ -365,16 +382,270 @@ onMounted(async () => {
     if (!proceso) return;
 
     const runIdPrevio = data && data.PiepelineRunIdInsumos ? data.PiepelineRunIdInsumos : null;
-    const statusSync = data && data.SyncMaestrosStatus ? data.SyncMaestrosStatus : null;
-    if (runIdPrevio && statusSync && String(statusSync).toUpperCase().includes('PROCESO')) {
-      proceso.executionId = runIdPrevio;
-      proceso.status = 'ejecutando';
-      planProduccionIniciado.value = true;
-      console.log('🔄 Estado inicial: sincronización de insumos en ejecución, runId:', runIdPrevio);
+    const statusSync = data && data.SyncInsumosStatus ? data.SyncInsumosStatus : null;
+
+    if (runIdPrevio && statusSync) {
+      const statusUpper = String(statusSync).toUpperCase();
+
+      if (statusUpper.includes('PROCESO')) {
+        // Estado en proceso - iniciar polling
+        proceso.executionId = runIdPrevio;
+        proceso.status = 'ejecutando';
+        planProduccionIniciado.value = true;
+        console.log('🔄 Estado inicial: sincronización de insumos en ejecución, runId:', runIdPrevio);
+
+        // Consultar el estado del pipeline inmediatamente
+        await consultarEstadoPipeline(runIdPrevio);
+
+        // Iniciar polling automático para monitorear el estado
+        iniciarPolling(runIdPrevio);
+      } else if (statusUpper.includes('COMPLETADO')) {
+        // Estado completado - mostrar como completado
+        proceso.executionId = runIdPrevio;
+        proceso.status = 'completado';
+        planProduccionIniciado.value = true;
+        console.log('✅ Estado inicial: sincronización de insumos completada, runId:', runIdPrevio);
+
+        // Consultar el estado del pipeline para verificar
+        await consultarEstadoPipeline(runIdPrevio);
+      }
     }
   } catch (e) {
     console.warn('No se pudo cargar estado inicial de Boom:', e);
   }
+});
+
+// Función para consultar el estado del pipeline
+const consultarEstadoPipeline = async (runId) => {
+  try {
+    console.log('🔍 Consultando estado del pipeline con runId:', runId);
+
+    const { data } = await client.queries.getStatusPipeline({
+      runId: runId
+    });
+
+    console.log('📊 Respuesta del estado del pipeline:', data);
+
+    // Parsear la respuesta del pipeline
+    const pipelineData = parsePipelineResponse(data);
+    console.log('🔍 Pipeline data parseado:', pipelineData);
+
+    if (!pipelineData) {
+      console.warn('⚠️ No se pudo parsear la respuesta del pipeline');
+      return;
+    }
+
+    // Actualizar el estado del proceso según la respuesta
+    console.log('🔄 Llamando a actualizarEstadoProceso con:', pipelineData.status);
+    await actualizarEstadoProceso(pipelineData);
+
+  } catch (error) {
+    console.error('❌ Error consultando estado del pipeline:', error);
+  }
+};
+
+// Función para parsear la respuesta del pipeline
+const parsePipelineResponse = (data) => {
+  try {
+    // La respuesta puede venir directamente en data o en data.getStatusPipeline
+    let rawResponse = data?.getStatusPipeline || data;
+    if (!rawResponse) return null;
+
+    // Si viene como string JSON, parsearlo; si ya es objeto, usarlo directamente
+    const pipelineInfo = typeof rawResponse === 'string'
+      ? JSON.parse(rawResponse)
+      : rawResponse;
+
+    console.log('📋 Pipeline info parseado:', pipelineInfo);
+    return pipelineInfo;
+  } catch (error) {
+    console.error('❌ Error parseando respuesta del pipeline:', error);
+    return null;
+  }
+};
+
+// Función para actualizar el estado del proceso según la respuesta del pipeline
+const actualizarEstadoProceso = async (pipelineInfo) => {
+  console.log('🎯 actualizarEstadoProceso llamada con:', pipelineInfo);
+
+  const proceso = procesosProduccion.value.find(p => p.id === 'sincronizar-insumos');
+  if (!proceso) {
+    console.warn('⚠️ No se encontró el proceso sincronizar-insumos');
+    return;
+  }
+
+  const status = pipelineInfo.status;
+  console.log('🔄 Actualizando estado del proceso:', status);
+
+  // Actualizar el estado del proceso según el status del pipeline
+  // Estados posibles: Queued, InProgress, Succeeded, Failed, Canceling, Cancelled
+  switch (status) {
+    case 'Succeeded':
+      proceso.status = 'completado';
+      proceso.finTiempo = new Date();
+      proceso.duracion = calcularDuracion(proceso.inicioTiempo, proceso.finTiempo);
+
+      // Actualizar Boom con estado completado
+      await actualizarBoomStatus('Completado');
+
+      useToast().add({
+        title: "Pipeline completado",
+        description: "Sincronización de insumos completada exitosamente",
+        color: "green",
+        timeout: 3000
+      });
+
+      // Detener polling y verificar si todos los procesos están completados
+      detenerPolling();
+
+      // Actualizar Boom con estado completado (mantener runId para historial)
+      await actualizarBoomStatus('Completado');
+
+      checkAndEmitCompleted();
+      break;
+
+    case 'Failed':
+    case 'Canceling':
+    case 'Cancelled':
+      console.log('❌ Pipeline falló con estado:', status);
+      proceso.status = 'error';
+      proceso.finTiempo = new Date();
+
+      console.log('📝 Actualizando proceso a estado error');
+
+      // Actualizar Boom con estado de error
+      await actualizarBoomStatus('Error');
+
+      useToast().add({
+        title: "Pipeline falló",
+        description: `Pipeline terminó con estado: ${status}. Puedes reintentar la ejecución.`,
+        color: "red",
+        timeout: 5000
+      });
+
+      // Detener polling y permitir re-ejecutar limpiando el runId
+      detenerPolling();
+      await limpiarRunIdParaReintento();
+      break;
+
+    case 'Queued':
+      // Pipeline en cola, preparándose para ejecutar
+      proceso.status = 'ejecutando';
+      console.log('⏳ Pipeline en cola, preparándose para ejecutar...');
+      iniciarPolling(pipelineInfo.runId);
+      break;
+
+    case 'InProgress':
+      // Mantener en ejecutando y iniciar polling
+      proceso.status = 'ejecutando';
+      console.log('⏳ Pipeline aún en progreso...');
+      iniciarPolling(pipelineInfo.runId);
+      break;
+
+    default:
+      console.warn('⚠️ Estado desconocido del pipeline:', status);
+  }
+};
+
+// Función para actualizar el estado en Boom
+const actualizarBoomStatus = async (nuevoEstado) => {
+  try {
+    if (!props.explosionId) return;
+
+    await client.models.Boom.update({
+      id: props.explosionId,
+      SyncInsumosStatus: nuevoEstado
+    });
+
+    console.log(`📝 Boom actualizado con estado: ${nuevoEstado}`);
+  } catch (error) {
+    console.error('❌ Error actualizando estado en Boom:', error);
+  }
+};
+
+// Función para limpiar runId y permitir reintento (solo para errores)
+const limpiarRunIdParaReintento = async () => {
+  try {
+    if (!props.explosionId) return;
+
+    // Limpiar en la base de datos
+    await client.models.Boom.update({
+      id: props.explosionId,
+      PiepelineRunIdInsumos: null,
+      SyncInsumosStatus: 'Pendiente'
+    });
+
+    // Limpiar en el estado local del proceso
+    const proceso = procesosProduccion.value.find(p => p.id === 'sincronizar-insumos');
+    if (proceso) {
+      proceso.executionId = null;
+      proceso.status = 'pendiente';
+      proceso.finTiempo = null;
+      proceso.duracion = null;
+    }
+
+    console.log('🔄 RunId limpiado para permitir reintento');
+  } catch (error) {
+    console.error('❌ Error limpiando runId:', error);
+  }
+};
+
+// Función para re-ejecutar desde estado completado
+const reEjecutarDesdeCompletado = async () => {
+  try {
+    if (!props.explosionId) return;
+
+    // Limpiar runId anterior y resetear estado
+    await client.models.Boom.update({
+      id: props.explosionId,
+      PiepelineRunIdInsumos: null,
+      SyncInsumosStatus: 'Pendiente'
+    });
+
+    // Resetear el proceso local
+    const proceso = procesosProduccion.value.find(p => p.id === 'sincronizar-insumos');
+    if (proceso) {
+      proceso.executionId = null;
+      proceso.status = 'pendiente';
+      proceso.finTiempo = null;
+      proceso.duracion = null;
+    }
+
+    // Ejecutar nuevo pipeline
+    await ejecutarPipelineInsumos();
+
+    console.log('🔄 Re-ejecutando pipeline desde estado completado');
+  } catch (error) {
+    console.error('❌ Error re-ejecutando pipeline:', error);
+  }
+};
+
+// Función para iniciar polling del estado del pipeline
+const iniciarPolling = (runId) => {
+  // Limpiar polling anterior si existe
+  detenerPolling();
+
+  console.log('🔄 Iniciando polling cada 10 segundos para runId:', runId);
+
+  // Polling cada 10 segundos
+  pollingInterval.value = setInterval(async () => {
+    console.log('⏰ Polling automático - consultando estado del pipeline:', runId);
+    await consultarEstadoPipeline(runId);
+  }, 10000);
+};
+
+// Función para detener el polling
+const detenerPolling = () => {
+  if (pollingInterval.value) {
+    clearInterval(pollingInterval.value);
+    pollingInterval.value = null;
+    console.log('⏹️ Polling detenido');
+  }
+};
+
+// Limpiar polling al desmontar el componente
+onUnmounted(() => {
+  detenerPolling();
 });
 
 // Métodos para manejar estilos y estados de los procesos
