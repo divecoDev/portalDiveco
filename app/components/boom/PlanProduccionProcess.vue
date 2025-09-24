@@ -119,7 +119,7 @@
             color="green"
             variant="ghost"
             class="mt-2 hover:bg-green-50 dark:hover:bg-green-900/20"
-            @click="reEjecutarDesdeCompletado"
+            @click="reEjecutarDesdeCompletado(proceso.id)"
           >
             Re-ejecutar
           </UButton>
@@ -185,39 +185,61 @@ const props = defineProps({
 // Emits
 const emit = defineEmits(['plan-completed']);
 
-// Estado reactivo
-const planProduccionIniciado = ref(false);
-const pollingInterval = ref(null);
-const procesosProduccion = ref([
-  {
-    id: 'sincronizar-insumos',
+// Configuración centralizada de procesos
+const procesosConfig = {
+  'sincronizar-insumos': {
     nombre: 'Sincronizar Insumos',
     descripcion: 'Ejecución del pipeline de extracción de insumos',
-    status: 'pendiente', // pendiente, ejecutando, completado, error
+    pipelineName: 'EjecutarExtraccionInsumos',
+    boomFields: {
+      runId: 'PiepelineRunIdInsumos',
+      status: 'SyncInsumosStatus'
+    },
+    hasPipeline: true
+  },
+  'sincronizar-plan-ventas': {
+    nombre: 'Sincronizar Plan de Ventas',
+    descripcion: 'Sincronización del plan de ventas actual',
+    pipelineName: 'EjecutarExtraccionInsumos', // Temporal: usar mismo pipeline
+    boomFields: {
+      runId: 'PiepelineRunIdPlanVentas',
+      status: 'SyncSalesPlanStatus'
+    },
+    hasPipeline: true
+  },
+  'calcular-plan-demanda': {
+    nombre: 'Calcular Plan Demanda',
+    descripcion: 'Cálculo del plan de demanda basado en datos sincronizados',
+    pipelineName: 'EjecutarExtraccionInsumos', // Temporal: usar mismo pipeline
+    boomFields: {
+      runId: 'PiepelineRunIdPlanDemandas',
+      status: 'SyncDemandPlanStatus'
+    },
+    hasPipeline: true
+  }
+};
+
+// Estado reactivo
+const planProduccionIniciado = ref(false);
+const pollingIntervals = ref({}); // Múltiples intervalos de polling
+const procesosProduccion = ref([]);
+
+// Inicializar procesos basándose en la configuración
+const inicializarProcesos = () => {
+  procesosProduccion.value = Object.entries(procesosConfig).map(([id, config]) => ({
+    id,
+    nombre: config.nombre,
+    descripcion: config.descripcion,
+    status: 'pendiente',
     duracion: null,
     inicioTiempo: null,
     finTiempo: null,
-    executionId: null // ID de ejecución del pipeline
-  },
-  {
-    id: 'sincronizar-plan-ventas',
-    nombre: 'Sincronizar Plan de Ventas',
-    descripcion: 'Sincronización del plan de ventas actual',
-    status: 'pendiente',
-    duracion: null,
-    inicioTiempo: null,
-    finTiempo: null
-  },
-  {
-    id: 'calcular-plan-demanda',
-    nombre: 'Calcular Plan Demanda',
-    descripcion: 'Cálculo del plan de demanda basado en datos sincronizados',
-    status: 'pendiente',
-    duracion: null,
-    inicioTiempo: null,
-    finTiempo: null
-  }
-]);
+    executionId: null
+  }));
+};
+
+// Inicializar procesos al montar el componente
+inicializarProcesos();
 
 // Métodos para manejar los procesos de producción
 const iniciarPlanProduccion = async () => {
@@ -248,11 +270,16 @@ const ejecutarProceso = async (procesoId) => {
   proceso.inicioTiempo = new Date();
 
   try {
-    // Manejar específicamente el proceso de sincronización de insumos
-    if (procesoId === 'sincronizar-insumos') {
-      await ejecutarPipelineInsumos(proceso);
+    const config = procesosConfig[procesoId];
+    if (!config) {
+      throw new Error(`Configuración no encontrada para el proceso: ${procesoId}`);
+    }
+
+    // Si el proceso tiene pipeline, ejecutarlo
+    if (config.hasPipeline) {
+      await ejecutarPipeline(proceso, config);
     } else {
-      // Simular tiempo de ejecución para otros procesos (en producción aquí iría la llamada real al API)
+      // Simular tiempo de ejecución para procesos sin pipeline
       const tiempoEjecucion = Math.random() * 3000 + 2000; // Entre 2-5 segundos
       await new Promise(resolve => setTimeout(resolve, tiempoEjecucion));
 
@@ -284,13 +311,13 @@ const ejecutarProceso = async (procesoId) => {
   }
 };
 
-const ejecutarPipelineInsumos = async (proceso) => {
+const ejecutarPipeline = async (proceso, config) => {
   try {
-    console.log('🚀 Ejecutando pipeline EjecutarExtraccionInsumos...');
+    console.log(`🚀 Ejecutando pipeline ${config.pipelineName} para ${proceso.nombre}...`);
 
     // Llamar a la mutación runPipeline
     const { data } = await client.mutations.runPipeline({
-      pipelineName: "EjecutarExtraccionInsumos"
+      pipelineName: config.pipelineName
     });
 
     console.log('📋 Respuesta del pipeline:', data);
@@ -320,12 +347,14 @@ const ejecutarPipelineInsumos = async (proceso) => {
       // Persistir en Boom el runId y el estado "En Proceso" si hay explosionId
       try {
         if (props.explosionId) {
-          await client.models.Boom.update({
+          const updateData = {
             id: props.explosionId,
-            PiepelineRunIdInsumos: runId,
-            SyncInsumosStatus: 'En Proceso'
-          });
-          console.log('📝 Boom actualizado con runId y estado En Proceso');
+            [config.boomFields.runId]: runId,
+            [config.boomFields.status]: 'En Proceso'
+          };
+
+          await client.models.Boom.update(updateData);
+          console.log(`📝 Boom actualizado con runId y estado En Proceso para ${proceso.nombre}`);
         } else {
           console.warn('explosionId no provisto; no se puede persistir runId en Boom');
         }
@@ -343,12 +372,12 @@ const ejecutarPipelineInsumos = async (proceso) => {
       console.log(`✅ Pipeline iniciado con runId: ${runId}`);
 
       // Consultar el estado del pipeline después de iniciarlo
-      await consultarEstadoPipeline(runId);
+      await consultarEstadoPipeline(runId, proceso.id);
     } else {
       throw new Error('No se recibió runId válido del pipeline');
     }
   } catch (error) {
-    console.error('❌ Error ejecutando pipeline de insumos:', error);
+    console.error(`❌ Error ejecutando pipeline ${config.pipelineName}:`, error);
     throw error;
   }
 };
@@ -378,36 +407,39 @@ onMounted(async () => {
     const { data } = await client.models.Boom.get({ id: props.explosionId });
     if (!data) return;
 
-    const proceso = procesosProduccion.value.find(p => p.id === 'sincronizar-insumos');
-    if (!proceso) return;
+    // Verificar cada proceso configurado
+    for (const [procesoId, config] of Object.entries(procesosConfig)) {
+      const proceso = procesosProduccion.value.find(p => p.id === procesoId);
+      if (!proceso) continue;
 
-    const runIdPrevio = data && data.PiepelineRunIdInsumos ? data.PiepelineRunIdInsumos : null;
-    const statusSync = data && data.SyncInsumosStatus ? data.SyncInsumosStatus : null;
+      const runIdPrevio = data && data[config.boomFields.runId] ? data[config.boomFields.runId] : null;
+      const statusSync = data && data[config.boomFields.status] ? data[config.boomFields.status] : null;
 
-    if (runIdPrevio && statusSync) {
-      const statusUpper = String(statusSync).toUpperCase();
+      if (runIdPrevio && statusSync) {
+        const statusUpper = String(statusSync).toUpperCase();
 
-      if (statusUpper.includes('PROCESO')) {
-        // Estado en proceso - iniciar polling
-        proceso.executionId = runIdPrevio;
-        proceso.status = 'ejecutando';
-        planProduccionIniciado.value = true;
-        console.log('🔄 Estado inicial: sincronización de insumos en ejecución, runId:', runIdPrevio);
+        if (statusUpper.includes('PROCESO')) {
+          // Estado en proceso - iniciar polling
+          proceso.executionId = runIdPrevio;
+          proceso.status = 'ejecutando';
+          planProduccionIniciado.value = true;
+          console.log(`🔄 Estado inicial: ${config.nombre} en ejecución, runId:`, runIdPrevio);
 
-        // Consultar el estado del pipeline inmediatamente
-        await consultarEstadoPipeline(runIdPrevio);
+          // Consultar el estado del pipeline inmediatamente
+          await consultarEstadoPipeline(runIdPrevio, procesoId);
 
-        // Iniciar polling automático para monitorear el estado
-        iniciarPolling(runIdPrevio);
-      } else if (statusUpper.includes('COMPLETADO')) {
-        // Estado completado - mostrar como completado
-        proceso.executionId = runIdPrevio;
-        proceso.status = 'completado';
-        planProduccionIniciado.value = true;
-        console.log('✅ Estado inicial: sincronización de insumos completada, runId:', runIdPrevio);
+          // Iniciar polling automático para monitorear el estado
+          iniciarPolling(runIdPrevio, procesoId);
+        } else if (statusUpper.includes('COMPLETADO')) {
+          // Estado completado - mostrar como completado
+          proceso.executionId = runIdPrevio;
+          proceso.status = 'completado';
+          planProduccionIniciado.value = true;
+          console.log(`✅ Estado inicial: ${config.nombre} completada, runId:`, runIdPrevio);
 
-        // Consultar el estado del pipeline para verificar
-        await consultarEstadoPipeline(runIdPrevio);
+          // Consultar el estado del pipeline para verificar
+          await consultarEstadoPipeline(runIdPrevio, procesoId);
+        }
       }
     }
   } catch (e) {
@@ -416,9 +448,9 @@ onMounted(async () => {
 });
 
 // Función para consultar el estado del pipeline
-const consultarEstadoPipeline = async (runId) => {
+const consultarEstadoPipeline = async (runId, procesoId) => {
   try {
-    console.log('🔍 Consultando estado del pipeline con runId:', runId);
+    console.log(`🔍 Consultando estado del pipeline con runId: ${runId} para proceso: ${procesoId}`);
 
     const { data } = await client.queries.getStatusPipeline({
       runId: runId
@@ -437,7 +469,7 @@ const consultarEstadoPipeline = async (runId) => {
 
     // Actualizar el estado del proceso según la respuesta
     console.log('🔄 Llamando a actualizarEstadoProceso con:', pipelineData.status);
-    await actualizarEstadoProceso(pipelineData);
+    await actualizarEstadoProceso(pipelineData, procesoId);
 
   } catch (error) {
     console.error('❌ Error consultando estado del pipeline:', error);
@@ -465,12 +497,18 @@ const parsePipelineResponse = (data) => {
 };
 
 // Función para actualizar el estado del proceso según la respuesta del pipeline
-const actualizarEstadoProceso = async (pipelineInfo) => {
-  console.log('🎯 actualizarEstadoProceso llamada con:', pipelineInfo);
+const actualizarEstadoProceso = async (pipelineInfo, procesoId) => {
+  console.log('🎯 actualizarEstadoProceso llamada con:', pipelineInfo, 'para proceso:', procesoId);
 
-  const proceso = procesosProduccion.value.find(p => p.id === 'sincronizar-insumos');
+  const proceso = procesosProduccion.value.find(p => p.id === procesoId);
   if (!proceso) {
-    console.warn('⚠️ No se encontró el proceso sincronizar-insumos');
+    console.warn(`⚠️ No se encontró el proceso ${procesoId}`);
+    return;
+  }
+
+  const config = procesosConfig[procesoId];
+  if (!config) {
+    console.warn(`⚠️ No se encontró la configuración para el proceso ${procesoId}`);
     return;
   }
 
@@ -486,21 +524,17 @@ const actualizarEstadoProceso = async (pipelineInfo) => {
       proceso.duracion = calcularDuracion(proceso.inicioTiempo, proceso.finTiempo);
 
       // Actualizar Boom con estado completado
-      await actualizarBoomStatus('Completado');
+      await actualizarBoomStatus('Completado', config);
 
       useToast().add({
         title: "Pipeline completado",
-        description: "Sincronización de insumos completada exitosamente",
+        description: `${proceso.nombre} completado exitosamente`,
         color: "green",
         timeout: 3000
       });
 
       // Detener polling y verificar si todos los procesos están completados
-      detenerPolling();
-
-      // Actualizar Boom con estado completado (mantener runId para historial)
-      await actualizarBoomStatus('Completado');
-
+      detenerPolling(procesoId);
       checkAndEmitCompleted();
       break;
 
@@ -514,32 +548,32 @@ const actualizarEstadoProceso = async (pipelineInfo) => {
       console.log('📝 Actualizando proceso a estado error');
 
       // Actualizar Boom con estado de error
-      await actualizarBoomStatus('Error');
+      await actualizarBoomStatus('Error', config);
 
       useToast().add({
         title: "Pipeline falló",
-        description: `Pipeline terminó con estado: ${status}. Puedes reintentar la ejecución.`,
+        description: `${proceso.nombre} terminó con estado: ${status}. Puedes reintentar la ejecución.`,
         color: "red",
         timeout: 5000
       });
 
       // Detener polling y permitir re-ejecutar limpiando el runId
-      detenerPolling();
-      await limpiarRunIdParaReintento();
+      detenerPolling(procesoId);
+      await limpiarRunIdParaReintento(procesoId, config);
       break;
 
     case 'Queued':
       // Pipeline en cola, preparándose para ejecutar
       proceso.status = 'ejecutando';
       console.log('⏳ Pipeline en cola, preparándose para ejecutar...');
-      iniciarPolling(pipelineInfo.runId);
+      iniciarPolling(pipelineInfo.runId, procesoId);
       break;
 
     case 'InProgress':
       // Mantener en ejecutando y iniciar polling
       proceso.status = 'ejecutando';
       console.log('⏳ Pipeline aún en progreso...');
-      iniciarPolling(pipelineInfo.runId);
+      iniciarPolling(pipelineInfo.runId, procesoId);
       break;
 
     default:
@@ -548,35 +582,35 @@ const actualizarEstadoProceso = async (pipelineInfo) => {
 };
 
 // Función para actualizar el estado en Boom
-const actualizarBoomStatus = async (nuevoEstado) => {
+const actualizarBoomStatus = async (nuevoEstado, config) => {
   try {
     if (!props.explosionId) return;
 
     await client.models.Boom.update({
       id: props.explosionId,
-      SyncInsumosStatus: nuevoEstado
+      [config.boomFields.status]: nuevoEstado
     });
 
-    console.log(`📝 Boom actualizado con estado: ${nuevoEstado}`);
+    console.log(`📝 Boom actualizado con estado: ${nuevoEstado} para ${config.nombre}`);
   } catch (error) {
     console.error('❌ Error actualizando estado en Boom:', error);
   }
 };
 
 // Función para limpiar runId y permitir reintento (solo para errores)
-const limpiarRunIdParaReintento = async () => {
+const limpiarRunIdParaReintento = async (procesoId, config) => {
   try {
     if (!props.explosionId) return;
 
     // Limpiar en la base de datos
     await client.models.Boom.update({
       id: props.explosionId,
-      PiepelineRunIdInsumos: null,
-      SyncInsumosStatus: 'Pendiente'
+      [config.boomFields.runId]: null,
+      [config.boomFields.status]: 'Pendiente'
     });
 
     // Limpiar en el estado local del proceso
-    const proceso = procesosProduccion.value.find(p => p.id === 'sincronizar-insumos');
+    const proceso = procesosProduccion.value.find(p => p.id === procesoId);
     if (proceso) {
       proceso.executionId = null;
       proceso.status = 'pendiente';
@@ -584,26 +618,31 @@ const limpiarRunIdParaReintento = async () => {
       proceso.duracion = null;
     }
 
-    console.log('🔄 RunId limpiado para permitir reintento');
+    console.log(`🔄 RunId limpiado para permitir reintento de ${config.nombre}`);
   } catch (error) {
     console.error('❌ Error limpiando runId:', error);
   }
 };
 
 // Función para re-ejecutar desde estado completado
-const reEjecutarDesdeCompletado = async () => {
+const reEjecutarDesdeCompletado = async (procesoId) => {
   try {
     if (!props.explosionId) return;
+
+    const config = procesosConfig[procesoId];
+    if (!config) {
+      throw new Error(`Configuración no encontrada para el proceso: ${procesoId}`);
+    }
 
     // Limpiar runId anterior y resetear estado
     await client.models.Boom.update({
       id: props.explosionId,
-      PiepelineRunIdInsumos: null,
-      SyncInsumosStatus: 'Pendiente'
+      [config.boomFields.runId]: null,
+      [config.boomFields.status]: 'Pendiente'
     });
 
     // Resetear el proceso local
-    const proceso = procesosProduccion.value.find(p => p.id === 'sincronizar-insumos');
+    const proceso = procesosProduccion.value.find(p => p.id === procesoId);
     if (proceso) {
       proceso.executionId = null;
       proceso.status = 'pendiente';
@@ -612,40 +651,47 @@ const reEjecutarDesdeCompletado = async () => {
     }
 
     // Ejecutar nuevo pipeline
-    await ejecutarPipelineInsumos();
+    await ejecutarPipeline(proceso, config);
 
-    console.log('🔄 Re-ejecutando pipeline desde estado completado');
+    console.log(`🔄 Re-ejecutando pipeline desde estado completado para ${config.nombre}`);
   } catch (error) {
     console.error('❌ Error re-ejecutando pipeline:', error);
   }
 };
 
 // Función para iniciar polling del estado del pipeline
-const iniciarPolling = (runId) => {
-  // Limpiar polling anterior si existe
-  detenerPolling();
+const iniciarPolling = (runId, procesoId) => {
+  // Limpiar polling anterior si existe para este proceso
+  detenerPolling(procesoId);
 
-  console.log('🔄 Iniciando polling cada 10 segundos para runId:', runId);
+  console.log(`🔄 Iniciando polling cada 10 segundos para runId: ${runId} (proceso: ${procesoId})`);
 
   // Polling cada 10 segundos
-  pollingInterval.value = setInterval(async () => {
-    console.log('⏰ Polling automático - consultando estado del pipeline:', runId);
-    await consultarEstadoPipeline(runId);
+  pollingIntervals.value[procesoId] = setInterval(async () => {
+    console.log(`⏰ Polling automático - consultando estado del pipeline: ${runId} (proceso: ${procesoId})`);
+    await consultarEstadoPipeline(runId, procesoId);
   }, 10000);
 };
 
 // Función para detener el polling
-const detenerPolling = () => {
-  if (pollingInterval.value) {
-    clearInterval(pollingInterval.value);
-    pollingInterval.value = null;
-    console.log('⏹️ Polling detenido');
+const detenerPolling = (procesoId) => {
+  if (pollingIntervals.value[procesoId]) {
+    clearInterval(pollingIntervals.value[procesoId]);
+    delete pollingIntervals.value[procesoId];
+    console.log(`⏹️ Polling detenido para proceso: ${procesoId}`);
   }
+};
+
+// Función para detener todos los polling
+const detenerTodosLosPolling = () => {
+  Object.keys(pollingIntervals.value).forEach(procesoId => {
+    detenerPolling(procesoId);
+  });
 };
 
 // Limpiar polling al desmontar el componente
 onUnmounted(() => {
-  detenerPolling();
+  detenerTodosLosPolling();
 });
 
 // Métodos para manejar estilos y estados de los procesos
