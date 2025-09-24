@@ -51,6 +51,24 @@
         ]"
       >
         <div class="flex items-center space-x-3">
+          <!-- Número de orden secuencial -->
+          <div class="flex flex-col items-center">
+            <div
+              :class="[
+                'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300',
+                puedeEjecutarProceso(proceso.id) && proceso.status === 'pendiente'
+                  ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300'
+                  : proceso.status === 'completado'
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                  : proceso.status === 'ejecutando'
+                  ? 'bg-cyan-200 dark:bg-cyan-800 text-cyan-800 dark:text-cyan-200'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+              ]"
+            >
+              {{ procesosProduccion.findIndex(p => p.id === proceso.id) + 1 }}
+            </div>
+          </div>
+
           <!-- Icono de estado -->
           <div
             :class="[
@@ -105,11 +123,19 @@
             color="cyan"
             variant="ghost"
             class="mt-2 hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
-            :disabled="proceso.status === 'ejecutando' || isCompleted"
+            :disabled="proceso.status === 'ejecutando' || isCompleted || !puedeEjecutarProceso(proceso.id)"
             @click="runSingleProcess(proceso.id)"
           >
             Ejecutar
           </UButton>
+
+          <!-- Indicador de dependencia no cumplida -->
+          <div
+            v-if="proceso.status === 'pendiente' && !puedeEjecutarProceso(proceso.id)"
+            class="mt-2 text-xs text-orange-600 dark:text-orange-400"
+          >
+            Esperando proceso anterior
+          </div>
 
           <!-- Botón para re-ejecutar desde completado -->
           <UButton
@@ -130,35 +156,80 @@
     <!-- Botón de acción principal -->
     <div class="text-center">
       <UButton
-        v-if="!planProduccionIniciado && !isCompleted"
+        v-if="!todosLosProcesosCompletados && !ejecucionGlobalEnProgreso"
         icon="i-heroicons-play"
         size="lg"
         color="cyan"
         class="rounded-md inline-flex items-center px-6 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
         @click="iniciarPlanProduccion"
       >
-        Iniciar Procesos
+        {{ planProduccionIniciado ? 'Continuar Procesos' : 'Iniciar Procesos' }}
       </UButton>
 
-      <div v-else-if="planProduccionIniciado && !isCompleted" class="text-center">
+      <div v-else-if="ejecucionGlobalEnProgreso" class="text-center">
         <div class="w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-        <p class="text-gray-600 dark:text-gray-300">
-          Ejecutando procesos...
+        <p class="text-gray-600 dark:text-gray-300 mb-2">
+          Ejecutando procesos secuencialmente...
         </p>
+
+        <!-- Barra de progreso -->
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4">
+          <div
+            class="bg-gradient-to-r from-cyan-500 to-cyan-600 h-2 rounded-full transition-all duration-500"
+            :style="{ width: `${progresoProcesos.porcentaje}%` }"
+          ></div>
+        </div>
+
+        <!-- Información de progreso -->
+        <div class="text-sm text-gray-500 dark:text-gray-400 mb-3">
+          {{ progresoProcesos.completados }} de {{ progresoProcesos.total }} procesos completados
+          <span v-if="progresoProcesos.enEjecucion > 0" class="text-cyan-600 dark:text-cyan-400">
+            ({{ progresoProcesos.enEjecucion }} ejecutándose)
+          </span>
+        </div>
+
+        <!-- Lista de procesos con estado visual -->
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+          <div v-for="proceso in procesosProduccion" :key="proceso.id" class="flex items-center justify-center space-x-2 mb-1">
+            <div
+              :class="[
+                'w-2 h-2 rounded-full',
+                proceso.status === 'completado' ? 'bg-green-500' :
+                proceso.status === 'ejecutando' ? 'bg-cyan-500 animate-pulse' :
+                'bg-gray-300'
+              ]"
+            ></div>
+            <span class="text-xs">{{ proceso.nombre }}</span>
+          </div>
+        </div>
       </div>
 
-      <div v-else class="flex items-center justify-center">
-        <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-xl">
-          <UIcon name="i-heroicons-check" class="w-8 h-8 text-white" />
+      <div v-else-if="todosLosProcesosCompletados" class="text-center">
+        <div class="flex items-center justify-center mb-4">
+          <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-xl">
+            <UIcon name="i-heroicons-check" class="w-8 h-8 text-white" />
+          </div>
+          <div class="ml-4 text-left">
+            <p class="text-lg font-semibold text-green-600 dark:text-green-400">
+              Plan de Producción Generado
+            </p>
+            <p class="text-sm text-gray-600 dark:text-gray-300">
+              Todos los procesos completados exitosamente
+            </p>
+          </div>
         </div>
-        <div class="ml-4 text-left">
-          <p class="text-lg font-semibold text-green-600 dark:text-green-400">
-            Plan de Producción Generado
-          </p>
-          <p class="text-sm text-gray-600 dark:text-gray-300">
-            Todos los procesos completados exitosamente
-          </p>
-        </div>
+
+        <!-- Botón para resetear y ejecutar nuevamente -->
+        <UButton
+          icon="i-heroicons-arrow-path"
+          size="md"
+          color="green"
+          variant="outline"
+          class="hover:bg-green-50 dark:hover:bg-green-900/20"
+          @click="resetearPlanProduccion"
+        >
+          Ejecutar Nuevamente
+        </UButton>
       </div>
     </div>
   </div>
@@ -221,6 +292,7 @@ const procesosConfig = {
 
 // Estado reactivo
 const planProduccionIniciado = ref(false);
+const ejecucionGlobalEnProgreso = ref(false);
 const pollingIntervals = ref({}); // Múltiples intervalos de polling
 const procesosProduccion = ref([]);
 
@@ -244,19 +316,48 @@ inicializarProcesos();
 // Métodos para manejar los procesos de producción
 const iniciarPlanProduccion = async () => {
   planProduccionIniciado.value = true;
+  ejecucionGlobalEnProgreso.value = true;
 
-  // Ejecutar procesos secuencialmente
-  await ejecutarProceso('sincronizar-insumos');
-  await ejecutarProceso('sincronizar-plan-ventas');
-  await ejecutarProceso('calcular-plan-demanda');
+  try {
+    // Ejecutar procesos secuencialmente, saltando los que ya están completados
+    const procesosOrdenados = ['sincronizar-insumos', 'sincronizar-plan-ventas', 'calcular-plan-demanda'];
 
-  // Emitir evento de completado
-  emit('plan-completed');
+    for (const procesoId of procesosOrdenados) {
+      const proceso = procesosProduccion.value.find(p => p.id === procesoId);
+
+      // Solo ejecutar si no está completado
+      if (proceso && proceso.status !== 'completado') {
+        await ejecutarProceso(procesoId);
+      }
+    }
+
+    // Emitir evento de completado
+    emit('plan-completed');
+  } finally {
+    // Siempre resetear el estado de ejecución global al finalizar
+    ejecucionGlobalEnProgreso.value = false;
+  }
 };
 
 const runSingleProcess = async (procesoId) => {
   const proceso = procesosProduccion.value.find(p => p.id === procesoId);
   if (!proceso || proceso.status === 'completado' || proceso.status === 'ejecutando') return;
+
+  // Verificar dependencias secuenciales
+  if (!puedeEjecutarProceso(procesoId)) {
+    const procesoIndex = procesosProduccion.value.findIndex(p => p.id === procesoId);
+    const procesoAnterior = procesosProduccion.value[procesoIndex - 1];
+
+    useToast().add({
+      title: "No se puede ejecutar",
+      description: `Debe completar primero: ${procesoAnterior.nombre}`,
+      color: "orange",
+      timeout: 4000
+    });
+    return;
+  }
+
+  // La ejecución individual no afecta el estado global
   await ejecutarProceso(procesoId);
   checkAndEmitCompleted();
 };
@@ -397,7 +498,43 @@ const calcularDuracion = (inicio, fin) => {
 
 const checkAndEmitCompleted = () => {
   const allCompleted = procesosProduccion.value.every(p => p.status === 'completado');
-  if (allCompleted) emit('plan-completed');
+  if (allCompleted) {
+    // Resetear estados cuando todos los procesos estén completados
+    planProduccionIniciado.value = true; // Mantener como iniciado
+    ejecucionGlobalEnProgreso.value = false; // Ya no está en progreso global
+    emit('plan-completed');
+  }
+};
+
+// Computed para verificar si todos los procesos están completados
+const todosLosProcesosCompletados = computed(() => {
+  return procesosProduccion.value.every(p => p.status === 'completado');
+});
+
+// Función para verificar si un proceso puede ser ejecutado (dependencias secuenciales)
+const puedeEjecutarProceso = (procesoId) => {
+  const procesoIndex = procesosProduccion.value.findIndex(p => p.id === procesoId);
+
+  // El primer proceso siempre se puede ejecutar
+  if (procesoIndex === 0) {
+    return true;
+  }
+
+  // Verificar que todos los procesos anteriores estén completados
+  for (let i = 0; i < procesoIndex; i++) {
+    if (procesosProduccion.value[i].status !== 'completado') {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+// Función para obtener el siguiente proceso que se puede ejecutar
+const obtenerSiguienteProcesoEjecutable = () => {
+  return procesosProduccion.value.find(p =>
+    p.status === 'pendiente' && puedeEjecutarProceso(p.id)
+  );
 };
 
 // Cargar estado inicial desde Boom para reflejar ejecución en curso
@@ -423,6 +560,7 @@ onMounted(async () => {
           proceso.executionId = runIdPrevio;
           proceso.status = 'ejecutando';
           planProduccionIniciado.value = true;
+          // No establecer ejecucionGlobalEnProgreso aquí porque es una ejecución previa
           console.log(`🔄 Estado inicial: ${config.nombre} en ejecución, runId:`, runIdPrevio);
 
           // Consultar el estado del pipeline inmediatamente
@@ -435,6 +573,7 @@ onMounted(async () => {
           proceso.executionId = runIdPrevio;
           proceso.status = 'completado';
           planProduccionIniciado.value = true;
+          // No establecer ejecucionGlobalEnProgreso aquí porque ya está completado
           console.log(`✅ Estado inicial: ${config.nombre} completada, runId:`, runIdPrevio);
 
           // Consultar el estado del pipeline para verificar
@@ -659,6 +798,26 @@ const reEjecutarDesdeCompletado = async (procesoId) => {
   }
 };
 
+// Función para resetear completamente el estado del plan de producción
+const resetearPlanProduccion = () => {
+  // Resetear estados globales
+  planProduccionIniciado.value = false;
+  ejecucionGlobalEnProgreso.value = false;
+
+  // Resetear todos los procesos
+  procesosProduccion.value.forEach(proceso => {
+    proceso.status = 'pendiente';
+    proceso.executionId = null;
+    proceso.finTiempo = null;
+    proceso.duracion = null;
+  });
+
+  // Detener todos los polling
+  detenerTodosLosPolling();
+
+  console.log('🔄 Plan de producción reseteado completamente');
+};
+
 // Función para iniciar polling del estado del pipeline
 const iniciarPolling = (runId, procesoId) => {
   // Limpiar polling anterior si existe para este proceso
@@ -744,4 +903,19 @@ const getProcesoStatusLabel = (status) => {
   };
   return labels[status] || 'Desconocido';
 };
+
+// Computed para calcular el progreso de los procesos
+const progresoProcesos = computed(() => {
+  const total = procesosProduccion.value.length;
+  const completados = procesosProduccion.value.filter(p => p.status === 'completado').length;
+  const enEjecucion = procesosProduccion.value.filter(p => p.status === 'ejecutando').length;
+
+  return {
+    total,
+    completados,
+    enEjecucion,
+    pendientes: total - completados - enEjecucion,
+    porcentaje: total > 0 ? Math.round((completados / total) * 100) : 0
+  };
+});
 </script>
