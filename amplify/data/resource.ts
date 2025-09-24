@@ -9,6 +9,7 @@ import { adminUserGlobalSignOut } from "../functions/admin-users/AdminUserGlobal
 import { microsoftGraphToken } from "../functions/microsoft-graph/token/resource";
 import { cargaInsumosSaveBatch } from "../functions/carga-insumos/saveBatch/resource";
 import { cargaInsumosGetData } from "../functions/carga-insumos/getData/resource";
+import { runPipeline } from "../functions/boom/runPipeline/resource";
 /*== STEP 1 ===============================================================
 The section below creates a Todo database table with a "content" field. Try
 adding a new "isDone" field as a boolean. The authorization rule below
@@ -148,6 +149,18 @@ const schema = a.schema({
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(cargaInsumosGetData)),
+
+  /**
+   *  Ejeucuion de Pipelines ADF
+   */
+  runPipeline: a
+    .mutation()
+    .arguments({
+      pipelineName: a.string(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(runPipeline)),
 });
 
 export type Schema = ClientSchema<typeof schema>;

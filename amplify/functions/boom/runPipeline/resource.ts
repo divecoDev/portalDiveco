@@ -9,8 +9,6 @@ export const runPipeline = defineFunction({
     AZURE_CLIENT_SECRET: secret("AZURE_CLIENT_SECRET"),
     AZURE_SUBSCRIPTION_ID: secret("AZURE_SUBSCRIPTION_ID"),
     AZURE_DATA_FACTORY_NAME: secret("AZURE_DATA_FACTORY_NAME"),
-    AZURE_PIPELINE_NAME: secret("AZURE_PIPELINE_NAME"),
-    AZURE_REFERENCE_PIPELINE_RUN_ID: secret("AZURE_REFERENCE_PIPELINE_RUN_ID"),
   },
   timeoutSeconds: 30,
   memoryMB: 502,

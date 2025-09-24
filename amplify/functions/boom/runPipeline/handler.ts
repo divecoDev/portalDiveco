@@ -2,10 +2,12 @@ import {DataFactoryManagementClient} from "@azure/arm-datafactory";
 import { DefaultAzureCredential } from "@azure/identity";
 
 export const handler = async (event: any) => {
+
+  const pipelineName = event.pipelineName || "";
+
   const resourceGroupName = "ADF";
   const subscriptionId = process.env.AZURE_SUBSCRIPTION_ID || "";
   const factoryName = process.env.AZURE_DATA_FACTORY_NAME || "";
-  const pipelineName = process.env.AZURE_PIPELINE_NAME || "";
 
 
   console.log("subscriptionId", subscriptionId);
@@ -16,9 +18,7 @@ export const handler = async (event: any) => {
 
 
   const referencePipelineRunId = undefined;
-  const parameters = {
-    outputBlobNameList: ["exampleoutput.csv"],
-  };
+  const parameters = {};
   const options = {
     referencePipelineRunId,
     parameters,
