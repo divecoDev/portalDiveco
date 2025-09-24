@@ -18,6 +18,7 @@ import { saveSalePlan } from "./functions/boom/saveSalePlan/resource";
 import { runPipeline } from "./functions/boom/runPipeline/resource";
 import { cargaInsumosSaveBatch } from "./functions/carga-insumos/saveBatch/resource";
 import { cargaInsumosGetData } from "./functions/carga-insumos/getData/resource";
+import { BoomGetStatusPipeline } from "./functions/boom/GetStatusPipeline/resource";
 /**
  * Configuración del backend de Amplify
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
@@ -37,6 +38,7 @@ export const backend = defineBackend({
   runPipeline,
   cargaInsumosSaveBatch,
   cargaInsumosGetData,
+  BoomGetStatusPipeline,
 });
 
 const resetPasswordLambda = backend.resetPassword.resources.lambda;
