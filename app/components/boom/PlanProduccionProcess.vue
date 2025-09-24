@@ -295,6 +295,7 @@ const planProduccionIniciado = ref(false);
 const ejecucionGlobalEnProgreso = ref(false);
 const pollingIntervals = ref({}); // Múltiples intervalos de polling
 const procesosProduccion = ref([]);
+const esEjecucionNueva = ref(false); // Para distinguir entre ejecución nueva y carga inicial
 
 // Inicializar procesos basándose en la configuración
 const inicializarProcesos = () => {
@@ -317,6 +318,7 @@ inicializarProcesos();
 const iniciarPlanProduccion = async () => {
   planProduccionIniciado.value = true;
   ejecucionGlobalEnProgreso.value = true;
+  esEjecucionNueva.value = true; // Marcar como ejecución nueva
 
   try {
     // Ejecutar procesos secuencialmente, saltando los que ya están completados
@@ -331,8 +333,10 @@ const iniciarPlanProduccion = async () => {
       }
     }
 
-    // Emitir evento de completado
-    emit('plan-completed');
+    // Emitir evento de completado solo si es una ejecución nueva
+    if (esEjecucionNueva.value) {
+      emit('plan-completed');
+    }
   } finally {
     // Siempre resetear el estado de ejecución global al finalizar
     ejecucionGlobalEnProgreso.value = false;
@@ -356,6 +360,9 @@ const runSingleProcess = async (procesoId) => {
     });
     return;
   }
+
+  // Marcar como ejecución nueva para ejecuciones individuales
+  esEjecucionNueva.value = true;
 
   // La ejecución individual no afecta el estado global
   await ejecutarProceso(procesoId);
@@ -495,7 +502,11 @@ const checkAndEmitCompleted = () => {
     // Resetear estados cuando todos los procesos estén completados
     planProduccionIniciado.value = true; // Mantener como iniciado
     ejecucionGlobalEnProgreso.value = false; // Ya no está en progreso global
-    emit('plan-completed');
+
+    // Solo emitir si es una ejecución nueva, no al cargar estado inicial
+    if (esEjecucionNueva.value) {
+      emit('plan-completed');
+    }
   }
 };
 
@@ -536,6 +547,9 @@ onMounted(async () => {
     if (!props.explosionId) return;
     const { data } = await client.models.Boom.get({ id: props.explosionId });
     if (!data) return;
+
+    // IMPORTANTE: No marcar como ejecución nueva al cargar estado inicial
+    esEjecucionNueva.value = false;
 
     // Verificar cada proceso configurado
     for (const [procesoId, config] of Object.entries(procesosConfig)) {
@@ -765,6 +779,9 @@ const reEjecutarDesdeCompletado = async (procesoId) => {
     if (!config) {
       throw new Error(`Configuración no encontrada para el proceso: ${procesoId}`);
     }
+
+    // Marcar como ejecución nueva para re-ejecuciones
+    esEjecucionNueva.value = true;
 
     // Limpiar runId anterior y resetear estado
     await client.models.Boom.update({
