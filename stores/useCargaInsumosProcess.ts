@@ -45,6 +45,9 @@ export interface CargaInsumosProcessState {
   documents: CargaInsumosDocument[];
   selectedDocument: CargaInsumosDocument | null;
 
+  // Boom ID para relacionar con la explosión
+  boomId: string | null;
+
   // Estados generales
   isLoading: boolean;
   error: string | null;
@@ -101,6 +104,9 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
     // Documentos guardados
     documents: [],
     selectedDocument: null,
+
+    // Boom ID para relacionar con la explosión
+    boomId: null,
 
     // Estados generales
     isLoading: false,
@@ -431,7 +437,8 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
       try {
         console.log("🚀 Carga Insumos Store: Iniciando procesamiento por lotes...");
 
-        const documentId = `carga-insumos-${Date.now()}`;
+        // Usar boom_id como document_id para que cada explosión tenga una sola versión
+        const documentId = this.boomId || `carga-insumos-${Date.now()}`;
         const batchId = `batch-${Date.now()}`;
 
         console.log(`📄 Document ID: ${documentId}`);
@@ -670,8 +677,14 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
      * Crear un nuevo documento con los datos actuales
      */
     async createDocument(name?: string): Promise<CargaInsumosDocument> {
+      // Usar boom_id como document_id para mantener consistencia
+      const documentId = this.boomId || `carga-insumos-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      console.log(`🎯 Boom ID en createDocument: ${this.boomId}`);
+      console.log(`📄 Document ID en createDocument: ${documentId}`);
+
       const document: CargaInsumosDocument = {
-        id: `carga-insumos-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: documentId,
         name: name || `Carga de Insumos ${new Date().toLocaleDateString()}`,
         version: "1.0",
         createdAt: new Date(),
@@ -873,6 +886,15 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
       }
 
       console.log("🔄 Carga Insumos Store: Store reiniciado completamente");
+    },
+
+    /**
+     * Establecer el Boom ID para relacionar con la explosión
+     */
+    setBoomId(boomId: string) {
+      this.boomId = boomId;
+      console.log(`🎯 Carga Insumos Store: Boom ID establecido - ${boomId}`);
+      console.log(`🎯 Carga Insumos Store: Verificación - boomId actual: ${this.boomId}`);
     },
 
     /**
