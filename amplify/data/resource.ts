@@ -158,6 +158,7 @@ const schema = a.schema({
     .mutation()
     .arguments({
       pipelineName: a.string(),
+      Pversion: a.string(),
     })
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])

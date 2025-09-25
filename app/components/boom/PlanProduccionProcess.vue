@@ -238,10 +238,9 @@
 <script setup>
 import { generateClient } from "aws-amplify/data";
 
-// Cliente de Amplify
 const client = generateClient();
 
-// Props
+
 const props = defineProps({
   isCompleted: {
     type: Boolean,
@@ -250,6 +249,10 @@ const props = defineProps({
   explosionId: {
     type: String,
     default: ''
+  },
+  pversion: {
+    type: String,
+    default: null
   }
 });
 
@@ -271,7 +274,7 @@ const procesosConfig = {
   'sincronizar-plan-ventas': {
     nombre: 'Sincronizar Plan de Ventas',
     descripcion: 'Sincronización del plan de ventas actual',
-    pipelineName: 'EjecutarExtraccionInsumos', // Temporal: usar mismo pipeline
+    pipelineName: 'EjecutarCalcularPlanVentasBoom',
     boomFields: {
       runId: 'PiepelineRunIdPlanVentas',
       status: 'SyncSalesPlanStatus'
@@ -281,7 +284,7 @@ const procesosConfig = {
   'calcular-plan-demanda': {
     nombre: 'Calcular Plan Demanda',
     descripcion: 'Cálculo del plan de demanda basado en datos sincronizados',
-    pipelineName: 'EjecutarExtraccionInsumos', // Temporal: usar mismo pipeline
+    pipelineName: 'EjecutarCalcularPlanDemadaBoom',
     boomFields: {
       runId: 'PiepelineRunIdPlanDemandas',
       status: 'SyncDemandPlanStatus'
@@ -423,10 +426,21 @@ const ejecutarPipeline = async (proceso, config) => {
   try {
     console.log(`🚀 Ejecutando pipeline ${config.pipelineName} para ${proceso.nombre}...`);
 
-    // Llamar a la mutación runPipeline
-    const { data } = await client.mutations.runPipeline({
+    // Preparar argumentos del pipeline
+    const pipelineArgs = {
       pipelineName: config.pipelineName
-    });
+    };
+
+    // Agregar Pversion para pipelines que lo requieren
+    if ((config.pipelineName === 'EjecutarCalcularPlanVentasBoom' || 
+         config.pipelineName === 'EjecutarCalcularPlanDemadaBoom') && props.pversion) {
+      pipelineArgs.Pversion = props.pversion;
+      const pipelineType = config.pipelineName === 'EjecutarCalcularPlanVentasBoom' ? 'plan de ventas' : 'plan de demanda';
+      console.log(`📋 Enviando Pversion: ${props.pversion} para pipeline de ${pipelineType}`);
+    }
+
+    // Llamar a la mutación runPipeline
+    const { data } = await client.mutations.runPipeline(pipelineArgs);
 
     console.log('📋 Respuesta del pipeline:', data);
 

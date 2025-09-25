@@ -11,5 +11,37 @@
   ],
   "css.validate": false,
   "less.validate": false,
-  "scss.validate": false
+  "scss.validate": false, 
+
+  "workbench.startupEditor": "none",
+  "editor.minimap.enabled": false,
+  "editor.renderWhitespace": "boundary",
+  "editor.guides.bracketPairs": true,
+  "editor.bracketPairColorization.enabled": true,
+
+  "editor.formatOnSave": true,
+  "editor.detectIndentation": true,
+  "editor.wordWrap": "on",
+  "editor.linkedEditing": true,
+  "editor.stickyScroll.enabled": true,
+  "explorer.compactFolders": false,
+
+  "editor.formatOnSave": true,
+  "editor.detectIndentation": true,
+  "editor.wordWrap": "on",
+  "editor.linkedEditing": true,
+  "editor.stickyScroll.enabled": true,
+  "explorer.compactFolders": false,
+
+  "editor.fontSize": 18,
+
+  "editor.fontFamily": "JetBrains Mono, monospace",
+
+  "editor.lineHeight": 25,
+
+
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "javascript.updateImportsOnFileMove.enabled": "always"
+
 }

@@ -118,6 +118,7 @@
             :explosion-id="explosionId"
             :is-completed="completedSteps['generar-plan-de-produccion']"
             @plan-completed="handlePlanProduccionCompleted"
+            :pversion="explosion?.version"
           />
         </template>
 
