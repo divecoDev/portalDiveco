@@ -16,10 +16,12 @@ export const handler = async (event: any) => {
 
   const credential = new DefaultAzureCredential();
 
+  console.log("Pversion", Pversion);
+
 
   const referencePipelineRunId = undefined;
   const parameters = {
-    Pversion: Pversion,
+    PVersion: Pversion,
   };
   const options = {
     referencePipelineRunId,
