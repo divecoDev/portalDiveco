@@ -5,4 +5,7 @@ export const GetPlanProduccion = defineFunction({
     entry: "./handler.ts",
     memoryMB: 502,
     timeoutSeconds: 240,
+    environment: {
+        BUCKET_NAME: "explosion-materiales-uts"
+    }
 });

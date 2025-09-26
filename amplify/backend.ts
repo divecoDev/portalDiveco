@@ -128,6 +128,22 @@ const getPlanProduccionPolicy = new iam.PolicyStatement({
 });
 getPlanProduccionLambda.addToRolePolicy(getPlanProduccionPolicy);
 
+// S3 permissions for GetPlanProduccion
+const getPlanProduccionS3Policy = new iam.PolicyStatement({
+  actions: [
+    "s3:PutObject",
+    "s3:PutObjectAcl",
+    "s3:GetObject",
+    "s3:DeleteObject",
+    "s3:ListBucket"
+  ],
+  resources: [
+    "arn:aws:s3:::explosion-materiales-uts",
+    "arn:aws:s3:::explosion-materiales-uts/*"
+  ],
+});
+getPlanProduccionLambda.addToRolePolicy(getPlanProduccionS3Policy);
+
 /*
  * CREACION DE API REST
  */

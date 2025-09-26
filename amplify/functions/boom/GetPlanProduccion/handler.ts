@@ -1,9 +1,12 @@
 import msql from "mssql";
 import { json2csv } from 'json-2-csv';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 export const handler = async (event: any) => {
     try {
-        const boomId = event.headers.boomId;
+        console.log("event", event);
+        console.log("event.headers", event.headers);
+        const boomId = event.headers.boom_id;
         let data = event.body;
         
         if (typeof data === 'string') {
@@ -34,10 +37,32 @@ export const handler = async (event: any) => {
         // Convert to CSV
         const csv = await json2csv(dataArray);
         console.log("CSV generated successfully");
-        console.log("csv", csv);
+        
+        // Initialize S3 client
+        const s3Client = new S3Client({});
+        
+        // Generate filename with boom ID
+        const fileName = `plan-produccion-${boomId}.csv`;
+        const bucketName = 'explosion-materiales-uts';
+        
+        // Upload CSV to S3
+        const uploadParams = {
+            Bucket: bucketName,
+            Key: fileName,
+            Body: csv,
+            ContentType: 'text/csv',
+            ContentDisposition: `attachment; filename="${fileName}"`
+        };
+        
+        await s3Client.send(new PutObjectCommand(uploadParams));
+        console.log(`CSV uploaded successfully to S3: ${bucketName}/${fileName}`);
+        
         return {
             success: true,
-            message: "Plan de Produccion obtenido",
+            message: "Plan de Produccion obtenido y guardado en S3",
+            fileName: fileName,
+            bucketName: bucketName,
+            s3Key: fileName
         };
         
     } catch (error) {
