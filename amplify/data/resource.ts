@@ -109,6 +109,9 @@ const schema = a.schema({
       SyncSalesPlanStatus: a.string(),
       SyncDemandPlanStatus: a.string(),
       ExecuteBoomStatus: a.string(),
+      reportePlanDemanda: a.json(),
+      materialesSinAprovicion: a.json(),
+      materialesSinCentroProduccion: a.json(),
     })
     .authorization((allow) => [allow.publicApiKey()]),
 
@@ -159,6 +162,7 @@ const schema = a.schema({
     .arguments({
       pipelineName: a.string(),
       Pversion: a.string(),
+      boomId: a.string(),
     })
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])

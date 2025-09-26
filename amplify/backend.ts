@@ -19,6 +19,8 @@ import { runPipeline } from "./functions/boom/runPipeline/resource";
 import { cargaInsumosSaveBatch } from "./functions/carga-insumos/saveBatch/resource";
 import { cargaInsumosGetData } from "./functions/carga-insumos/getData/resource";
 import { BoomGetStatusPipeline } from "./functions/boom/GetStatusPipeline/resource";
+import { GetPlanProduccion } from "./functions/boom/GetPlanProduccion/resource";
+
 /**
  * Configuración del backend de Amplify
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
@@ -39,6 +41,7 @@ export const backend = defineBackend({
   cargaInsumosSaveBatch,
   cargaInsumosGetData,
   BoomGetStatusPipeline,
+  GetPlanProduccion,
 });
 
 const resetPasswordLambda = backend.resetPassword.resources.lambda;
@@ -117,6 +120,13 @@ const cargaInsumosGetDataPolicy = new iam.PolicyStatement({
   resources: ["*"],
 });
 cargaInsumosGetDataLambda.addToRolePolicy(cargaInsumosGetDataPolicy);
+
+const getPlanProduccionLambda = backend.GetPlanProduccion.resources.lambda;
+const getPlanProduccionPolicy = new iam.PolicyStatement({
+  actions: ["ec2:CreateNetworkInterface", "ec2:DescribeNetworkInterfaces", "ec2:DeleteNetworkInterface"],
+  resources: ["*"],
+});
+getPlanProduccionLambda.addToRolePolicy(getPlanProduccionPolicy);
 
 /*
  * CREACION DE API REST

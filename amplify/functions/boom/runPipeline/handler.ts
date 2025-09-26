@@ -4,6 +4,7 @@ import { DefaultAzureCredential } from "@azure/identity";
 export const handler = async (event: any) => {
   const pipelineName = event.arguments.pipelineName || "";
   const Pversion = event.arguments.Pversion || "";
+  const boomId = event.arguments.boomId || "";
 
   const resourceGroupName = "ADF";
   const subscriptionId = process.env.AZURE_SUBSCRIPTION_ID || "";
@@ -22,6 +23,7 @@ export const handler = async (event: any) => {
   const referencePipelineRunId = undefined;
   const parameters = {
     PVersion: Pversion,
+    BoomId: boomId,
   };
   const options = {
     referencePipelineRunId,

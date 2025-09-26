@@ -250,6 +250,10 @@ const props = defineProps({
     type: String,
     default: ''
   },
+  boomId: {
+    type: String,
+    default: ''
+  },
   pversion: {
     type: String,
     default: null
@@ -437,6 +441,12 @@ const ejecutarPipeline = async (proceso, config) => {
       pipelineArgs.Pversion = props.pversion;
       const pipelineType = config.pipelineName === 'EjecutarCalcularPlanVentasBoom' ? 'plan de ventas' : 'plan de demanda';
       console.log(`📋 Enviando Pversion: ${props.pversion} para pipeline de ${pipelineType}`);
+    }
+
+    // Agregar boomId para el pipeline de plan de demanda
+    if (config.pipelineName === 'EjecutarCalcularPlanDemadaBoom' && props.boomId) {
+      pipelineArgs.boomId = props.boomId;
+      console.log(`📋 Enviando boomId: ${props.boomId} para pipeline de plan de demanda`);
     }
 
     // Llamar a la mutación runPipeline
