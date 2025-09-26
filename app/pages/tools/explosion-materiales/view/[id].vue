@@ -124,56 +124,12 @@
         </template>
 
         <template #validacion-de-aprovisionamiento>
-          <div
-            class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-          >
-                                      <div class="text-center py-12">
-               <div
-                 :class="[
-                   'w-32 h-32 rounded-md flex items-center justify-center mx-auto mb-8 shadow-lg relative transition-all duration-500',
-                   completedSteps['validacion-de-aprovisionamiento']
-                     ? 'bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30'
-                     : 'bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30'
-                 ]"
-               >
-                 <UIcon
-                   name="i-heroicons-shield-check"
-                   :class="[
-                     'w-16 h-16 transition-all duration-500',
-                     completedSteps['validacion-de-aprovisionamiento']
-                       ? 'text-green-600 dark:text-green-400'
-                       : 'text-cyan-600 dark:text-cyan-400'
-                   ]"
-                 />
-                 <div v-if="completedSteps['validacion-de-aprovisionamiento']" class="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                   <UIcon name="i-heroicons-check" class="w-5 h-5 text-white" />
-                 </div>
-               </div>
-               <h3
-                 :class="[
-                   'text-2xl font-bold mb-8 transition-all duration-500',
-                   completedSteps['validacion-de-aprovisionamiento']
-                     ? 'text-green-600 dark:text-green-400'
-                     : 'text-gray-900 dark:text-white'
-                 ]"
-               >
-                 Validación de Aprovisionamiento
-               </h3>
-                              <UButton
-                 v-if="!completedSteps['validacion-de-aprovisionamiento']"
-                 icon="i-heroicons-check"
-                 size="lg"
-                 color="cyan"
-                 class="rounded-md inline-flex items-center px-6 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
-                 @click="completeValidacionAprovisionamiento"
-               >
-                 Validar Aprovisionamiento
-               </UButton>
-               <div v-else class="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-xl animate-pulse">
-                 <UIcon name="i-heroicons-check" class="w-8 h-8 text-white" />
-               </div>
-            </div>
-          </div>
+          <ValidacionAprovisionamiento
+            :is-completed="completedSteps['validacion-de-aprovisionamiento']"
+            :explosion-id="explosionId"
+            :boom-id="explosion?.id"
+            @validation-completed="handleValidacionAprovisionamientoCompleted"
+          />
         </template>
 
         <template #explocionar>
@@ -238,6 +194,7 @@ import { generateClient } from "aws-amplify/data";
 import { useCargaInsumosData } from "~/composables/useCargaInsumosData";
 import CargaInsumosDataView from "~/components/CargaInsumosDataView.vue";
 import PlanProduccionProcess from "~/components/boom/PlanProduccionProcess.vue";
+import ValidacionAprovisionamiento from "~/components/boom/ValidacionAprovisionamiento.vue";
 
 // Cliente de Amplify
 const client = generateClient();
@@ -495,7 +452,7 @@ const completePlanProduccion = async () => {
   });
 };
 
-const completeValidacionAprovisionamiento = async () => {
+const handleValidacionAprovisionamientoCompleted = async () => {
   completedSteps.value['validacion-de-aprovisionamiento'] = true;
 
   // Esperar a que el DOM se actualice
@@ -512,13 +469,6 @@ const completeValidacionAprovisionamiento = async () => {
       console.warn("Error al avanzar stepper:", error);
     }
   }
-
-  useToast().add({
-    title: "Validación completada",
-    description: "La validación de aprovisionamiento se ha completado exitosamente",
-    color: "green",
-    timeout: 3000
-  });
 };
 
 const completeExplosion = () => {
