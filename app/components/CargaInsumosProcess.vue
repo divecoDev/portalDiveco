@@ -4,6 +4,7 @@ import ExistenciasStep from "./boom/ExistenciasStep.vue";
 import CoberturaStep from "./boom/CoberturaStep.vue";
 import GuardarStep from "./boom/GuardarStep.vue";
 import { useCargaInsumosProcessStore } from "../../stores/useCargaInsumosProcess";
+import { useCargaInsumosData } from "../composables/useCargaInsumosData";
 
 // Props para recibir la explosión
 const props = defineProps({
@@ -19,13 +20,19 @@ const emit = defineEmits(['carga-insumos-completed']);
 // Usar el store de Carga de Insumos
 const cargaInsumosStore = useCargaInsumosProcessStore();
 
+// Usar el composable para consultar datos existentes
+const { queryData, loading: dataLoading, error: dataError } = useCargaInsumosData();
+
+// Estado para controlar si se están cargando datos existentes
+const loadingExistingData = ref(false);
+
 // Inicializar el store al montar el componente
 onMounted(async () => {
   await cargaInsumosStore.initialize();
 
-  // Establecer el boom_id en el store
+  // Establecer el boom_id en el store y verificar datos existentes
   if (props.explosion?.id) {
-    cargaInsumosStore.setBoomId(props.explosion.id);
+    await checkAndLoadExistingData(props.explosion.id);
   }
 });
 
@@ -91,18 +98,61 @@ watch(() => cargaInsumosStore.currentStep, (newStep) => {
   }
 });
 
+// Función para verificar y cargar datos existentes
+const checkAndLoadExistingData = async (boomId) => {
+  try {
+    loadingExistingData.value = true;
+    console.log(`🔍 Verificando datos existentes para boom_id: ${boomId}`);
+    
+    // Establecer el boom_id en el store
+    cargaInsumosStore.setBoomId(boomId);
+    
+    // Consultar datos existentes usando el boom_id como document_id
+    const response = await queryData({ documentId: boomId });
+    
+    console.log(`📊 Respuesta de consulta de datos existentes:`, response);
+    
+    if (response.success && response.data && response.data.length > 0) {
+      console.log(`✅ Se encontraron datos existentes para boom_id: ${boomId}`);
+      
+      // Cargar los datos existentes en el store
+      await cargaInsumosStore.loadExistingData(response.data);
+      
+      console.log(`📥 Datos existentes cargados en el store`);
+    } else {
+      console.log(`📭 No se encontraron datos existentes para boom_id: ${boomId}`);
+      console.log(`🔄 Mostrando vista de carga de datos`);
+    }
+    
+  } catch (error) {
+    console.error(`❌ Error verificando datos existentes:`, error);
+    // En caso de error, continuar con la vista de carga
+  } finally {
+    loadingExistingData.value = false;
+  }
+};
+
 // Watcher para detectar cambios en la prop explosion
-watch(() => props.explosion, (newExplosion) => {
+watch(() => props.explosion, async (newExplosion) => {
   if (newExplosion?.id) {
-    cargaInsumosStore.setBoomId(newExplosion.id);
+    await checkAndLoadExistingData(newExplosion.id);
   }
 }, { immediate: true });
 </script>
 
 <template>
   <div class="space-y-6">
+    <!-- Estado de carga de datos existentes -->
+    <div v-if="loadingExistingData" class="flex justify-center items-center py-12">
+      <div class="text-center">
+        <div class="w-12 h-12 border-4 border-cyan-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p class="text-gray-600 dark:text-gray-300">Verificando datos existentes...</p>
+      </div>
+    </div>
+
     <!-- Stepper con navegación deshabilitada -->
     <UStepper
+      v-else
       ref="stepper"
       v-model="currentStep"
       :items="items"
@@ -143,7 +193,7 @@ watch(() => props.explosion, (newExplosion) => {
     </UStepper>
 
     <!-- Controles de navegación -->
-    <div class="flex justify-between items-center pt-4">
+    <div v-if="!loadingExistingData" class="flex justify-between items-center pt-4">
       <UButton
         class="cursor-pointer"
         :disabled="!canGoPrev"
