@@ -436,6 +436,7 @@ const deleteExplosion = async () => {
   }
 };
 
+
 // Método para manejar cuando el proceso BOOM se completa
 const handleBoomProcessCompleted = async () => {
   // Marcar el primer paso como completado

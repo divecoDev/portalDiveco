@@ -3,39 +3,8 @@
     class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
   >
     <div class="text-center py-8">
-      <!-- Icono principal -->
-      <div
-        :class="[
-          'w-32 h-32 rounded-md flex items-center justify-center mx-auto mb-6 shadow-lg relative transition-all duration-500',
-          isCompleted
-            ? 'bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30'
-            : explosionInProgress
-            ? 'bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30'
-            : 'bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30'
-        ]"
-      >
-        <UIcon
-          name="i-heroicons-bolt"
-          :class="[
-            'w-16 h-16 transition-all duration-500',
-            isCompleted
-              ? 'text-green-600 dark:text-green-400'
-              : explosionInProgress
-              ? 'text-blue-600 dark:text-blue-400'
-              : 'text-cyan-600 dark:text-cyan-400'
-          ]"
-        />
-        <div v-if="isCompleted" class="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-          <UIcon name="i-heroicons-check" class="w-5 h-5 text-white" />
-        </div>
-      </div>
-
       <!-- Botón de ejecución o estado en progreso -->
       <div v-if="!isCompleted">
-        <!-- Debug info -->
-        <div class="text-xs text-gray-500 mb-2">
-          Debug: explosionInProgress = {{ explosionInProgress }}, isCompleted = {{ isCompleted }}
-        </div>
         
         <!-- Estado en progreso -->
         <div v-if="explosionInProgress" class="space-y-4">
@@ -62,14 +31,13 @@
             class="rounded-md inline-flex items-center px-8 py-4 text-base gap-3 shadow-xl bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-bold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-2xl border-0 cursor-pointer"
             @click="confirmAndExecuteExplosion"
           >
-            <UIcon name="i-heroicons-rocket-launch" class="w-6 h-6" />
             Ejecutar Explosión
           </UButton>
         </div>
       </div>
 
       <!-- Estado completado -->
-      <div v-else class="space-y-4">
+      <div v-else class="space-y-6">
         <div class="w-20 h-20 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-xl animate-pulse mx-auto">
           <UIcon name="i-heroicons-check" class="w-10 h-10 text-white" />
         </div>
@@ -81,6 +49,22 @@
           <p class="text-sm text-green-600 dark:text-green-400">
             La explosión de materiales se ha ejecutado exitosamente. Los resultados están disponibles para descarga.
           </p>
+        </div>
+
+        <!-- Botón para re-ejecutar explosión -->
+        <div class="flex justify-center">
+          <UButton
+            icon="i-heroicons-arrow-path"
+            size="lg"
+            color="cyan"
+            variant="solid"
+            :loading="reexecutingExplosion"
+            @click="reexecuteExplosion"
+            class="rounded-md inline-flex items-center px-6 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
+          >
+            <UIcon name="i-heroicons-arrow-path" class="w-5 h-5" />
+            Re-ejecutar Explosión
+          </UButton>
         </div>
       </div>
     </div>
@@ -119,6 +103,7 @@ const client = generateClient();
 // Estado reactivo
 const explosionInProgress = ref(false);
 const explosionPollingInterval = ref(null);
+const reexecutingExplosion = ref(false);
 
 // Watcher para emitir cambios en el estado de carga
 watch(explosionInProgress, (newValue) => {
@@ -134,6 +119,59 @@ const confirmAndExecuteExplosion = () => {
     "Esta acción no se puede deshacer una vez iniciada."
   )) {
     executeExplosion();
+  }
+};
+
+// Función para re-ejecutar la explosión
+const reexecuteExplosion = async () => {
+  if (
+    confirm(
+      "¿Está seguro de que desea re-ejecutar la explosión de materiales?\n\n" +
+      "Esto reiniciará el proceso de explosión y generará nuevos resultados. " +
+      "Los resultados anteriores serán reemplazados."
+    )
+  ) {
+    try {
+      reexecutingExplosion.value = true;
+
+      // Limpiar polling activo si existe
+      if (explosionPollingInterval.value) {
+        clearInterval(explosionPollingInterval.value);
+        explosionPollingInterval.value = null;
+      }
+
+      // Resetear estados
+      explosionInProgress.value = false;
+
+      // Limpiar el estado del Boom para permitir nueva ejecución
+      await client.models.Boom.update({
+        id: props.explosionId,
+        PiepelineRunIdExplocion: null,
+        ExecuteBoomStatus: null
+      });
+
+      // Mostrar notificación de éxito
+      useToast().add({
+        title: "Listo para re-ejecutar",
+        description: "El estado se ha reseteado. Puedes ejecutar nuevamente la explosión.",
+        color: "green",
+        timeout: 3000
+      });
+
+      // Emitir evento para notificar al componente padre que se puede ejecutar nuevamente
+      emit('explosion-completed');
+
+    } catch (error) {
+      console.error("Error al re-ejecutar explosión:", error);
+      useToast().add({
+        title: "Error",
+        description: "No se pudo resetear el estado para re-ejecutar la explosión",
+        color: "red",
+        timeout: 4000
+      });
+    } finally {
+      reexecutingExplosion.value = false;
+    }
   }
 };
 
@@ -189,6 +227,23 @@ const executeExplosion = async () => {
       // Si la respuesta incluye el status directamente, procesarlo
       if (raw?.status) {
         console.log('📋 Pipeline ejecutado con status:', raw.status);
+        
+        // Si el pipeline se completó inmediatamente, guardar el runId primero
+        if (raw.status === 'Succeeded' || raw.status === 'Failed') {
+          // Persistir en Boom el runId y el estado antes de procesar
+          try {
+            console.log('📝 Guardando runId para pipeline completado inmediatamente:', runId);
+            await client.models.Boom.update({
+              id: props.explosionId,
+              PiepelineRunIdExplocion: runId,
+              ExecuteBoomStatus: raw.status === 'Succeeded' ? 'En Proceso' : 'Error'
+            });
+            console.log('📝 RunId guardado para pipeline completado inmediatamente');
+          } catch (persistErr) {
+            console.error('❌ Error guardando runId para pipeline completado:', persistErr);
+          }
+        }
+        
         await procesarEstadoPipeline(raw.status, runId);
         return; // No necesitamos iniciar polling si ya tenemos el resultado
       }
@@ -202,14 +257,31 @@ const executeExplosion = async () => {
 
       // Persistir en Boom el runId y el estado "En Proceso"
       try {
-        await client.models.Boom.update({
+        console.log('📝 Intentando actualizar Boom con:', {
           id: props.explosionId,
           PiepelineRunIdExplocion: runId,
           ExecuteBoomStatus: 'En Proceso'
         });
+        
+        const updateResult = await client.models.Boom.update({
+          id: props.explosionId,
+          PiepelineRunIdExplocion: runId,
+          ExecuteBoomStatus: 'En Proceso'
+        });
+        
+        console.log('📝 Resultado de actualización Boom:', updateResult);
+        
+        // Verificar que se guardó correctamente
+        const { data: verifyData } = await client.models.Boom.get({ id: props.explosionId });
+        console.log('📝 Verificación post-actualización:', {
+          PiepelineRunIdExplocion: verifyData?.PiepelineRunIdExplocion,
+          ExecuteBoomStatus: verifyData?.ExecuteBoomStatus
+        });
+        
         console.log('📝 Boom actualizado con runId y estado En Proceso para explosión');
       } catch (persistErr) {
-        console.warn('No se pudo actualizar Boom con el runId:', persistErr);
+        console.error('❌ Error actualizando Boom con el runId:', persistErr);
+        console.error('❌ Detalles del error:', persistErr.message);
       }
 
       // Cerrar toast de carga inicial
@@ -377,6 +449,20 @@ const procesarEstadoPipeline = async (status, runId) => {
       
       console.log('✅ Estado de explosionInProgress DESPUÉS de cambiar a false:', explosionInProgress.value);
       
+      // Asegurar que el runId esté guardado antes de marcar como completado
+      try {
+        const { data: currentData } = await client.models.Boom.get({ id: props.explosionId });
+        if (!currentData?.PiepelineRunIdExplocion && runId) {
+          console.log('📝 RunId no encontrado, guardándolo ahora:', runId);
+          await client.models.Boom.update({
+            id: props.explosionId,
+            PiepelineRunIdExplocion: runId
+          });
+        }
+      } catch (error) {
+        console.warn('⚠️ No se pudo verificar/guardar runId:', error);
+      }
+      
       // Actualizar Boom con estado completado
       console.log('✅ Actualizando Boom con estado Completado...');
       await actualizarBoomStatusExplosion('Completado');
@@ -456,6 +542,13 @@ const actualizarBoomStatusExplosion = async (nuevoEstado) => {
     });
     
     console.log('📝 Resultado de la actualización de Boom:', result);
+    
+    // Verificar que se guardó correctamente
+    const { data: verifyData } = await client.models.Boom.get({ id: props.explosionId });
+    console.log('📝 Verificación post-actualización estado:', {
+      ExecuteBoomStatus: verifyData?.ExecuteBoomStatus
+    });
+    
     console.log(`📝 Boom actualizado con estado de explosión: ${nuevoEstado}`);
   } catch (error) {
     console.error('❌ Error actualizando estado de explosión en Boom:', error);
@@ -485,6 +578,10 @@ const checkInitialExplosionState = async () => {
       else if (statusExplosion === 'Completado') {
         explosionInProgress.value = false; // Resetear estado de progreso
         console.log('✅ Pipeline de explosión ya completado');
+        
+        // Emitir evento para notificar al componente padre que ya está completado
+        emit('explosion-completed');
+        console.log('✅ Evento explosion-completed emitido para estado inicial completado');
       }
       // Si el estado es "Error", permitir reintento
       else if (statusExplosion === 'Error') {
