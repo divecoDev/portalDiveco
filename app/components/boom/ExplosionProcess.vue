@@ -62,7 +62,6 @@
             @click="reexecuteExplosion"
             class="rounded-md inline-flex items-center px-6 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
           >
-            <UIcon name="i-heroicons-arrow-path" class="w-5 h-5" />
             Re-ejecutar Explosión
           </UButton>
         </div>
@@ -150,16 +149,21 @@ const reexecuteExplosion = async () => {
         ExecuteBoomStatus: null
       });
 
-      // Mostrar notificación de éxito
+      console.log('🔄 Estado reseteado, ejecutando nueva explosión automáticamente...');
+
+      // Mostrar notificación de que se está ejecutando
       useToast().add({
-        title: "Listo para re-ejecutar",
-        description: "El estado se ha reseteado. Puedes ejecutar nuevamente la explosión.",
-        color: "green",
+        title: "Re-ejecutando explosión",
+        description: "Se ha iniciado una nueva ejecución del pipeline de explosión.",
+        color: "blue",
         timeout: 3000
       });
 
-      // Emitir evento para notificar al componente padre que se puede ejecutar nuevamente
-      emit('explosion-completed');
+      // Pequeño delay para asegurar que el estado se actualice correctamente
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Ejecutar automáticamente el pipeline después de resetear
+      await executeExplosion();
 
     } catch (error) {
       console.error("Error al re-ejecutar explosión:", error);
