@@ -199,17 +199,19 @@
           </UTabs>
         </div>
 
-        <!-- Botón de validación -->
-        <UButton
-          icon="i-heroicons-check"
-          size="lg"
-          color="cyan"
-          :loading="isValidating"
-          class="rounded-md inline-flex items-center px-6 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
-          @click="executeValidation"
-        >
-          {{ isValidating ? 'Validando...' : 'Validar Aprovisionamiento' }}
-        </UButton>
+        <!-- Botón simple para continuar -->
+        <div class="text-center py-6">
+          <UButton
+            icon="i-heroicons-arrow-right"
+            size="sm"
+            color="cyan"
+            :loading="isValidating"
+            class="hover:bg-cyan-50 dark:hover:bg-cyan-900/20 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold"
+            @click="proceedWithExplosion"
+          >
+            {{ isValidating ? 'Procesando...' : 'Siguiente Paso' }}
+          </UButton>
+        </div>
       </div>
 
     </div>
@@ -293,6 +295,7 @@ const canValidate = computed(() => {
   return !isValidating.value;
 });
 
+
 // Métodos
 const loadMaterialesData = async () => {
   try {
@@ -362,35 +365,32 @@ const downloadPlanProduccion = async () => {
   }
 };
 
-const executeValidation = async () => {
+const proceedWithExplosion = async () => {
   if (isValidating.value) return;
 
   try {
     isValidating.value = true;
 
-    // Simular proceso de validación paso a paso
-    for (let i = 0; i < validations.value.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simular delay
-      validations.value[i].completed = true;
-    }
+    // Simular delay mínimo
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Emitir evento de completado
     emit('validation-completed');
 
-    // Mostrar notificación de éxito
+    // Mostrar notificación simple
     useToast().add({
-      title: "Validación completada",
-      description: "La validación de aprovisionamiento se ha completado exitosamente",
+      title: "Continuando",
+      description: "Avanzando al siguiente paso",
       color: "green",
-      timeout: 3000
+      timeout: 2000
     });
 
   } catch (error) {
-    console.error('Error en validación:', error);
+    console.error('Error al continuar:', error);
     
     useToast().add({
-      title: "Error en validación",
-      description: "Ocurrió un error durante el proceso de validación",
+      title: "Error",
+      description: "No se pudo continuar al siguiente paso",
       color: "red",
       timeout: 3000
     });
@@ -398,6 +398,9 @@ const executeValidation = async () => {
     isValidating.value = false;
   }
 };
+
+// Método legacy para compatibilidad
+const executeValidation = proceedWithExplosion;
 
 // Reset validations when component is reset
 const resetValidations = () => {
@@ -422,6 +425,7 @@ onMounted(() => {
 defineExpose({
   resetValidations,
   executeValidation,
+  proceedWithExplosion,
   loadMaterialesData
 });
 </script>

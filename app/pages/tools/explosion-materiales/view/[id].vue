@@ -61,66 +61,103 @@
       >
 
         <template #carga-de-insumos>
-          <div
-            class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-          >
-            <!-- Header con controles -->
-            <div class="flex items-center justify-between mb-6">
-              <div class="flex items-center">
-                <div
-                  class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-cyan-500/25"
-                >
-                  <UIcon name="i-heroicons-circle-stack" class="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                    Carga de Insumos
-                  </h3>
-                  <p class="text-sm text-gray-600 dark:text-gray-300">
-                    {{ hasSavedData ? 'Datos cargados y guardados' : 'Proceso de carga de datos' }}
-                  </p>
-                </div>
-              </div>
-
-              <!-- Botones de acción -->
-              <div class="flex items-center space-x-3">
-                <UButton
-                  v-if="hasSavedData"
-                  icon="i-heroicons-arrow-path"
-                  size="sm"
-                  color="gray"
-                  variant="outline"
-                  @click="refreshSavedData"
-                  :loading="checkingSavedData"
-                >
-                  Actualizar
-                </UButton>
+          <div class="relative">
+            <!-- Spinner de carga mientras se verifica si hay datos guardados -->
+            <div 
+              v-if="checkingSavedData"
+              class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl z-10 flex items-center justify-center"
+            >
+              <div class="text-center">
+                <div class="w-12 h-12 border-4 border-cyan-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                  Verificando datos cargados...
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  Comprobando si ya existen datos de carga de insumos
+                </p>
               </div>
             </div>
 
-            <!-- Mostrar datos guardados si existen, sino mostrar proceso de carga -->
-            <CargaInsumosDataView
-              v-if="hasSavedData && !showCargaProcess"
-              :document-id="explosion?.id"
-              :explosion-id="explosionId"
-            />
+            <div
+              class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+            >
+              <!-- Header con controles -->
+              <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center">
+                  <div
+                    class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-cyan-500/25"
+                  >
+                    <UIcon name="i-heroicons-circle-stack" class="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                      Carga de Insumos
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">
+                      {{ hasSavedData ? 'Datos cargados y guardados' : 'Proceso de carga de datos' }}
+                    </p>
+                  </div>
+                </div>
 
-            <CargaInsumosProcess
-              v-if="!hasSavedData || showCargaProcess"
-              :explosion="explosion"
-              @carga-insumos-completed="handleBoomProcessCompleted"
-            />
+                <!-- Botones de acción -->
+                <div class="flex items-center space-x-3">
+                  <UButton
+                    v-if="hasSavedData"
+                    icon="i-heroicons-arrow-path"
+                    size="sm"
+                    color="gray"
+                    variant="outline"
+                    @click="refreshSavedData"
+                    :loading="checkingSavedData"
+                  >
+                    Actualizar
+                  </UButton>
+                </div>
+              </div>
+
+              <!-- Mostrar datos guardados si existen, sino mostrar proceso de carga -->
+              <CargaInsumosDataView
+                v-if="hasSavedData && !showCargaProcess && !checkingSavedData"
+                :document-id="explosion?.id"
+                :explosion-id="explosionId"
+              />
+
+              <CargaInsumosProcess
+                v-if="(!hasSavedData || showCargaProcess) && !checkingSavedData"
+                :explosion="explosion"
+                @carga-insumos-completed="handleBoomProcessCompleted"
+              />
+            </div>
           </div>
         </template>
 
         <template #generar-plan-de-produccion>
-          <PlanProduccionProcess
-            :explosion-id="explosionId"
-            :boom-id="explosion?.id"
-            :is-completed="completedSteps['generar-plan-de-produccion']"
-            @plan-completed="handlePlanProduccionCompleted"
-            :pversion="explosion?.version"
-          />
+          <div class="relative">
+            <!-- Spinner de carga sobre el componente -->
+            <div 
+              v-if="loadingPlanProduccion"
+              class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl z-10 flex items-center justify-center"
+            >
+              <div class="text-center">
+                <div class="w-12 h-12 border-4 border-cyan-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                  Cargando estados de procesos...
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  Verificando el estado actual de los procesos
+                </p>
+              </div>
+            </div>
+
+            <PlanProduccionProcess
+              :explosion-id="explosionId"
+              :boom-id="explosion?.id"
+              :is-completed="completedSteps['generar-plan-de-produccion']"
+              @plan-completed="handlePlanProduccionCompleted"
+              :pversion="explosion?.version"
+              @loading-state-changed="handlePlanProduccionLoadingStateChanged"
+            />
+          </div>
         </template>
 
         <template #validacion-de-aprovisionamiento>
@@ -136,51 +173,59 @@
           <div
             class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
           >
-                                      <div class="text-center py-12">
-               <div
-                 :class="[
-                   'w-32 h-32 rounded-md flex items-center justify-center mx-auto mb-8 shadow-lg relative transition-all duration-500',
-                   completedSteps['explocionar']
-                     ? 'bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30'
-                     : 'bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30'
-                 ]"
-               >
-                 <UIcon
-                   name="i-heroicons-bolt"
-                   :class="[
-                     'w-16 h-16 transition-all duration-500',
-                     completedSteps['explocionar']
-                       ? 'text-green-600 dark:text-green-400'
-                       : 'text-cyan-600 dark:text-cyan-400'
-                   ]"
-                 />
-                 <div v-if="completedSteps['explocionar']" class="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                   <UIcon name="i-heroicons-check" class="w-5 h-5 text-white" />
-                 </div>
-               </div>
-               <h3
-                 :class="[
-                   'text-2xl font-bold mb-8 transition-all duration-500',
-                   completedSteps['explocionar']
-                     ? 'text-green-600 dark:text-green-400'
-                     : 'text-gray-900 dark:text-white'
-                 ]"
-               >
-                 Explosión de Materiales
-               </h3>
-                              <UButton
-                 v-if="!completedSteps['explocionar']"
-                 icon="i-heroicons-bolt"
-                 size="lg"
-                 color="cyan"
-                 class="rounded-md inline-flex items-center px-6 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
-                 @click="completeExplosion"
-               >
-                 Ejecutar Explosión
-               </UButton>
-               <div v-else class="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-xl animate-pulse">
-                 <UIcon name="i-heroicons-check" class="w-8 h-8 text-white" />
-               </div>
+            <div class="text-center py-8">
+              <!-- Icono principal -->
+              <div
+                :class="[
+                  'w-32 h-32 rounded-md flex items-center justify-center mx-auto mb-6 shadow-lg relative transition-all duration-500',
+                  completedSteps['explocionar']
+                    ? 'bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30'
+                    : 'bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30'
+                ]"
+              >
+                <UIcon
+                  name="i-heroicons-bolt"
+                  :class="[
+                    'w-16 h-16 transition-all duration-500',
+                    completedSteps['explocionar']
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-cyan-600 dark:text-cyan-400'
+                  ]"
+                />
+                <div v-if="completedSteps['explocionar']" class="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                  <UIcon name="i-heroicons-check" class="w-5 h-5 text-white" />
+                </div>
+              </div>
+
+              <!-- Botón de ejecución o estado completado -->
+              <div v-if="!completedSteps['explocionar']">
+                <UButton
+                  icon="i-heroicons-bolt"
+                  size="lg"
+                  color="cyan"
+                  class="rounded-md inline-flex items-center px-8 py-4 text-base gap-3 shadow-xl bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-bold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-2xl border-0 cursor-pointer"
+                  @click="confirmAndExecuteExplosion"
+                >
+                  <UIcon name="i-heroicons-rocket-launch" class="w-6 h-6" />
+                  Ejecutar Explosión
+                </UButton>
+              </div>
+
+              <!-- Estado completado -->
+              <div v-else class="space-y-4">
+                <div class="w-20 h-20 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-xl animate-pulse mx-auto">
+                  <UIcon name="i-heroicons-check" class="w-10 h-10 text-white" />
+                </div>
+                
+                <div class="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 p-4 rounded-lg border border-green-200 dark:border-green-700/50 max-w-md mx-auto">
+                  <h4 class="text-lg font-semibold text-green-700 dark:text-green-300 mb-2">
+                    ¡Explosión Completada!
+                  </h4>
+                  <p class="text-sm text-green-600 dark:text-green-400">
+                    La explosión de materiales se ha ejecutado exitosamente. Los resultados están disponibles para descarga.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </template>
@@ -249,6 +294,7 @@ const loading = ref(true);
 const explosion = ref(null);
 const checkingSavedData = ref(false);
 const showCargaProcess = ref(false);
+const loadingPlanProduccion = ref(true); // Estado de carga del plan de producción
 
 // Computed para verificar si hay datos guardados
 const hasSavedData = computed(() => {
@@ -277,6 +323,7 @@ const completedSteps = ref({
 const fetchExplosion = async () => {
   try {
     loading.value = true;
+    checkingSavedData.value = true; // Iniciar verificación de datos guardados
     const { data } = await client.models.Boom.get({ id: explosionId });
     explosion.value = data;
 
@@ -287,6 +334,7 @@ const fetchExplosion = async () => {
     explosion.value = null;
   } finally {
     loading.value = false;
+    // checkingSavedData se maneja en checkForSavedData
   }
 };
 
@@ -330,6 +378,76 @@ const refreshSavedData = async () => {
     timeout: 2000
   });
 };
+
+// Función para verificar los estados de todos los procesos
+const checkProcessStates = async () => {
+  if (!explosion.value?.id) return;
+
+  try {
+    console.log('🔍 Verificando estados de procesos para explosión:', explosion.value.id);
+    
+    // Verificar estado del plan de producción
+    await checkPlanProduccionState();
+    
+    // Verificar estado de validación de aprovisionamiento
+    await checkValidacionAprovisionamientoState();
+    
+    console.log('✅ Estados de procesos verificados:', completedSteps.value);
+  } catch (error) {
+    console.error('❌ Error verificando estados de procesos:', error);
+  }
+};
+
+// Función para verificar el estado del plan de producción
+const checkPlanProduccionState = async () => {
+  try {
+    const { data } = await client.models.Boom.get({ id: explosion.value.id });
+    if (!data) return;
+
+    // Verificar si todos los procesos del plan de producción están completados
+    const procesosConfig = {
+      'sincronizar-insumos': 'SyncInsumosStatus',
+      'sincronizar-plan-ventas': 'SyncSalesPlanStatus', 
+      'calcular-plan-demanda': 'SyncDemandPlanStatus'
+    };
+
+    let todosCompletados = true;
+    for (const [procesoId, statusField] of Object.entries(procesosConfig)) {
+      const status = data[statusField];
+      if (!status || !status.toString().toUpperCase().includes('COMPLETADO')) {
+        todosCompletados = false;
+        break;
+      }
+    }
+
+    if (todosCompletados) {
+      completedSteps.value['generar-plan-de-produccion'] = true;
+      console.log('✅ Plan de producción marcado como completado');
+    }
+  } catch (error) {
+    console.error('❌ Error verificando estado del plan de producción:', error);
+  }
+};
+
+// Función para verificar el estado de validación de aprovisionamiento
+const checkValidacionAprovisionamientoState = async () => {
+  try {
+    // Si el plan de producción está completado, permitir acceso a validación
+    if (completedSteps.value['generar-plan-de-produccion']) {
+      // Por ahora, marcamos como completado si el plan está listo
+      // En el futuro, aquí se podría verificar si ya se realizó la validación
+      completedSteps.value['validacion-de-aprovisionamiento'] = true;
+      console.log('✅ Validación de aprovisionamiento habilitada');
+    }
+  } catch (error) {
+    console.error('❌ Error verificando estado de validación:', error);
+  }
+};
+
+// Computed para verificar si todos los procesos están completos
+const allProcessesCompleted = computed(() => {
+  return Object.values(completedSteps.value).every(completed => completed === true);
+});
 
 const deleteExplosion = async () => {
   if (
@@ -393,25 +511,51 @@ const handleBoomProcessCompleted = async () => {
 const availableSteps = computed(() => {
   return stepperItems.value.map((item, index) => {
     let disabled = false;
+    let status = 'pending'; // pending, completed, current, disabled
+
+    // Si todos los procesos están completos, permitir navegación libre
+    if (allProcessesCompleted.value) {
+      disabled = false;
+      status = 'completed';
+      return {
+        ...item,
+        disabled,
+        status
+      };
+    }
 
     // El primer paso siempre está disponible
     if (index === 0) {
       disabled = false;
+      status = completedSteps.value['carga-de-insumos'] ? 'completed' : 'current';
     }
     // Los siguientes pasos dependen del anterior
     else if (index === 1) {
+      // Paso 2: Generar plan de producción
       disabled = !completedSteps.value['carga-de-insumos'];
+      status = completedSteps.value['carga-de-insumos'] 
+        ? (completedSteps.value['generar-plan-de-produccion'] ? 'completed' : 'current')
+        : 'disabled';
     }
     else if (index === 2) {
+      // Paso 3: Validación de aprovisionamiento
       disabled = !completedSteps.value['generar-plan-de-produccion'];
+      status = completedSteps.value['generar-plan-de-produccion'] 
+        ? (completedSteps.value['validacion-de-aprovisionamiento'] ? 'completed' : 'current')
+        : 'disabled';
     }
     else if (index === 3) {
+      // Paso 4: Explosionar
       disabled = !completedSteps.value['validacion-de-aprovisionamiento'];
+      status = completedSteps.value['validacion-de-aprovisionamiento'] 
+        ? (completedSteps.value['explocionar'] ? 'completed' : 'current')
+        : 'disabled';
     }
 
     return {
       ...item,
-      disabled
+      disabled,
+      status
     };
   });
 });
@@ -423,6 +567,11 @@ const handlePlanProduccionCompleted = async () => {
 
   // Avanzar al siguiente paso
   await completePlanProduccion();
+};
+
+// Método para manejar el cambio de estado de carga del plan de producción
+const handlePlanProduccionLoadingStateChanged = (isLoading) => {
+  loadingPlanProduccion.value = isLoading;
 };
 
 // Métodos para completar cada paso
@@ -453,34 +602,87 @@ const completePlanProduccion = async () => {
 };
 
 const handleValidacionAprovisionamientoCompleted = async () => {
+  // Marcar como completado - el usuario ha tomado la decisión de proceder
   completedSteps.value['validacion-de-aprovisionamiento'] = true;
 
   // Esperar a que el DOM se actualice
   await nextTick();
 
-  // Avanzar al siguiente paso si es posible
+  // Avanzar al siguiente paso (explosión) si es posible
   if (isStepperReady.value && mainStepper.value.hasNext) {
     try {
       mainStepper.value.next();
+      
+      // Scroll suave hacia el stepper
       setTimeout(() => {
         window.scrollTo({ top: 200, behavior: "smooth" });
       }, 100);
+
+      // Mostrar notificación simple
+      useToast().add({
+        title: "Continuando",
+        description: "Avanzando al paso final",
+        color: "green",
+        timeout: 2000
+      });
     } catch (error) {
       console.warn("Error al avanzar stepper:", error);
     }
   }
 };
 
-const completeExplosion = () => {
-  completedSteps.value['explocionar'] = true;
-
-  useToast().add({
-    title: "Explosión completada",
-    description: "La explosión de materiales se ha ejecutado exitosamente",
-    color: "green",
-    timeout: 3000
-  });
+const confirmAndExecuteExplosion = () => {
+  // Mostrar confirmación antes de ejecutar
+  if (confirm(
+    "¿Está seguro de que desea ejecutar la explosión final de materiales?\n\n" +
+    "Este proceso procesará todos los datos y generará los resultados finales. " +
+    "Esta acción no se puede deshacer una vez iniciada."
+  )) {
+    executeExplosion();
+  }
 };
+
+const executeExplosion = async () => {
+  try {
+    // Simular proceso de explosión (en producción aquí se llamaría a la API)
+    const loadingToast = useToast().add({
+      title: "Ejecutando explosión...",
+      description: "Procesando datos y generando resultados. Esto puede tomar varios minutos.",
+      color: "blue",
+      timeout: 0 // No se cierra automáticamente
+    });
+
+    // Simular delay del proceso
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Marcar como completado
+    completedSteps.value['explocionar'] = true;
+
+    // Cerrar toast de carga
+    useToast().remove(loadingToast.id);
+
+    // Mostrar notificación de éxito
+    useToast().add({
+      title: "¡Explosión completada!",
+      description: "La explosión de materiales se ha ejecutado exitosamente. Los resultados están listos.",
+      color: "green",
+      timeout: 5000
+    });
+
+  } catch (error) {
+    console.error("Error ejecutando explosión:", error);
+    
+    useToast().add({
+      title: "Error en explosión",
+      description: "Ocurrió un error durante la ejecución de la explosión de materiales",
+      color: "red",
+      timeout: 4000
+    });
+  }
+};
+
+// Método legacy para compatibilidad
+const completeExplosion = confirmAndExecuteExplosion;
 
 
 const getStatusConfig = (status) => {
@@ -558,7 +760,9 @@ const formatRelativeDate = (date) => {
 };
 
 // Cargar datos al montar el componente
-onMounted(() => {
-  fetchExplosion();
+onMounted(async () => {
+  await fetchExplosion();
+  // Verificar estados de procesos después de cargar la explosión
+  await checkProcessStates();
 });
 </script>

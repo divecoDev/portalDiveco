@@ -11,9 +11,12 @@ export const handler = async (event: any) => {
   const factoryName = process.env.AZURE_DATA_FACTORY_NAME || "";
 
 
-  console.log("subscriptionId", subscriptionId);
-  console.log("factoryName", factoryName);
-  console.log("pipelineName", pipelineName);
+  
+  console.log("AZURE_TENANT_ID", process.env.AZURE_TENANT_ID);
+  console.log("AZURE_CLIENT_ID", process.env.AZURE_CLIENT_ID);
+  console.log("AZURE_CLIENT_SECRET", process.env.AZURE_CLIENT_SECRET);
+  console.log("AZURE_SUBSCRIPTION_ID", process.env.AZURE_SUBSCRIPTION_ID);
+  console.log("AZURE_DATA_FACTORY_NAME", process.env.AZURE_DATA_FACTORY_NAME);
 
   const credential = new DefaultAzureCredential();
 

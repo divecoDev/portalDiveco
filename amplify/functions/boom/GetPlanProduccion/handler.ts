@@ -4,8 +4,6 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 export const handler = async (event: any) => {
     try {
-        console.log("event", event);
-        console.log("event.headers", event.headers);
         const boomId = event.headers.boom_id;
         let data = event.body;
         
