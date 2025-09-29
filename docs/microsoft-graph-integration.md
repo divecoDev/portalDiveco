@@ -524,7 +524,7 @@ La aplicación construye una estructura jerárquica completa utilizando el endpo
 const getDirectReportsRecursive = async (
   userName,
   maxDepth = 3,
-  currentDepth = 0
+  currentDepth = 0,
 ) => {
   if (currentDepth >= maxDepth) return [];
 
@@ -536,7 +536,7 @@ const getDirectReportsRecursive = async (
       const subordinates = await getDirectReportsRecursive(
         report.mail,
         maxDepth,
-        currentDepth + 1
+        currentDepth + 1,
       );
 
       return {
@@ -545,7 +545,7 @@ const getDirectReportsRecursive = async (
         hasSubordinates: subordinates.length > 0,
         subordinatesCount: subordinates.length,
       };
-    })
+    }),
   );
 
   return processedReports;

@@ -43,7 +43,7 @@ interface ProcessLog {
 function addLog(
   level: string,
   message: string,
-  processLogs: ProcessLog[]
+  processLogs: ProcessLog[],
 ): void {
   const log = {
     timestamp: new Date().toISOString(),
@@ -60,7 +60,7 @@ function findElementByKey(obj: any, keyName: string): any {
 
   console.log(
     `[SOAP Service] Buscando elemento '${keyName}' en:`,
-    Object.keys(obj)
+    Object.keys(obj),
   );
 
   // Buscar en las claves directas
@@ -69,7 +69,7 @@ function findElementByKey(obj: any, keyName: string): any {
     const cleanKey = key.includes(":") ? key.split(":").pop() : key;
     if (cleanKey === keyName) {
       console.log(
-        `[SOAP Service] Elemento '${keyName}' encontrado en clave: '${key}'`
+        `[SOAP Service] Elemento '${keyName}' encontrado en clave: '${key}'`,
       );
       return obj[key];
     }
@@ -91,7 +91,7 @@ function findElementByKey(obj: any, keyName: string): any {
 function generateSapOperationSOAPBody(
   sapUser: string,
   email: string,
-  accion: string = "R"
+  accion: string = "R",
 ): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:urn="urn:sap-com:document:sap:rfc:functions">
@@ -109,12 +109,12 @@ function generateSapOperationSOAPBody(
 // Función para llamar al web service SAP
 async function callSOAPService(soapBody: string): Promise<any> {
   const credentials = Buffer.from(
-    `${SAP_WEB_SERVICE_CONFIG.credentials.username}:${SAP_WEB_SERVICE_CONFIG.credentials.password}`
+    `${SAP_WEB_SERVICE_CONFIG.credentials.username}:${SAP_WEB_SERVICE_CONFIG.credentials.password}`,
   ).toString("base64");
 
   try {
     console.log(
-      `[SOAP Service] Iniciando llamada a: ${SAP_WEB_SERVICE_CONFIG.url}`
+      `[SOAP Service] Iniciando llamada a: ${SAP_WEB_SERVICE_CONFIG.url}`,
     );
     console.log(`[SOAP Service] Headers de la petición:`, {
       "Content-Type": "text/xml; charset=utf-8",
@@ -134,11 +134,11 @@ async function callSOAPService(soapBody: string): Promise<any> {
     });
 
     console.log(
-      `[SOAP Service] Respuesta recibida - Status: ${response.status} ${response.statusText}`
+      `[SOAP Service] Respuesta recibida - Status: ${response.status} ${response.statusText}`,
     );
     console.log(
       `[SOAP Service] Headers de respuesta:`,
-      Object.fromEntries(response.headers.entries())
+      Object.fromEntries(response.headers.entries()),
     );
 
     if (!response.ok) {
@@ -146,21 +146,21 @@ async function callSOAPService(soapBody: string): Promise<any> {
         .text()
         .catch(() => "No se pudo leer el contenido de error");
       console.error(
-        `[SOAP Service] Error HTTP ${response.status}: ${response.statusText}`
+        `[SOAP Service] Error HTTP ${response.status}: ${response.statusText}`,
       );
       console.error(`[SOAP Service] Contenido del error:`, errorText);
       throw new Error(
-        `HTTP error! status: ${response.status} - ${response.statusText} - Content: ${errorText}`
+        `HTTP error! status: ${response.status} - ${response.statusText} - Content: ${errorText}`,
       );
     }
 
     const responseText = await response.text();
     console.log(
       `[SOAP Service] Contenido de respuesta (primeros 500 chars):`,
-      responseText
+      responseText,
     );
     console.log(
-      `[SOAP Service] Longitud total de respuesta: ${responseText.length} caracteres`
+      `[SOAP Service] Longitud total de respuesta: ${responseText.length} caracteres`,
     );
 
     // Parsear respuesta SOAP básica
@@ -171,7 +171,7 @@ async function callSOAPService(soapBody: string): Promise<any> {
       xmlDoc = await parser.parseStringPromise(responseText);
       console.log(
         `[SOAP Service] XML parseado exitosamente:`,
-        JSON.stringify(xmlDoc, null, 2)
+        JSON.stringify(xmlDoc, null, 2),
       );
     } catch (parseError) {
       console.error(`[SOAP Service] Error parseando XML:`, parseError);
@@ -182,7 +182,7 @@ async function callSOAPService(soapBody: string): Promise<any> {
     // PRIMERO: Buscar la estructura real del web service SAP (n0:ZGLFU_WS_SRVUSERSAPResponse)
     const sapResponseElement = findElementByKey(
       xmlDoc,
-      "ZGLFU_WS_SRVUSERSAPResponse"
+      "ZGLFU_WS_SRVUSERSAPResponse",
     );
     if (
       sapResponseElement &&
@@ -192,7 +192,7 @@ async function callSOAPService(soapBody: string): Promise<any> {
       console.log(`[SOAP Service] Usando parsing para estructura SAP Response`);
       console.log(
         `[SOAP Service] Elemento encontrado:`,
-        JSON.stringify(sapResponseElement, null, 2)
+        JSON.stringify(sapResponseElement, null, 2),
       );
       const responseData = sapResponseElement[0];
 
@@ -213,7 +213,7 @@ async function callSOAPService(soapBody: string): Promise<any> {
         const isSuccess = codigo === "0" || codigo === 0;
 
         console.log(
-          `[SOAP Service] Parsing exitoso - Código: ${codigo}, Éxito: ${isSuccess}`
+          `[SOAP Service] Parsing exitoso - Código: ${codigo}, Éxito: ${isSuccess}`,
         );
 
         return {
@@ -229,7 +229,7 @@ async function callSOAPService(soapBody: string): Promise<any> {
         };
       } else {
         console.log(
-          `[SOAP Service] Campos requeridos faltantes - Código: ${codigo}, Mensaje: ${mensaje}`
+          `[SOAP Service] Campos requeridos faltantes - Código: ${codigo}, Mensaje: ${mensaje}`,
         );
       }
     } else {
@@ -320,14 +320,14 @@ async function callSOAPService(soapBody: string): Promise<any> {
     }
 
     console.log(
-      `[SOAP Service] No se pudo procesar la respuesta del servicio SAP`
+      `[SOAP Service] No se pudo procesar la respuesta del servicio SAP`,
     );
     console.log(`[SOAP Service] Estructura XML completa:`, responseText);
     console.log(
-      `[SOAP Service] Tipos de parsing intentados: SAP Response, Return, RFC, SOAP genérico`
+      `[SOAP Service] Tipos de parsing intentados: SAP Response, Return, RFC, SOAP genérico`,
     );
     console.log(
-      `[SOAP Service] Ningún parsing fue exitoso - usando respuesta por defecto`
+      `[SOAP Service] Ningún parsing fue exitoso - usando respuesta por defecto`,
     );
 
     return {
@@ -352,10 +352,10 @@ async function callSOAPService(soapBody: string): Promise<any> {
         error.message.includes("ECONNREFUSED")
       ) {
         console.error(
-          `[SOAP Service] Error de conexión detectado - URL: ${SAP_WEB_SERVICE_CONFIG.url}`
+          `[SOAP Service] Error de conexión detectado - URL: ${SAP_WEB_SERVICE_CONFIG.url}`,
         );
         console.error(
-          `[SOAP Service] Posibles causas: servicio no disponible, timeout, firewall, etc.`
+          `[SOAP Service] Posibles causas: servicio no disponible, timeout, firewall, etc.`,
         );
       }
     } else {
@@ -375,7 +375,7 @@ export const handler: Handler = async (event) => {
     addLog(
       "info",
       "===== INICIO FUNCIÓN LAMBDA OPERACIONES SAP =====",
-      processLogs
+      processLogs,
     );
 
     // Extraer argumentos del evento
@@ -403,7 +403,7 @@ export const handler: Handler = async (event) => {
       addLog(
         "error",
         `Acción no válida: ${accion}. Solo se permiten 'R' (reset) o 'D' (desbloquear)`,
-        processLogs
+        processLogs,
       );
       return {
         success: false,
@@ -423,7 +423,7 @@ export const handler: Handler = async (event) => {
     addLog(
       "info",
       `Acción: ${accion} (${accion === "R" ? "Reset Password" : "Unlock User"})`,
-      processLogs
+      processLogs,
     );
 
     // Generar el body SOAP para la operación SAP
@@ -434,7 +434,7 @@ export const handler: Handler = async (event) => {
     addLog(
       "info",
       `Body SOAP generado (primeros 200 chars): ${soapBody.substring(0, 200)}...`,
-      processLogs
+      processLogs,
     );
 
     // Sistema de reintentos
@@ -459,7 +459,7 @@ export const handler: Handler = async (event) => {
           addLog(
             "info",
             `Datos adicionales: ${JSON.stringify(sapResponse.additionalData)}`,
-            processLogs
+            processLogs,
           );
         }
 
@@ -475,12 +475,12 @@ export const handler: Handler = async (event) => {
           addLog(
             "info",
             `Código de respuesta: ${sapResponse.codigo}`,
-            processLogs
+            processLogs,
           );
           addLog(
             "info",
             `Mensaje del servicio: ${sapResponse.mensaje}`,
-            processLogs
+            processLogs,
           );
 
           const defaultMessage =
@@ -507,12 +507,12 @@ export const handler: Handler = async (event) => {
           addLog(
             "error",
             `Error del servicio SAP - Código: ${sapResponse.codigo}`,
-            processLogs
+            processLogs,
           );
           addLog(
             "error",
             `Mensaje de error: ${sapResponse.mensaje}`,
-            processLogs
+            processLogs,
           );
           addLog("error", `Flag success: ${sapResponse.success}`, processLogs);
 
@@ -536,16 +536,16 @@ export const handler: Handler = async (event) => {
         addLog(
           "error",
           `Error en intento ${attempts}: ${errorMessage}`,
-          processLogs
+          processLogs,
         );
 
         // Log adicional para errores de conexión
         if (error instanceof Error) {
           console.error(
-            `[Lambda Handler] Intento ${attempts} - Tipo de error: ${error.constructor.name}`
+            `[Lambda Handler] Intento ${attempts} - Tipo de error: ${error.constructor.name}`,
           );
           console.error(
-            `[Lambda Handler] Intento ${attempts} - Mensaje completo: ${error.message}`
+            `[Lambda Handler] Intento ${attempts} - Mensaje completo: ${error.message}`,
           );
 
           if (
@@ -554,26 +554,26 @@ export const handler: Handler = async (event) => {
             error.message.includes("ECONNREFUSED")
           ) {
             console.error(
-              `[Lambda Handler] Intento ${attempts} - Error de conexión detectado`
+              `[Lambda Handler] Intento ${attempts} - Error de conexión detectado`,
             );
             console.error(
-              `[Lambda Handler] Intento ${attempts} - URL objetivo: ${SAP_WEB_SERVICE_CONFIG.url}`
+              `[Lambda Handler] Intento ${attempts} - URL objetivo: ${SAP_WEB_SERVICE_CONFIG.url}`,
             );
             console.error(
-              `[Lambda Handler] Intento ${attempts} - Posibles causas: servicio SAP no disponible, timeout, firewall, problemas de red`
+              `[Lambda Handler] Intento ${attempts} - Posibles causas: servicio SAP no disponible, timeout, firewall, problemas de red`,
             );
 
             addLog(
               "error",
               `Error de conexión - URL: ${SAP_WEB_SERVICE_CONFIG.url}`,
-              processLogs
+              processLogs,
             );
           }
 
           if (error.stack) {
             console.error(
               `[Lambda Handler] Intento ${attempts} - Stack trace:`,
-              error.stack
+              error.stack,
             );
           }
         }
@@ -583,7 +583,7 @@ export const handler: Handler = async (event) => {
           addLog(
             "info",
             `Esperando ${delay}ms antes del siguiente intento...`,
-            processLogs
+            processLogs,
           );
           await new Promise((resolve) => setTimeout(resolve, delay));
         }
@@ -594,7 +594,7 @@ export const handler: Handler = async (event) => {
     addLog(
       "error",
       "===== SE AGOTARON TODOS LOS REINTENTOS =====",
-      processLogs
+      processLogs,
     );
     addLog("error", `Total de intentos: ${attempts - 1}`, processLogs);
     const lastErrorMessage =

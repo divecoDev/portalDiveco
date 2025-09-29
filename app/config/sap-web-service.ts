@@ -66,7 +66,7 @@ export interface ResetPasswordError {
 // Función para desbloquear usuario SAP
 export async function unlockUserSAP(
   sapUser: string,
-  email: string
+  email: string,
 ): Promise<{
   success: boolean;
   data?: UnlockUserResponse;
@@ -95,7 +95,7 @@ export async function unlockUserSAP(
     } else {
       // Código 1: Usuario inexistente, otros códigos: errores del sistema
       console.error(
-        `❌ Error SAP - Código: ${sapResponse.codigo}, Mensaje: ${sapResponse.mensaje}`
+        `❌ Error SAP - Código: ${sapResponse.codigo}, Mensaje: ${sapResponse.mensaje}`,
       );
       return {
         success: false,
@@ -120,7 +120,7 @@ export async function unlockUserSAP(
 // Función para reiniciar contraseña SAP
 export async function resetPasswordSAP(
   sapUser: string,
-  email: string
+  email: string,
 ): Promise<{
   success: boolean;
   data?: ResetPasswordResponse;
@@ -170,7 +170,7 @@ export async function resetPasswordSAP(
     } else {
       // Código 1: Usuario inexistente, otros códigos: errores del sistema
       console.log(
-        `❌ Error SAP - Código: ${sapResponse.codigo}, Mensaje: ${sapResponse.mensaje}`
+        `❌ Error SAP - Código: ${sapResponse.codigo}, Mensaje: ${sapResponse.mensaje}`,
       );
       return {
         success: false,

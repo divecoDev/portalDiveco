@@ -252,7 +252,7 @@ const filteredUsers = computed(() => {
     filtered = filtered.filter(
       (user) =>
         user.email.toLowerCase().includes(query) ||
-        user.Username.toLowerCase().includes(query)
+        user.Username.toLowerCase().includes(query),
     );
   }
 
@@ -381,7 +381,7 @@ const getUsers = async () => {
       }
 
       const emailAttribute = user.Attributes.find(
-        (attr) => attr.Name === "email"
+        (attr) => attr.Name === "email",
       );
       return {
         ...user,

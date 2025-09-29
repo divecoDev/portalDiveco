@@ -31,7 +31,7 @@ export interface ApiResponse<T> {
  * Reinicia la contraseña de un usuario SAP
  */
 export async function resetPassword(
-  request: ResetPasswordRequest
+  request: ResetPasswordRequest,
 ): Promise<ApiResponse<ResetPasswordResponse>> {
   console.group("🔑 ===== SERVICIO DE REINICIO DE CONTRASEÑA =====");
   console.log("📝 Request recibido:", request);
@@ -60,7 +60,7 @@ export async function resetPassword(
         console.log("🔄 Intentos realizados:", response.attempts);
         if (response.attempts > 1) {
           console.log(
-            "⚠️ Se requirieron reintentos para completar la operación"
+            "⚠️ Se requirieron reintentos para completar la operación",
           );
         }
       }
@@ -121,7 +121,7 @@ export async function resetPassword(
         throw new Error(`Error del servidor: ${statusError.statusMessage}`);
       } else {
         throw new Error(
-          `Error HTTP ${statusError.statusCode}: ${statusError.statusMessage}`
+          `Error HTTP ${statusError.statusCode}: ${statusError.statusMessage}`,
         );
       }
     } else if (error instanceof Error) {

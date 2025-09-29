@@ -56,12 +56,14 @@ npm run status
 **Propósito**: Reinicia la contraseña de un usuario SAP
 
 **Argumentos**:
+
 - `sapUser`: Usuario SAP
 - `email`: Email del usuario
 
 **Retorna**: String con la respuesta del servicio
 
 **Configuración**:
+
 - Máximo 5 reintentos
 - Delay exponencial entre reintentos
 - Logs detallados de cada operación
@@ -71,6 +73,7 @@ npm run status
 **Propósito**: Obtiene los grupos de un usuario
 
 **Argumentos**:
+
 - `username`: Nombre de usuario
 
 **Retorna**: String con los grupos del usuario
@@ -80,6 +83,7 @@ npm run status
 ### Logs
 
 Todas las funciones generan logs detallados que incluyen:
+
 - Timestamp de cada operación
 - Nivel de log (INFO, WARN, ERROR)
 - Mensaje descriptivo
@@ -97,12 +101,14 @@ Todas las funciones generan logs detallados que incluyen:
 ### Página de Pruebas
 
 Accede a `/test-reset-password` para probar ambas implementaciones:
+
 - **Nuxt API**: Endpoint del servidor
 - **Amplify Lambda**: Función Lambda
 
 ### Comparación
 
 La página de pruebas permite:
+
 - Probar cada implementación por separado
 - Comparar resultados automáticamente
 - Ver logs en tiempo real
@@ -115,6 +121,7 @@ La página de pruebas permite:
 **Causa**: La función de Amplify no está desplegada o el cliente no está configurado correctamente.
 
 **Solución**:
+
 1. Verificar que la función esté desplegada: `npm run status`
 2. Reconstruir y desplegar: `npm run build && npm run deploy`
 3. Verificar que el schema esté correctamente configurado
@@ -124,6 +131,7 @@ La página de pruebas permite:
 **Causa**: Problema con la configuración del schema o la función no está registrada.
 
 **Solución**:
+
 1. Verificar `amplify/data/resource.ts`
 2. Asegurar que la función esté importada en `backend.ts`
 3. Reconstruir el backend

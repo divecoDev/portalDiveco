@@ -167,7 +167,7 @@ El componente `PasswordResetComparison.vue` permite:
 
 ```typescript
 const credentials = btoa(
-  `${SAP_WEB_SERVICE_CONFIG.credentials.username}:${SAP_WEB_SERVICE_CONFIG.credentials.password}`
+  `${SAP_WEB_SERVICE_CONFIG.credentials.username}:${SAP_WEB_SERVICE_CONFIG.credentials.password}`,
 );
 ```
 
@@ -175,7 +175,7 @@ const credentials = btoa(
 
 ```typescript
 const credentials = Buffer.from(
-  `${SAP_WEB_SERVICE_CONFIG.credentials.username}:${SAP_WEB_SERVICE_CONFIG.credentials.password}`
+  `${SAP_WEB_SERVICE_CONFIG.credentials.username}:${SAP_WEB_SERVICE_CONFIG.credentials.password}`,
 ).toString("base64");
 ```
 

@@ -14,7 +14,7 @@ export class SAPWebServiceClient {
   private constructor() {
     // Crear credenciales para Basic Auth
     this.credentials = btoa(
-      `${SAP_WEB_SERVICE_CONFIG.credentials.username}:${SAP_WEB_SERVICE_CONFIG.credentials.password}`
+      `${SAP_WEB_SERVICE_CONFIG.credentials.username}:${SAP_WEB_SERVICE_CONFIG.credentials.password}`,
     );
   }
 
@@ -32,14 +32,14 @@ export class SAPWebServiceClient {
    * Realiza una llamada SOAP al web service
    */
   public async callSOAPService(
-    soapBody: string
+    soapBody: string,
   ): Promise<SAPWebServiceResponse> {
     try {
       console.log("🌐 Iniciando llamada al web service SAP...");
       console.log("📍 URL:", SAP_WEB_SERVICE_CONFIG.url);
       console.log(
         "🔑 Credenciales:",
-        `${SAP_WEB_SERVICE_CONFIG.credentials.username}:***`
+        `${SAP_WEB_SERVICE_CONFIG.credentials.username}:***`,
       );
       console.log("📋 Headers:", {
         ...SAP_WEB_SERVICE_CONFIG.headers,
@@ -70,14 +70,14 @@ export class SAPWebServiceClient {
           body: errorText,
         });
         throw new Error(
-          `HTTP error! status: ${response.status} - ${response.statusText}`
+          `HTTP error! status: ${response.status} - ${response.statusText}`,
         );
       }
 
       const responseText = await response.text();
       console.log(
         "✅ Respuesta exitosa:",
-        responseText.substring(0, 300) + "..."
+        responseText.substring(0, 300) + "...",
       );
 
       return await this.parseSOAPResponse(responseText);

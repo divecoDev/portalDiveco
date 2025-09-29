@@ -43,11 +43,11 @@ const props = defineProps({
 // Computed para procesar datos de éxito vs errores
 const chartData = computed(() => {
   const completedCount = props.history.filter(
-    (record) => record.status === "Completado"
+    (record) => record.status === "Completado",
   ).length;
 
   const errorCount = props.history.filter(
-    (record) => record.status === "Error"
+    (record) => record.status === "Error",
   ).length;
 
   return {

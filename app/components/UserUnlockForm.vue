@@ -188,7 +188,7 @@ onMounted(() => {
 
 const changeSapUserSelected = () => {
   const searchUser = users.value.find(
-    (user) => user.usuario === form.value.sapUser
+    (user) => user.usuario === form.value.sapUser,
   );
   sapUserSelected.value = searchUser;
   form.value.email = searchUser.correo;
@@ -309,13 +309,13 @@ const submitUserUnlock = async () => {
   // Mostrar mensaje de inicio
   showStatusMessage(
     `Iniciando proceso de desbloqueo para usuario ${form.value.sapUser}`,
-    "info"
+    "info",
   );
 
   try {
     console.log("📤 Enviando petición a través de Amplify...");
     console.log(
-      "📍 Usando cliente de Amplify para ResetPassword con acción 'D'"
+      "📍 Usando cliente de Amplify para ResetPassword con acción 'D'",
     );
 
     const response = await client.queries.ResetPassword({
@@ -355,7 +355,7 @@ const submitUserUnlock = async () => {
 
       console.log(
         "✅ Notificación mostrada, verificando estado:",
-        statusMessage.value
+        statusMessage.value,
       );
 
       // Fallback con useToast para verificar que funciona
@@ -483,7 +483,7 @@ const submitUserUnlock = async () => {
         codigo: codigo,
         mensaje: errorMessage,
       },
-      false
+      false,
     );
 
     // Emitir error

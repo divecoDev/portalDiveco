@@ -181,7 +181,7 @@ Puedes crear funciones personalizadas de verificación:
 // Verificar permisos basados en roles
 const hasRole = (roleName: string) => {
   return userGroups.value.some((group) =>
-    group.toLowerCase().includes(roleName.toLowerCase())
+    group.toLowerCase().includes(roleName.toLowerCase()),
   );
 };
 
@@ -189,7 +189,7 @@ const hasRole = (roleName: string) => {
 const hasAccessLevel = (level: string) => {
   const accessLevels = ["basic", "standard", "premium", "admin"];
   const userLevel = userGroups.value.find((group) =>
-    accessLevels.includes(group.toLowerCase())
+    accessLevels.includes(group.toLowerCase()),
   );
   return accessLevels.indexOf(userLevel) >= accessLevels.indexOf(level);
 };

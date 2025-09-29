@@ -28,7 +28,7 @@
       <AppHeader @toggle-sidebar="toggleSidebar" />
 
       <!-- Contenedor de contenido -->
-      <main class="flex-1 pt-12 overflow-auto">
+      <main class="flex-1 pt-12">
         <!-- Breadcrumbs (si existen) - Ancho completo -->
         <div
           v-if="breadcrumbs.length > 0"
@@ -91,6 +91,9 @@
         </div>
       </main>
 
+      <div class="relative bottom-0 left-0 right-0 flex justify-center p-0 m-0">
+        <img src="/logo-uts.png" alt="Diveco" class="w-64 h-64 dark:invert" />
+      </div>
       <AppFooter />
     </div>
   </div>

@@ -46,7 +46,7 @@ export async function testSAPConnection() {
       const responseText = await response.text();
       console.log(
         "✅ Respuesta exitosa:",
-        responseText.substring(0, 500) + "..."
+        responseText.substring(0, 500) + "...",
       );
       return { success: true, data: responseText };
     } else {

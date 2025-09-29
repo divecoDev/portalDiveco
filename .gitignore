@@ -29,6 +29,7 @@ node_modules
 .amplify
 amplify_outputs*
 amplifyconfiguration*
-
+amplify/coverage
 
 package-lock.json
+bun.lock

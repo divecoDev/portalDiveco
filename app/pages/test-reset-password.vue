@@ -421,7 +421,7 @@ const logLevels = [
 // Logs filtrados
 const filteredLogs = computed(() => {
   return allLogs.value.filter((log) =>
-    activeLogLevels.value.includes(log.level)
+    activeLogLevels.value.includes(log.level),
   );
 });
 
@@ -458,7 +458,7 @@ const exportLogs = () => {
   const logText = allLogs.value
     .map(
       (log) =>
-        `[${formatTimestamp(log.timestamp)}] ${log.level.toUpperCase()}: ${log.message} (${log.source})`
+        `[${formatTimestamp(log.timestamp)}] ${log.level.toUpperCase()}: ${log.message} (${log.source})`,
     )
     .join("\n");
 
@@ -608,22 +608,22 @@ const updateMetrics = (testResult) => {
 
   // Calcular tasa de éxito
   metrics.value.successRate = Math.round(
-    (metrics.value.successCount / metrics.value.totalTests) * 100
+    (metrics.value.successCount / metrics.value.totalTests) * 100,
   );
 
   // Actualizar tiempo promedio (simulado)
   const randomTime = Math.floor(Math.random() * 5000) + 1000;
   metrics.value.averageTime = Math.round(
-    (metrics.value.averageTime + randomTime) / 2
+    (metrics.value.averageTime + randomTime) / 2,
   );
 
   if (testResult.source === "Nuxt") {
     metrics.value.nuxtAvgTime = Math.round(
-      (metrics.value.nuxtAvgTime + randomTime) / 2
+      (metrics.value.nuxtAvgTime + randomTime) / 2,
     );
   } else if (testResult.source === "Amplify") {
     metrics.value.amplifyAvgTime = Math.round(
-      (metrics.value.amplifyAvgTime + randomTime) / 2
+      (metrics.value.amplifyAvgTime + randomTime) / 2,
     );
   }
 };
@@ -638,7 +638,7 @@ const handleResetError = (error) => {
   addLog(
     "error",
     `❌ Error en reinicio: ${error.mensaje} (Código: ${error.codigo})`,
-    "Test"
+    "Test",
   );
   updateMetrics({ success: false, source: "Test" });
   systemStatus.value.lastTest = new Date().toLocaleString("es-ES");
@@ -701,7 +701,7 @@ setInterval(() => {
     addLog(
       "info",
       "Logs limpiados automáticamente (más de 500 entradas)",
-      "System"
+      "System",
     );
   }
 }, 3600000);

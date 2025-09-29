@@ -92,7 +92,7 @@ export const PERMISSIONS: Record<string, PermissionConfig> = {
 // Función para verificar si un rol tiene un permiso específico
 export function hasPermission(
   roleName: string,
-  permissionName: string
+  permissionName: string,
 ): boolean {
   const role = ROLES[roleName];
   if (!role) return false;
@@ -119,7 +119,7 @@ export function canAccessRoute(roleName: string, route: string): boolean {
       permission.routes.some((permissionRoute) => {
         // Convertir rutas con parámetros a regex para comparación
         const routeRegex = new RegExp(
-          "^" + permissionRoute.replace(/:[^/]+/g, "[^/]+") + "$"
+          "^" + permissionRoute.replace(/:[^/]+/g, "[^/]+") + "$",
         );
         return routeRegex.test(route);
       })
@@ -154,4 +154,3 @@ export function getRoleColor(roleName: string): string {
 export function getRoleIcon(roleName: string): string {
   return ROLES[roleName]?.icon || "i-heroicons-user";
 }
-

@@ -48,17 +48,49 @@ export const useMicrosoftGraph = () => {
    * @returns Promise<string> Token de acceso
    */
   const getAccessToken = async (): Promise<string> => {
-    const currentUser = await getCurrentUser();
-    // Obtener el email del usuario desde la estructura de Amplify Auth
-    const userEmail = currentUser.username;
+    try {
+      const currentUser = await getCurrentUser();
+      // Obtener el email del usuario desde la estructura de Amplify Auth
+      const userEmail = currentUser.username;
 
-    const tenant = determineTenant(userEmail);
+      const tenant = determineTenant(userEmail);
 
-    const request = await (amplifyClient.queries as any).MicrosoftGraphToken({
-      tenantName: tenant,
-    });
-    const response = JSON.parse(request.data);
-    return response.access_token;
+      const request = await (amplifyClient.queries as any).MicrosoftGraphToken({
+        tenantName: tenant,
+      });
+
+      // Validar que la respuesta tenga datos válidos
+      if (!request || !request.data) {
+        console.warn("🔐 Respuesta vacía del servicio de Microsoft Graph Token");
+        throw new Error("NO_GRAPH_ACCESS");
+      }
+
+      let response;
+      try {
+        response = JSON.parse(request.data);
+      } catch (parseError) {
+        console.warn("🔐 Error parsing respuesta de Microsoft Graph Token:", parseError);
+        throw new Error("NO_GRAPH_ACCESS");
+      }
+
+      if (!response || !response.access_token) {
+        console.warn("🔐 Token de acceso no disponible en la respuesta");
+        throw new Error("NO_GRAPH_ACCESS");
+      }
+
+      return response.access_token;
+    } catch (error) {
+      // Manejo específico para usuarios sin acceso a Microsoft Graph
+      if (error?.name === "UserUnAuthenticatedException" ||
+          error?.message?.includes("User needs to be authenticated") ||
+          error?.message === "NO_GRAPH_ACCESS") {
+        console.warn("🔐 Usuario autenticado sin acceso a Microsoft Graph (probablemente autenticado con contraseña)");
+        throw new Error("NO_GRAPH_ACCESS");
+      }
+
+      console.error("❌ Error inesperado obteniendo token de Microsoft Graph:", error);
+      throw new Error("NO_GRAPH_ACCESS");
+    }
   };
 
   /**
@@ -69,7 +101,7 @@ export const useMicrosoftGraph = () => {
   const getUserData = async (userName: string): Promise<any> => {
     if (!userName) {
       console.error(
-        "userName es requerido para obtener datos de Microsoft Graph"
+        "userName es requerido para obtener datos de Microsoft Graph",
       );
       return null;
     }
@@ -212,7 +244,13 @@ export const useMicrosoftGraph = () => {
 
       return { userData, photo };
     } catch (error: any) {
-      console.error("Error obteniendo datos completos del usuario:", error);
+      // Manejo específico para usuarios sin acceso a Microsoft Graph
+      if (error?.message === "NO_GRAPH_ACCESS") {
+        console.warn("🔐 Usuario sin acceso a Microsoft Graph - usando datos básicos de Cognito");
+        return { userData: null, photo: null };
+      }
+
+      console.error("❌ Error obteniendo datos completos del usuario:", error);
       return { userData: null, photo: null };
     }
   };
