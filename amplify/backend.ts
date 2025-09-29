@@ -1,7 +1,12 @@
 import { defineBackend } from "@aws-amplify/backend";
+import { FunctionUrlAuthType } from "aws-cdk-lib/aws-lambda";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { auth } from "./auth/resource";
 import { data } from "./data/resource";
+import { storage } from "./storage/resource";
+/**
+ * Imports functions
+ */
 import { groups } from "./functions/admin-users/Groups/resource";
 import { resetPassword } from "./functions/reset-password/resource";
 import { users } from "./functions/admin-users/Users/resource";
@@ -10,6 +15,16 @@ import { assignUserToGroup } from "./functions/admin-users/AssignUserToGroup/res
 import { removeUserFromGroup } from "./functions/admin-users/RemoveUserFromGroup/resource";
 import { adminUserGlobalSignOut } from "./functions/admin-users/AdminUserGlobalSignOut/resource";
 import { microsoftGraphToken } from "./functions/microsoft-graph/token/resource";
+/* Functions Boom */
+import { saveSalePlan } from "./functions/boom/saveSalePlan/resource";
+import { runPipeline } from "./functions/boom/runPipeline/resource";
+import { cargaInsumosSaveBatch } from "./functions/carga-insumos/saveBatch/resource";
+import { cargaInsumosGetData } from "./functions/carga-insumos/getData/resource";
+import { BoomGetStatusPipeline } from "./functions/boom/GetStatusPipeline/resource";
+import { GetPlanProduccion } from "./functions/boom/GetPlanProduccion/resource";
+import { GetMaterialesSinAprovicionamiento } from "./functions/boom/GetMaterialesSinAprovicionamiento/resource";
+import { GetMaterialesSinCentroProduccion } from "./functions/boom/getMaterialesSinCentroProduccion/resource";
+
 /**
  * Configuración del backend de Amplify
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
@@ -17,6 +32,7 @@ import { microsoftGraphToken } from "./functions/microsoft-graph/token/resource"
 export const backend = defineBackend({
   auth,
   data,
+  storage,
   groups,
   resetPassword,
   users,
@@ -24,6 +40,14 @@ export const backend = defineBackend({
   assignUserToGroup,
   removeUserFromGroup,
   adminUserGlobalSignOut,
+  saveSalePlan,
+  runPipeline,
+  cargaInsumosSaveBatch,
+  cargaInsumosGetData,
+  BoomGetStatusPipeline,
+  GetPlanProduccion,
+  GetMaterialesSinAprovicionamiento,
+  GetMaterialesSinCentroProduccion,
 });
 
 const resetPasswordLambda = backend.resetPassword.resources.lambda;
@@ -36,6 +60,16 @@ const resetPasswordPolicy = new iam.PolicyStatement({
   resources: ["*"],
 });
 resetPasswordLambda.addToRolePolicy(resetPasswordPolicy);
+
+const saveSalePlanLambda = backend.saveSalePlan.resources.lambda;
+const saveSalePlanPolicy = new iam.PolicyStatement({
+  actions: [
+    "ec2:CreateNetworkInterface",
+    "ec2:DescribeNetworkInterfaces",
+    "ec2:DeleteNetworkInterface"],
+  resources: ["*"],
+});
+saveSalePlanLambda.addToRolePolicy(saveSalePlanPolicy);
 
 /// add resePasswordLambda to  VPC
 
@@ -81,6 +115,63 @@ const adminUserGlobalSignOutPolicy = new iam.PolicyStatement({
   resources: ["*"],
 });
 adminUserGlobalSignOutLambda.addToRolePolicy(adminUserGlobalSignOutPolicy);
+
+const cargaInsumosGetDataLambda = backend.cargaInsumosGetData.resources.lambda;
+const cargaInsumosGetDataPolicy = new iam.PolicyStatement({
+  actions: [
+    "ec2:CreateNetworkInterface",
+    "ec2:DescribeNetworkInterfaces",
+    "ec2:DeleteNetworkInterface",
+  ],
+  resources: ["*"],
+});
+cargaInsumosGetDataLambda.addToRolePolicy(cargaInsumosGetDataPolicy);
+
+const getPlanProduccionLambda = backend.GetPlanProduccion.resources.lambda;
+const getPlanProduccionPolicy = new iam.PolicyStatement({
+  actions: ["ec2:CreateNetworkInterface", "ec2:DescribeNetworkInterfaces", "ec2:DeleteNetworkInterface"],
+  resources: ["*"],
+});
+getPlanProduccionLambda.addToRolePolicy(getPlanProduccionPolicy);
+
+
+const getBoomS3Policy = new iam.PolicyStatement({
+  actions: [
+    "s3:PutObject",
+    "s3:PutObjectAcl",
+    "s3:GetObject",
+    "s3:DeleteObject",
+    "s3:ListBucket"
+  ],
+  resources: [
+    "arn:aws:s3:::explosion-materiales-uts",
+    "arn:aws:s3:::explosion-materiales-uts/*"
+  ],
+});
+getPlanProduccionLambda.addToRolePolicy(getBoomS3Policy);
+getPlanProduccionLambda.addFunctionUrl(
+  {
+    authType: FunctionUrlAuthType.NONE,
+  }
+);
+
+const getMaterialesSinAprovicionamientoLambda = backend.GetMaterialesSinAprovicionamiento.resources.lambda;
+const getMaterialesSinAprovicionamientoPolicy = new iam.PolicyStatement(getBoomS3Policy);
+getMaterialesSinAprovicionamientoLambda.addToRolePolicy(getMaterialesSinAprovicionamientoPolicy);
+getMaterialesSinAprovicionamientoLambda.addFunctionUrl(
+  {
+    authType: FunctionUrlAuthType.NONE,
+  }
+);
+
+const getMaterialesSinCentroProduccionLambda = backend.GetMaterialesSinCentroProduccion.resources.lambda;
+const getMaterialesSinCentroProduccionPolicy = new iam.PolicyStatement(getBoomS3Policy);
+getMaterialesSinCentroProduccionLambda.addToRolePolicy(getMaterialesSinCentroProduccionPolicy);
+getMaterialesSinCentroProduccionLambda.addFunctionUrl(
+  {
+    authType: FunctionUrlAuthType.NONE,
+  }
+);
 
 /*
  * CREACION DE API REST

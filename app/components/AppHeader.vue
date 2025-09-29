@@ -198,7 +198,7 @@ const notifications = ref([
 
 // Computed
 const hasUnreadNotifications = computed(() =>
-  notifications.value.some((n) => n.unread)
+  notifications.value.some((n) => n.unread),
 );
 
 const notificationMenuItems = computed(() => [

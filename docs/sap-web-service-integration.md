@@ -79,7 +79,7 @@ import { getSAPWebServiceClient } from "~/utils/sap-web-service-client";
 const client = getSAPWebServiceClient();
 const soapBody = client.generateUnlockUserSOAPBody(
   "JRODAS",
-  "usuario@diveco.com"
+  "usuario@diveco.com",
 );
 
 try {

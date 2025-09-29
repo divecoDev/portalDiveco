@@ -35,7 +35,7 @@ export interface ApiResponse<T> {
  * Reinicia la contraseña de un usuario SAP usando la función de Amplify
  */
 export async function resetPasswordAmplify(
-  request: ResetPasswordRequest
+  request: ResetPasswordRequest,
 ): Promise<ApiResponse<ResetPasswordResponse>> {
   console.group("🔑 ===== SERVICIO AMPLIFY DE REINICIO DE CONTRASEÑA =====");
   console.log("📝 Request recibido:", request);
@@ -48,7 +48,7 @@ export async function resetPasswordAmplify(
     // Verificar que generateClient esté disponible
     if (typeof generateClient === "undefined") {
       throw new Error(
-        "generateClient no está disponible. Verifica que Amplify esté instalado y configurado."
+        "generateClient no está disponible. Verifica que Amplify esté instalado y configurado.",
       );
     }
 
@@ -66,7 +66,7 @@ export async function resetPasswordAmplify(
 
     if (!client.models.ResetPassword) {
       throw new Error(
-        "La función ResetPassword no está disponible en el cliente de Amplify. Verifica que esté desplegada."
+        "La función ResetPassword no está disponible en el cliente de Amplify. Verifica que esté desplegada.",
       );
     }
 
@@ -88,7 +88,7 @@ export async function resetPasswordAmplify(
     } catch (parseError) {
       console.error("❌ Error parseando respuesta JSON:", parseError);
       throw new Error(
-        "Error al procesar la respuesta de la función de Amplify"
+        "Error al procesar la respuesta de la función de Amplify",
       );
     }
 
@@ -106,7 +106,7 @@ export async function resetPasswordAmplify(
         console.log("🔄 Intentos realizados:", parsedResponse.attempts);
         if (parsedResponse.attempts > 1) {
           console.log(
-            "⚠️ Se requirieron reintentos para completar la operación"
+            "⚠️ Se requirieron reintentos para completar la operación",
           );
         }
       }
@@ -131,7 +131,7 @@ export async function resetPasswordAmplify(
     } else {
       console.error(
         "❌ Respuesta inválida de la función de Amplify:",
-        parsedResponse
+        parsedResponse,
       );
       console.groupEnd();
       throw new Error("Respuesta inválida de la función de Amplify");
@@ -170,7 +170,7 @@ export async function resetPasswordAmplify(
         throw new Error(`Error del servidor: ${statusError.statusMessage}`);
       } else {
         throw new Error(
-          `Error HTTP ${statusError.statusCode}: ${statusError.statusMessage}`
+          `Error HTTP ${statusError.statusCode}: ${statusError.statusMessage}`,
         );
       }
     } else if (error instanceof Error) {
@@ -186,7 +186,7 @@ export async function resetPasswordAmplify(
  */
 export function compareResponses(
   nuxtResponse: ApiResponse<ResetPasswordResponse>,
-  amplifyResponse: ApiResponse<ResetPasswordResponse>
+  amplifyResponse: ApiResponse<ResetPasswordResponse>,
 ): {
   successMatch: boolean;
   dataMatch: boolean;
@@ -200,7 +200,7 @@ export function compareResponses(
   const successMatch = nuxtResponse.success === amplifyResponse.success;
   if (!successMatch) {
     differences.push(
-      `Success no coincide: Nuxt=${nuxtResponse.success}, Amplify=${amplifyResponse.success}`
+      `Success no coincide: Nuxt=${nuxtResponse.success}, Amplify=${amplifyResponse.success}`,
     );
   }
 
@@ -244,7 +244,7 @@ export function compareResponses(
   const attemptsMatch = nuxtResponse.attempts === amplifyResponse.attempts;
   if (!attemptsMatch) {
     differences.push(
-      `Intentos no coinciden: Nuxt=${nuxtResponse.attempts}, Amplify=${amplifyResponse.attempts}`
+      `Intentos no coinciden: Nuxt=${nuxtResponse.attempts}, Amplify=${amplifyResponse.attempts}`,
     );
   }
 

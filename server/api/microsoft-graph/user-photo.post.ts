@@ -76,7 +76,7 @@ export default defineEventHandler(async (event) => {
   } catch (error: any) {
     console.error(
       "Error obteniendo foto de usuario de Microsoft Graph:",
-      error
+      error,
     );
 
     // Si es un error de Microsoft Graph API

@@ -45,8 +45,8 @@ export default defineEventHandler(async (event) => {
           (t) =>
             t.correo === user.correo &&
             t.usuario === user.usuario &&
-            t.cod_personal === user.cod_personal
-        )
+            t.cod_personal === user.cod_personal,
+        ),
     );
 
     return {

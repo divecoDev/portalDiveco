@@ -2,11 +2,6 @@
 import { Authenticator } from "@aws-amplify/ui-vue";
 import "@aws-amplify/ui-vue/styles.css";
 
-import { Amplify } from "aws-amplify";
-import outputs from "../amplify_outputs.json";
-
-Amplify.configure(outputs);
-
 import { signInWithRedirect } from "aws-amplify/auth";
 
 import { I18n } from "aws-amplify/utils";
@@ -133,10 +128,12 @@ const handleNovaFinanzasSignIn = async () => {
         </div>
       </template>
 
-      <template v-slot="{ user, signOut }" class="bg-white">
-        <NuxtLayout>
-          <NuxtPage />
-        </NuxtLayout>
+      <template v-slot="{ user, signOut }">
+        <div class="bg-white min-h-screen">
+          <NuxtLayout>
+            <NuxtPage />
+          </NuxtLayout>
+        </div>
       </template>
     </authenticator>
   </div>

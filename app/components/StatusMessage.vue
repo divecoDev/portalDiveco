@@ -315,7 +315,7 @@ watch(
       clearAutoHide();
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 // Watch for message changes
@@ -323,7 +323,7 @@ watch(
   () => props.message,
   (newValue) => {
     console.log("🔍 StatusMessage - message changed:", newValue);
-  }
+  },
 );
 
 // Watch for type changes
@@ -331,7 +331,7 @@ watch(
   () => props.type,
   (newValue) => {
     console.log("🔍 StatusMessage - type changed:", newValue);
-  }
+  },
 );
 
 // Cleanup on unmount

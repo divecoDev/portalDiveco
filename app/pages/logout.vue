@@ -98,10 +98,16 @@ const goToRoot = async () => {
 
 // Lifecycle
 onMounted(async () => {
-  // limpiar en local storage
-  localStorage.clear();
-  // Cerrar sesión automáticamente al cargar la página
-  await logout();
+  try {
+    // Solo limpiar localStorage si estamos realmente en la página de logout
+    if (window.location.pathname === '/logout') {
+      localStorage.clear();
+      // Cerrar sesión automáticamente al cargar la página
+      await logout();
+    }
+  } catch (error) {
+    console.error("Error en el proceso de logout:", error);
+  }
 });
 </script>
 

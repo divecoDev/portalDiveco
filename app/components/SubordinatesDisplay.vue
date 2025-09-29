@@ -135,7 +135,7 @@
                           id: graphUserData.id,
                           hasSapUser: currentUserHasSap,
                         },
-                        'reset'
+                        'reset',
                       )
                     : null
                 "
@@ -165,7 +165,7 @@
                           id: graphUserData.id,
                           hasSapUser: currentUserHasSap,
                         },
-                        'unlock'
+                        'unlock',
                       )
                     : null
                 "
@@ -505,7 +505,7 @@ const checkCurrentUserSap = async () => {
 const getGraphUserData = async (userName) => {
   if (!userName) {
     console.error(
-      "userName es requerido para obtener datos de Microsoft Graph"
+      "userName es requerido para obtener datos de Microsoft Graph",
     );
     return null;
   }
@@ -578,7 +578,7 @@ const getDirectReportsForUser = async (userName) => {
   // Verificar si es un usuario problemático conocido
   if (problematicUsers.has(userName)) {
     console.warn(
-      `⚠️ Saltando consulta para usuario problemático conocido: ${userName}`
+      `⚠️ Saltando consulta para usuario problemático conocido: ${userName}`,
     );
     return [];
   }
@@ -607,14 +607,14 @@ const getDirectReportsForUser = async (userName) => {
       problematicUsers.add(userName);
     } else if (error.status === 500) {
       console.warn(
-        `⚠️ Error del servidor para usuario: ${userName} - Continuando con otros usuarios`
+        `⚠️ Error del servidor para usuario: ${userName} - Continuando con otros usuarios`,
       );
       // Agregar automáticamente a la lista de usuarios problemáticos
       problematicUsers.add(userName);
     } else {
       console.error(
         `❌ Error consultando directReports para ${userName}:`,
-        error.message
+        error.message,
       );
     }
     return []; // Devolver array vacío para continuar con otros usuarios
@@ -625,7 +625,7 @@ const getDirectReportsForUser = async (userName) => {
 const getDirectReportsRecursive = async (
   userName,
   maxDepth = 3,
-  currentDepth = 0
+  currentDepth = 0,
 ) => {
   if (currentDepth >= maxDepth) {
     return [];
@@ -653,7 +653,7 @@ const getDirectReportsRecursive = async (
         const subordinates = await getDirectReportsRecursive(
           report.mail || report.userPrincipalName,
           maxDepth,
-          currentDepth + 1
+          currentDepth + 1,
         );
 
         processedReport.subordinates = subordinates;
@@ -665,14 +665,14 @@ const getDirectReportsRecursive = async (
           subordinates.reduce((total, sub) => total + sub.subordinatesCount, 0);
 
         return processedReport;
-      })
+      }),
     );
 
     return processedReports;
   } catch (error) {
     console.error(
       `Error en getDirectReportsRecursive para ${userName}:`,
-      error
+      error,
     );
     return [];
   }
@@ -696,7 +696,7 @@ const getDirectReports = async (userName) => {
       // Calcular totales correctamente
       const totalSubordinatesOnly = hierarchicalReports.reduce(
         (total, report) => total + report.subordinatesCount,
-        0
+        0,
       );
       const totalPeopleInHierarchy =
         hierarchicalReports.length + totalSubordinatesOnly;
@@ -783,7 +783,7 @@ const saveActionHistory = async (
   sapUser,
   response,
   action,
-  isSuccess = true
+  isSuccess = true,
 ) => {
   try {
     console.log("📝 ===== GUARDANDO HISTORIAL DE OPERACIÓN =====");

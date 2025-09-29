@@ -2,10 +2,7 @@ import { ref, computed, readonly } from "vue";
 import { getCurrentUser } from "aws-amplify/auth";
 import { useUserGroups } from "./useUserGroups";
 import {
-  ROLES,
   PERMISSIONS,
-  hasPermission,
-  canAccessRoute,
   getHighestRole,
   getRoleDisplayName,
 } from "~/config/roles";
@@ -47,8 +44,13 @@ export const useAuth = () => {
       currentUser.value = user;
       isAuthenticated.value = true;
 
-      // Cargar grupos del usuario
-      await fetchUserGroups();
+      // Intentar cargar grupos del usuario (puede fallar para usuarios con contraseña)
+      try {
+        await fetchUserGroups();
+      } catch (groupError) {
+        console.warn("🔐 Usuario autenticado sin grupos de Cognito:", groupError?.message);
+        // Continuar sin grupos - usuario básico autenticado
+      }
 
       // Obtener el rol principal
       userRole.value = getUserRole();
@@ -56,6 +58,10 @@ export const useAuth = () => {
       // Determinar permisos basados en el rol
       if (isAdmin.value) {
         userPermissions.value = ["*"]; // Todos los permisos
+      } else if (userGroups.value.length === 0) {
+        // Usuario sin grupos - permisos básicos
+        console.info("🔐 Usuario autenticado sin grupos - asignando permisos básicos");
+        userPermissions.value = ["view_dashboard", "edit_profile"];
       } else {
         userPermissions.value = [];
         // Agregar permisos específicos según el rol
@@ -63,7 +69,7 @@ export const useAuth = () => {
           userPermissions.value.push(
             "view_reports",
             "manage_users",
-            "view_analytics"
+            "view_analytics",
           );
         }
         if (isUser.value) {
@@ -98,7 +104,7 @@ export const useAuth = () => {
         permission.routes.some((permissionRoute) => {
           // Convertir rutas con parámetros a regex para comparación
           const routeRegex = new RegExp(
-            "^" + permissionRoute.replace(/:[^/]+/g, "[^/]+") + "$"
+            "^" + permissionRoute.replace(/:[^/]+/g, "[^/]+") + "$",
           );
           return routeRegex.test(route);
         })
@@ -171,6 +177,3 @@ export const useAuth = () => {
     init,
   };
 };
-
-
-

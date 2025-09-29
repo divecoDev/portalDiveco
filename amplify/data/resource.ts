@@ -7,12 +7,14 @@ import { assignUserToGroup } from "../functions/admin-users/AssignUserToGroup/re
 import { removeUserFromGroup } from "../functions/admin-users/RemoveUserFromGroup/resource";
 import { adminUserGlobalSignOut } from "../functions/admin-users/AdminUserGlobalSignOut/resource";
 import { microsoftGraphToken } from "../functions/microsoft-graph/token/resource";
-/*== STEP 1 ===============================================================
-The section below creates a Todo database table with a "content" field. Try
-adding a new "isDone" field as a boolean. The authorization rule below
-specifies that any unauthenticated user can "create", "read", "update",
-and "delete" any "Todo" records.
-=========================================================================*/
+/* Functions Boom */
+import { cargaInsumosSaveBatch } from "../functions/carga-insumos/saveBatch/resource";
+import { cargaInsumosGetData } from "../functions/carga-insumos/getData/resource";
+import { runPipeline } from "../functions/boom/runPipeline/resource";
+import { BoomGetStatusPipeline } from "../functions/boom/GetStatusPipeline/resource";
+import { GetMaterialesSinAprovicionamiento } from "../functions/boom/GetMaterialesSinAprovicionamiento/resource";
+import { GetMaterialesSinCentroProduccion } from "../functions/boom/getMaterialesSinCentroProduccion/resource";
+
 const schema = a.schema({
   Todo: a
     .model({
@@ -87,6 +89,30 @@ const schema = a.schema({
     })
     .authorization((allow) => [allow.publicApiKey()]),
 
+  /*
+    Modelo para generar eplocion de materiales
+    */
+  Boom: a
+    .model({
+      version: a.string(),
+      descripcion: a.string(),
+      username: a.string(),
+      status: a.string(),
+      aditionalData: a.json(),
+      PiepelineRunIdInsumos: a.string(),
+      PiepelineRunIdPlanVentas: a.string(),
+      PiepelineRunIdPlanDemandas: a.string(),
+      PiepelineRunIdExplocion: a.string(),
+      SyncInsumosStatus: a.string(),
+      SyncSalesPlanStatus: a.string(),
+      SyncDemandPlanStatus: a.string(),
+      ExecuteBoomStatus: a.string(),
+      reportePlanDemanda: a.json(),
+      materialesSinAprovicion: a.json(),
+      materialesSinCentroProduccion: a.json(),
+    })
+    .authorization((allow) => [allow.publicApiKey()]),
+
   /**
    * Microsoft Graph Module
    */
@@ -96,7 +122,79 @@ const schema = a.schema({
     .returns(a.string())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(microsoftGraphToken)),
-  // Modelo para la bitacora de usarios que se les resetea la contraseña o se desbloqueo el usuario.
+ /**
+  *  Carga de Insumos - Procesamiento por lotes
+  */
+  saveCargaInsumosBatch: a
+    .mutation()
+    .arguments({
+      tipo: a.string().required(),
+      data: a.json().required(),
+      metadata: a.json().required(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(cargaInsumosSaveBatch)),
+
+  /**
+   *  Carga de Insumos - Consulta de datos guardados
+   */
+  getCargaInsumosData: a
+    .query()
+    .arguments({
+      documentId: a.string(),
+      batchId: a.string(),
+      tipo: a.string(),
+      limit: a.integer(),
+      offset: a.integer(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(cargaInsumosGetData)),
+
+  /**
+   *  Ejeucuion de Pipelines ADF
+   */
+  runPipeline: a
+    .mutation()
+    .arguments({
+      pipelineName: a.string(),
+      Pversion: a.string(),
+      boomId: a.string(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(runPipeline)),
+
+  /**
+   *  Obtener estado de una pipeline
+   */
+  getStatusPipeline: a
+    .query()
+    .arguments({ runId: a.string() })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(BoomGetStatusPipeline)),
+
+  /**
+   *  Obtener materiales sin aprovicionamiento
+   */
+  getMaterialesSinAprovicionamiento: a
+    .query()
+    .arguments({ boomId: a.string() })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(GetMaterialesSinAprovicionamiento)),
+
+  /**
+   *  Obtener materiales sin centro de produccion
+   */
+  getMaterialesSinCentroProduccion: a
+    .query()
+    .arguments({ boomId: a.string() })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(GetMaterialesSinCentroProduccion)),
 });
 
 export type Schema = ClientSchema<typeof schema>;

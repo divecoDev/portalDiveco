@@ -1,7 +1,17 @@
 {
   "type": "module",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.896.0",
+    "@azure/arm-datafactory": "^19.0.0",
+    "@azure/identity": "^4.12.0",
     "@types/xml2js": "^0.4.14",
+    "json-2-csv": "^5.5.9",
+    "mssql": "^11.0.1",
+    "mysql2": "^3.9.7",
     "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "@types/mssql": "^9.1.8",
+    "@types/mysql2": "github:types/mysql2"
   }
 }

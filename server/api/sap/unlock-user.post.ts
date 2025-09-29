@@ -28,7 +28,7 @@ interface ProcessLog {
 function addLog(
   level: string,
   message: string,
-  processLogs: ProcessLog[]
+  processLogs: ProcessLog[],
 ): void {
   const log = {
     timestamp: new Date().toISOString(),
@@ -46,7 +46,7 @@ export default defineEventHandler(async (event) => {
     addLog(
       "info",
       "🚀 ===== INICIO ENDPOINT DESBLOQUEO USUARIO =====",
-      processLogs
+      processLogs,
     );
 
     // Leer el body de la petición
@@ -84,7 +84,7 @@ export default defineEventHandler(async (event) => {
     addLog(
       "info",
       "🌐 Llamando al servicio SAP para desbloqueo de usuario...",
-      processLogs
+      processLogs,
     );
 
     const sapResponse = await unlockUserSAP(sapUser, email);
@@ -140,7 +140,7 @@ export default defineEventHandler(async (event) => {
       addLog(
         "error",
         `🌐 Código de estado: ${statusError.statusCode}`,
-        processLogs
+        processLogs,
       );
       addLog("error", `💬 Mensaje: ${statusError.statusMessage}`, processLogs);
 
@@ -158,7 +158,7 @@ export default defineEventHandler(async (event) => {
       addLog(
         "error",
         error instanceof Error ? error.message : String(error),
-        processLogs
+        processLogs,
       );
 
       // Retornar error genérico

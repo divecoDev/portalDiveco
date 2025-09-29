@@ -309,7 +309,7 @@ const getSapUserFromEmail = async (email) => {
 
     // Buscar el usuario SAP que coincida con el email
     const sapUser = users.find(
-      (user) => user.correo?.toLowerCase() === email?.toLowerCase()
+      (user) => user.correo?.toLowerCase() === email?.toLowerCase(),
     );
 
     return sapUser;
@@ -360,7 +360,7 @@ const handlePasswordReset = async () => {
 
   try {
     console.log(
-      `🚀 Iniciando reinicio de contraseña para: ${props.citizen.displayName}`
+      `🚀 Iniciando reinicio de contraseña para: ${props.citizen.displayName}`,
     );
 
     // Obtener datos del usuario SAP
@@ -376,7 +376,7 @@ const handlePasswordReset = async () => {
     // Mostrar mensaje de procesando
     showStatusMessage(
       `Iniciando proceso de reinicio para ${props.citizen.displayName} (${sapUserData.usuario})`,
-      "info"
+      "info",
     );
 
     const response = await client.queries.ResetPassword({
@@ -418,7 +418,7 @@ const handlePasswordReset = async () => {
   } catch (error) {
     console.error(
       `❌ Error en reinicio para ${props.citizen.displayName}:`,
-      error
+      error,
     );
 
     // Mostrar mensaje de error
@@ -435,7 +435,7 @@ const handlePasswordReset = async () => {
         citizen: props.citizen.displayName,
         email: props.citizen.mail,
       },
-      false
+      false,
     );
   } finally {
     isResetting.value = false;
@@ -464,7 +464,7 @@ const handleUserUnlock = async () => {
     // Mostrar mensaje de procesando
     showStatusMessage(
       `Iniciando proceso de desbloqueo para ${props.citizen.displayName} (${sapUserData.usuario})`,
-      "info"
+      "info",
     );
 
     const response = await client.queries.ResetPassword({
@@ -506,7 +506,7 @@ const handleUserUnlock = async () => {
   } catch (error) {
     console.error(
       `❌ Error en desbloqueo para ${props.citizen.displayName}:`,
-      error
+      error,
     );
 
     // Mostrar mensaje de error
@@ -523,7 +523,7 @@ const handleUserUnlock = async () => {
         citizen: props.citizen.displayName,
         email: props.citizen.mail,
       },
-      false
+      false,
     );
   } finally {
     isUnlocking.value = false;

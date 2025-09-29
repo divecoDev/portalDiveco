@@ -29,7 +29,7 @@ interface ProcessLog {
 function addLog(
   level: string,
   message: string,
-  processLogs: ProcessLog[]
+  processLogs: ProcessLog[],
 ): void {
   const log = {
     timestamp: new Date().toISOString(),
@@ -49,7 +49,7 @@ export default defineEventHandler(async (event) => {
     addLog(
       "info",
       "===== INICIO ENDPOINT REINICIO CONTRASEÑA =====",
-      processLogs
+      processLogs,
     );
 
     // Leer el body de la petición
@@ -89,17 +89,17 @@ export default defineEventHandler(async (event) => {
     addLog(
       "info",
       `Body SOAP generado (primeros 200 chars): ${soapBody.substring(0, 200)}...`,
-      processLogs
+      processLogs,
     );
 
     // Crear credenciales para Basic Auth
     const credentials = btoa(
-      `${SAP_WEB_SERVICE_CONFIG.credentials.username}:${SAP_WEB_SERVICE_CONFIG.credentials.password}`
+      `${SAP_WEB_SERVICE_CONFIG.credentials.username}:${SAP_WEB_SERVICE_CONFIG.credentials.password}`,
     );
     addLog(
       "info",
       `Credenciales generadas (username): ${SAP_WEB_SERVICE_CONFIG.credentials.username}`,
-      processLogs
+      processLogs,
     );
 
     // Sistema de reintentos
@@ -111,19 +111,19 @@ export default defineEventHandler(async (event) => {
         addLog(
           "info",
           `===== INTENTO ${attempt}/${MAX_RETRIES} =====`,
-          processLogs
+          processLogs,
         );
         addLog("info", "===== ENVIANDO PETICIÓN A SAP =====", processLogs);
         addLog("info", `URL: ${SAP_WEB_SERVICE_CONFIG.url}`, processLogs);
         addLog(
           "info",
           `Acción: ${SAP_WEB_SERVICE_CONFIG.actions.RESET_PASSWORD}`,
-          processLogs
+          processLogs,
         );
         addLog(
           "info",
           `Timestamp de envío: ${new Date().toISOString()}`,
-          processLogs
+          processLogs,
         );
 
         // Realizar la llamada al web service SAP
@@ -140,13 +140,13 @@ export default defineEventHandler(async (event) => {
         addLog(
           "info",
           `Timestamp de respuesta: ${new Date().toISOString()}`,
-          processLogs
+          processLogs,
         );
         addLog("info", `Tipo de respuesta: ${typeof response}`, processLogs);
         addLog(
           "info",
           `Respuesta (primeros 300 chars): ${String(response).substring(0, 300)}...`,
-          processLogs
+          processLogs,
         );
 
         // Parsear la respuesta SOAP
@@ -156,7 +156,7 @@ export default defineEventHandler(async (event) => {
         addLog(
           "info",
           `Respuesta parseada: ${JSON.stringify(parsedResponse, null, 2)}`,
-          processLogs
+          processLogs,
         );
 
         if (parsedResponse.success) {
@@ -184,12 +184,12 @@ export default defineEventHandler(async (event) => {
           addLog(
             "error",
             `Código de error: ${parsedResponse.codigo}`,
-            processLogs
+            processLogs,
           );
           addLog(
             "error",
             `Mensaje de error: ${parsedResponse.error?.mensaje || parsedResponse.mensaje}`,
-            processLogs
+            processLogs,
           );
 
           // Si es un error del servicio SAP (no de conexión), no reintentar
@@ -197,7 +197,7 @@ export default defineEventHandler(async (event) => {
             addLog(
               "info",
               "Error del servicio SAP, no se reintentará",
-              processLogs
+              processLogs,
             );
             return {
               success: false,
@@ -221,7 +221,7 @@ export default defineEventHandler(async (event) => {
           addLog(
             "warn",
             `Intento ${attempt} falló, reintentando en ${delay}ms...`,
-            processLogs
+            processLogs,
           );
 
           let errorMessage = "Error desconocido";
@@ -242,7 +242,7 @@ export default defineEventHandler(async (event) => {
           addLog(
             "error",
             `===== AGOTADOS LOS ${MAX_RETRIES} INTENTOS =====`,
-            processLogs
+            processLogs,
           );
 
           let errorMessage = "Error desconocido";
@@ -264,12 +264,12 @@ export default defineEventHandler(async (event) => {
     addLog(
       "error",
       "===== ERROR CRÍTICO DESPUÉS DE REINTENTOS =====",
-      processLogs
+      processLogs,
     );
     addLog(
       "error",
       `Total de intentos realizados: ${MAX_RETRIES}`,
-      processLogs
+      processLogs,
     );
 
     let lastErrorMessage = "Error desconocido";
@@ -308,7 +308,7 @@ export default defineEventHandler(async (event) => {
       addLog(
         "error",
         `Código de estado: ${statusError.statusCode}`,
-        processLogs
+        processLogs,
       );
       addLog("error", `Mensaje: ${statusError.statusMessage}`, processLogs);
 
@@ -409,4 +409,3 @@ function parseSOAPResponse(xmlString: string): {
     };
   }
 }
-
