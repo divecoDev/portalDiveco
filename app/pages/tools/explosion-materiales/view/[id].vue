@@ -61,55 +61,73 @@
       >
 
         <template #carga-de-insumos>
-          <div
-            class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-          >
-            <!-- Header con controles -->
-            <div class="flex items-center justify-between mb-6">
-              <div class="flex items-center">
-                <div
-                  class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-cyan-500/25"
-                >
-                  <UIcon name="i-heroicons-circle-stack" class="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                    Carga de Insumos
-                  </h3>
-                  <p class="text-sm text-gray-600 dark:text-gray-300">
-                    {{ hasSavedData ? 'Datos cargados y guardados' : 'Proceso de carga de datos' }}
-                  </p>
-                </div>
-              </div>
-
-              <!-- Botones de acción -->
-              <div class="flex items-center space-x-3">
-                <UButton
-                  v-if="hasSavedData"
-                  icon="i-heroicons-arrow-path"
-                  size="sm"
-                  color="gray"
-                  variant="outline"
-                  @click="refreshSavedData"
-                  :loading="checkingSavedData"
-                >
-                  Actualizar
-                </UButton>
+          <div class="relative">
+            <!-- Spinner de carga mientras se verifica si hay datos guardados -->
+            <div 
+              v-if="checkingSavedData"
+              class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl z-10 flex items-center justify-center"
+            >
+              <div class="text-center">
+                <div class="w-12 h-12 border-4 border-cyan-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                  Verificando datos cargados...
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  Comprobando si ya existen datos de carga de insumos
+                </p>
               </div>
             </div>
 
-            <!-- Mostrar datos guardados si existen, sino mostrar proceso de carga -->
-            <CargaInsumosDataView
-              v-if="hasSavedData && !showCargaProcess"
-              :document-id="explosion?.id"
-              :explosion-id="explosionId"
-            />
+            <div
+              class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+            >
+              <!-- Header con controles -->
+              <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center">
+                  <div
+                    class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-cyan-500/25"
+                  >
+                    <UIcon name="i-heroicons-circle-stack" class="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                      Carga de Insumos
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">
+                      {{ hasSavedData ? 'Datos cargados y guardados' : 'Proceso de carga de datos' }}
+                    </p>
+                  </div>
+                </div>
 
-            <CargaInsumosProcess
-              v-if="!hasSavedData || showCargaProcess"
-              :explosion="explosion"
-              @carga-insumos-completed="handleBoomProcessCompleted"
-            />
+                <!-- Botones de acción -->
+                <div class="flex items-center space-x-3">
+                  <UButton
+                    v-if="hasSavedData"
+                    icon="i-heroicons-arrow-path"
+                    size="sm"
+                    color="gray"
+                    variant="outline"
+                    @click="refreshSavedData"
+                    :loading="checkingSavedData"
+                  >
+                    Actualizar
+                  </UButton>
+                </div>
+              </div>
+
+              <!-- Mostrar datos guardados si existen, sino mostrar proceso de carga -->
+              <CargaInsumosDataView
+                v-if="hasSavedData && !showCargaProcess && !checkingSavedData"
+                :document-id="explosion?.id"
+                :explosion-id="explosionId"
+              />
+
+              <CargaInsumosProcess
+                v-if="(!hasSavedData || showCargaProcess) && !checkingSavedData"
+                :explosion="explosion"
+                @carga-insumos-completed="handleBoomProcessCompleted"
+              />
+            </div>
           </div>
         </template>
 
@@ -305,6 +323,7 @@ const completedSteps = ref({
 const fetchExplosion = async () => {
   try {
     loading.value = true;
+    checkingSavedData.value = true; // Iniciar verificación de datos guardados
     const { data } = await client.models.Boom.get({ id: explosionId });
     explosion.value = data;
 
@@ -315,6 +334,7 @@ const fetchExplosion = async () => {
     explosion.value = null;
   } finally {
     loading.value = false;
+    // checkingSavedData se maneja en checkForSavedData
   }
 };
 
