@@ -245,7 +245,7 @@ import ValidacionAprovisionamiento from "~/components/boom/ValidacionAprovisiona
 const client = generateClient();
 
 // Composable para consultar datos de carga de insumos
-const { getSummary, hasData } = useCargaInsumosData();
+const { getDataByDocument, hasData } = useCargaInsumosData();
 
 const stepperItems = ref([
   {
@@ -295,10 +295,11 @@ const explosion = ref(null);
 const checkingSavedData = ref(false);
 const showCargaProcess = ref(false);
 const loadingPlanProduccion = ref(true); // Estado de carga del plan de producción
+const boomHasSavedData = ref(false); // Estado específico para datos guardados de este boom
 
 // Computed para verificar si hay datos guardados
 const hasSavedData = computed(() => {
-  return completedSteps.value['carga-de-insumos'] && hasData.value;
+  return boomHasSavedData.value;
 });
 
 // Estado para el stepper principal
@@ -345,24 +346,30 @@ const checkForSavedData = async () => {
     checkingSavedData.value = true;
     console.log('🔍 Verificando datos guardados para explosión:', explosion.value.id);
 
-    // Intentar obtener un resumen para ver si hay datos
-    const response = await getSummary();
+    // Consultar datos específicos para este boom usando el boom_id como document_id
+    const response = await getDataByDocument(explosion.value.id);
 
-    if (response.success && response.summary && response.summary.totalRecords > 0) {
-      console.log('✅ Se encontraron datos guardados:', response.summary);
-      console.log('📊 Resumen de datos:', {
-        totalDocuments: response.summary.totalDocuments,
-        totalRecords: response.summary.totalRecords,
-        types: response.summary.types
-      });
-      // Si hay datos, marcar como completado el primer paso
+    console.log('📊 Respuesta de consulta específica:', response);
+
+    if (response.success && response.data && response.data.length > 0) {
+      console.log('✅ Se encontraron datos guardados para este boom:', response.data.length, 'conjuntos');
+      console.log('📊 Resumen específico:', response.summary);
+      
+      // Si hay datos específicos para este boom, marcar como completado
+      boomHasSavedData.value = true;
       completedSteps.value['carga-de-insumos'] = true;
     } else {
-      console.log('📭 No se encontraron datos guardados');
-      console.log('🔍 Respuesta recibida:', response);
+      console.log('📭 No se encontraron datos guardados para este boom específico');
+      console.log('🔍 Resumen específico:', response.summary);
+      
+      // No hay datos específicos para este boom
+      boomHasSavedData.value = false;
+      completedSteps.value['carga-de-insumos'] = false;
     }
   } catch (error) {
     console.error('❌ Error verificando datos guardados:', error);
+    boomHasSavedData.value = false;
+    completedSteps.value['carga-de-insumos'] = false;
   } finally {
     checkingSavedData.value = false;
   }
@@ -481,6 +488,7 @@ const deleteExplosion = async () => {
 const handleBoomProcessCompleted = async () => {
   // Marcar el primer paso como completado
   completedSteps.value['carga-de-insumos'] = true;
+  boomHasSavedData.value = true;
 
   // Esperar a que el DOM se actualice
   await nextTick();

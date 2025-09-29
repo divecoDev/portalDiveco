@@ -896,6 +896,49 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
     },
 
     /**
+     * Cargar datos existentes desde la API
+     */
+    async loadExistingData(apiData: any[]) {
+      console.log("📥 Carga Insumos Store: Cargando datos existentes desde la API...");
+      
+      try {
+        // Limpiar datos actuales
+        this.clearAllData();
+        
+        // Procesar cada tipo de datos
+        for (const record of apiData) {
+          const { tipo, data, metadata } = record;
+          
+          console.log(`📊 Procesando datos de tipo: ${tipo}, registros: ${data.length}`);
+          
+          switch (tipo) {
+            case 'planVentas':
+              this.updatePlanVentasData(data, metadata.fileName);
+              break;
+            case 'existencias':
+              this.updateExistenciasData(data, metadata.fileName);
+              break;
+            case 'cobertura':
+              this.updateCoberturaData(data, metadata.fileName);
+              break;
+            default:
+              console.warn(`⚠️ Tipo de datos no reconocido: ${tipo}`);
+          }
+        }
+        
+        console.log("✅ Carga Insumos Store: Datos existentes cargados exitosamente");
+        console.log(`📊 Resumen de datos cargados:`, this.dataStats);
+        
+        return { success: true };
+        
+      } catch (error) {
+        console.error("❌ Carga Insumos Store: Error cargando datos existentes:", error);
+        this.error = error instanceof Error ? error.message : "Error desconocido";
+        return { success: false, error: this.error };
+      }
+    },
+
+    /**
      * Inicializar el store
      */
     async initialize() {
