@@ -123,7 +123,7 @@
             color="cyan"
             variant="ghost"
             class="hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
-            :disabled="proceso.status === 'ejecutando' || isCompleted || !puedeEjecutarProceso(proceso.id)"
+            :disabled="proceso.status === 'ejecutando' || isCompleted || !puedeEjecutarProceso(proceso.id) || cargandoEstadosIniciales"
             @click="runSingleProcess(proceso.id)"
           >
             Ejecutar
@@ -145,6 +145,7 @@
             color="green"
             variant="ghost"
             class="hover:bg-green-50 dark:hover:bg-green-900/20"
+            :disabled="cargandoEstadosIniciales"
             @click="reEjecutarDesdeCompletado(proceso.id)"
           >
             Re-ejecutar
@@ -213,6 +214,7 @@
             size="sm"
             color="gray"
             class="hover:bg-gray-50 dark:hover:bg-gray-900/20 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold"
+            :disabled="cargandoEstadosIniciales"
             @click="resetearPlanProduccion"
           >
             Ejecutar Nuevamente
@@ -224,6 +226,7 @@
             size="sm"
             color="cyan"
             class="hover:bg-cyan-50 dark:hover:bg-cyan-900/20 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold"
+            :disabled="cargandoEstadosIniciales"
             @click="avanzarSiguientePaso"
           >
             Siguiente Paso
@@ -260,7 +263,7 @@ const props = defineProps({
 });
 
 // Emits
-const emit = defineEmits(['plan-completed']);
+const emit = defineEmits(['plan-completed', 'loading-state-changed']);
 
 // Configuración centralizada de procesos
 const procesosConfig = {
@@ -302,6 +305,7 @@ const ejecucionGlobalEnProgreso = ref(false);
 const pollingIntervals = ref({}); // Múltiples intervalos de polling
 const procesosProduccion = ref([]);
 const esEjecucionNueva = ref(false); // Para distinguir entre ejecución nueva y carga inicial
+const cargandoEstadosIniciales = ref(true); // Estado de carga inicial
 
 // Inicializar procesos basándose en la configuración
 const inicializarProcesos = () => {
@@ -319,6 +323,11 @@ const inicializarProcesos = () => {
 
 // Inicializar procesos al montar el componente
 inicializarProcesos();
+
+// Watcher para emitir cambios en el estado de carga
+watch(cargandoEstadosIniciales, (newValue) => {
+  emit('loading-state-changed', newValue);
+});
 
 // Métodos para manejar los procesos de producción
 const iniciarPlanProduccion = async () => {
@@ -613,6 +622,9 @@ onMounted(async () => {
     }
   } catch (e) {
     console.warn('No se pudo cargar estado inicial de Boom:', e);
+  } finally {
+    // Marcar como completada la carga de estados iniciales
+    cargandoEstadosIniciales.value = false;
   }
 });
 

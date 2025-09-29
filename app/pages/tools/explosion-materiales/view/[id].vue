@@ -114,13 +114,32 @@
         </template>
 
         <template #generar-plan-de-produccion>
-          <PlanProduccionProcess
-            :explosion-id="explosionId"
-            :boom-id="explosion?.id"
-            :is-completed="completedSteps['generar-plan-de-produccion']"
-            @plan-completed="handlePlanProduccionCompleted"
-            :pversion="explosion?.version"
-          />
+          <div class="relative">
+            <!-- Spinner de carga sobre el componente -->
+            <div 
+              v-if="loadingPlanProduccion"
+              class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl z-10 flex items-center justify-center"
+            >
+              <div class="text-center">
+                <div class="w-12 h-12 border-4 border-cyan-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                  Cargando estados de procesos...
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  Verificando el estado actual de los procesos
+                </p>
+              </div>
+            </div>
+
+            <PlanProduccionProcess
+              :explosion-id="explosionId"
+              :boom-id="explosion?.id"
+              :is-completed="completedSteps['generar-plan-de-produccion']"
+              @plan-completed="handlePlanProduccionCompleted"
+              :pversion="explosion?.version"
+              @loading-state-changed="handlePlanProduccionLoadingStateChanged"
+            />
+          </div>
         </template>
 
         <template #validacion-de-aprovisionamiento>
@@ -257,6 +276,7 @@ const loading = ref(true);
 const explosion = ref(null);
 const checkingSavedData = ref(false);
 const showCargaProcess = ref(false);
+const loadingPlanProduccion = ref(true); // Estado de carga del plan de producción
 
 // Computed para verificar si hay datos guardados
 const hasSavedData = computed(() => {
@@ -527,6 +547,11 @@ const handlePlanProduccionCompleted = async () => {
 
   // Avanzar al siguiente paso
   await completePlanProduccion();
+};
+
+// Método para manejar el cambio de estado de carga del plan de producción
+const handlePlanProduccionLoadingStateChanged = (isLoading) => {
+  loadingPlanProduccion.value = isLoading;
 };
 
 // Métodos para completar cada paso
