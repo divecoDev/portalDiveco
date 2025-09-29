@@ -203,10 +203,10 @@
         <div class="text-center py-6">
           <UButton
             icon="i-heroicons-arrow-right"
-            size="lg"
+            size="sm"
             color="cyan"
             :loading="isValidating"
-            class="rounded-md inline-flex items-center px-6 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
+            class="hover:bg-cyan-50 dark:hover:bg-cyan-900/20 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold"
             @click="proceedWithExplosion"
           >
             {{ isValidating ? 'Procesando...' : 'Siguiente Paso' }}

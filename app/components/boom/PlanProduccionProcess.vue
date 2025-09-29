@@ -205,31 +205,30 @@
       </div>
 
       <div v-else-if="todosLosProcesosCompletados" class="text-center">
-        <div class="flex items-center justify-center mb-3">
-          <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg">
-            <UIcon name="i-heroicons-check" class="w-6 h-6 text-white" />
-          </div>
-          <div class="ml-3 text-left">
-            <p class="text-sm font-semibold text-green-600 dark:text-green-400">
-              Plan de Producción Generado
-            </p>
-            <p class="text-xs text-gray-600 dark:text-gray-300">
-              Todos los procesos completados exitosamente
-            </p>
-          </div>
-        </div>
+        <!-- Botones de acción cuando todos los procesos están completados -->
+        <div class="flex items-center justify-center space-x-3">
+          <!-- Botón para resetear y ejecutar nuevamente -->
+          <UButton
+            icon="i-heroicons-arrow-path"
+            size="sm"
+            color="gray"
+            class="hover:bg-gray-50 dark:hover:bg-gray-900/20 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold"
+            @click="resetearPlanProduccion"
+          >
+            Ejecutar Nuevamente
+          </UButton>
 
-        <!-- Botón para resetear y ejecutar nuevamente -->
-        <UButton
-          icon="i-heroicons-arrow-path"
-          size="sm"
-          color="green"
-          variant="outline"
-          class="hover:bg-green-50 dark:hover:bg-green-900/20"
-          @click="resetearPlanProduccion"
-        >
-          Ejecutar Nuevamente
-        </UButton>
+          <!-- Botón para avanzar al siguiente paso -->
+          <UButton
+            icon="i-heroicons-arrow-right"
+            size="sm"
+            color="cyan"
+            class="hover:bg-cyan-50 dark:hover:bg-cyan-900/20 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold"
+            @click="avanzarSiguientePaso"
+          >
+            Siguiente Paso
+          </UButton>
+        </div>
       </div>
     </div>
   </div>
@@ -850,6 +849,20 @@ const resetearPlanProduccion = () => {
   detenerTodosLosPolling();
 
   console.log('🔄 Plan de producción reseteado completamente');
+};
+
+// Función para avanzar al siguiente paso
+const avanzarSiguientePaso = () => {
+  // Emitir evento para que el componente padre maneje la navegación
+  emit('plan-completed');
+  
+  // Mostrar notificación de éxito
+  useToast().add({
+    title: "Avanzando al siguiente paso",
+    description: "Continuando a la validación de aprovisionamiento",
+    color: "cyan",
+    timeout: 3000
+  });
 };
 
 // Función para iniciar polling del estado del pipeline

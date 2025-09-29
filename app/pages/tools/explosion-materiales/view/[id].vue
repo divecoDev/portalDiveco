@@ -339,6 +339,76 @@ const refreshSavedData = async () => {
   });
 };
 
+// Función para verificar los estados de todos los procesos
+const checkProcessStates = async () => {
+  if (!explosion.value?.id) return;
+
+  try {
+    console.log('🔍 Verificando estados de procesos para explosión:', explosion.value.id);
+    
+    // Verificar estado del plan de producción
+    await checkPlanProduccionState();
+    
+    // Verificar estado de validación de aprovisionamiento
+    await checkValidacionAprovisionamientoState();
+    
+    console.log('✅ Estados de procesos verificados:', completedSteps.value);
+  } catch (error) {
+    console.error('❌ Error verificando estados de procesos:', error);
+  }
+};
+
+// Función para verificar el estado del plan de producción
+const checkPlanProduccionState = async () => {
+  try {
+    const { data } = await client.models.Boom.get({ id: explosion.value.id });
+    if (!data) return;
+
+    // Verificar si todos los procesos del plan de producción están completados
+    const procesosConfig = {
+      'sincronizar-insumos': 'SyncInsumosStatus',
+      'sincronizar-plan-ventas': 'SyncSalesPlanStatus', 
+      'calcular-plan-demanda': 'SyncDemandPlanStatus'
+    };
+
+    let todosCompletados = true;
+    for (const [procesoId, statusField] of Object.entries(procesosConfig)) {
+      const status = data[statusField];
+      if (!status || !status.toString().toUpperCase().includes('COMPLETADO')) {
+        todosCompletados = false;
+        break;
+      }
+    }
+
+    if (todosCompletados) {
+      completedSteps.value['generar-plan-de-produccion'] = true;
+      console.log('✅ Plan de producción marcado como completado');
+    }
+  } catch (error) {
+    console.error('❌ Error verificando estado del plan de producción:', error);
+  }
+};
+
+// Función para verificar el estado de validación de aprovisionamiento
+const checkValidacionAprovisionamientoState = async () => {
+  try {
+    // Si el plan de producción está completado, permitir acceso a validación
+    if (completedSteps.value['generar-plan-de-produccion']) {
+      // Por ahora, marcamos como completado si el plan está listo
+      // En el futuro, aquí se podría verificar si ya se realizó la validación
+      completedSteps.value['validacion-de-aprovisionamiento'] = true;
+      console.log('✅ Validación de aprovisionamiento habilitada');
+    }
+  } catch (error) {
+    console.error('❌ Error verificando estado de validación:', error);
+  }
+};
+
+// Computed para verificar si todos los procesos están completos
+const allProcessesCompleted = computed(() => {
+  return Object.values(completedSteps.value).every(completed => completed === true);
+});
+
 const deleteExplosion = async () => {
   if (
     confirm(
@@ -403,6 +473,17 @@ const availableSteps = computed(() => {
     let disabled = false;
     let status = 'pending'; // pending, completed, current, disabled
 
+    // Si todos los procesos están completos, permitir navegación libre
+    if (allProcessesCompleted.value) {
+      disabled = false;
+      status = 'completed';
+      return {
+        ...item,
+        disabled,
+        status
+      };
+    }
+
     // El primer paso siempre está disponible
     if (index === 0) {
       disabled = false;
@@ -410,18 +491,21 @@ const availableSteps = computed(() => {
     }
     // Los siguientes pasos dependen del anterior
     else if (index === 1) {
+      // Paso 2: Generar plan de producción
       disabled = !completedSteps.value['carga-de-insumos'];
       status = completedSteps.value['carga-de-insumos'] 
         ? (completedSteps.value['generar-plan-de-produccion'] ? 'completed' : 'current')
         : 'disabled';
     }
     else if (index === 2) {
+      // Paso 3: Validación de aprovisionamiento
       disabled = !completedSteps.value['generar-plan-de-produccion'];
       status = completedSteps.value['generar-plan-de-produccion'] 
         ? (completedSteps.value['validacion-de-aprovisionamiento'] ? 'completed' : 'current')
         : 'disabled';
     }
     else if (index === 3) {
+      // Paso 4: Explosionar
       disabled = !completedSteps.value['validacion-de-aprovisionamiento'];
       status = completedSteps.value['validacion-de-aprovisionamiento'] 
         ? (completedSteps.value['explocionar'] ? 'completed' : 'current')
@@ -631,7 +715,9 @@ const formatRelativeDate = (date) => {
 };
 
 // Cargar datos al montar el componente
-onMounted(() => {
-  fetchExplosion();
+onMounted(async () => {
+  await fetchExplosion();
+  // Verificar estados de procesos después de cargar la explosión
+  await checkProcessStates();
 });
 </script>
