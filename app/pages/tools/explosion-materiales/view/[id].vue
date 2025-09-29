@@ -170,64 +170,14 @@
         </template>
 
         <template #explocionar>
-          <div
-            class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-          >
-            <div class="text-center py-8">
-              <!-- Icono principal -->
-              <div
-                :class="[
-                  'w-32 h-32 rounded-md flex items-center justify-center mx-auto mb-6 shadow-lg relative transition-all duration-500',
-                  completedSteps['explocionar']
-                    ? 'bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30'
-                    : 'bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30'
-                ]"
-              >
-                <UIcon
-                  name="i-heroicons-bolt"
-                  :class="[
-                    'w-16 h-16 transition-all duration-500',
-                    completedSteps['explocionar']
-                      ? 'text-green-600 dark:text-green-400'
-                      : 'text-cyan-600 dark:text-cyan-400'
-                  ]"
-                />
-                <div v-if="completedSteps['explocionar']" class="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                  <UIcon name="i-heroicons-check" class="w-5 h-5 text-white" />
-                </div>
-              </div>
-
-              <!-- Botón de ejecución o estado completado -->
-              <div v-if="!completedSteps['explocionar']">
-                <UButton
-                  icon="i-heroicons-bolt"
-                  size="lg"
-                  color="cyan"
-                  class="rounded-md inline-flex items-center px-8 py-4 text-base gap-3 shadow-xl bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-bold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-2xl border-0 cursor-pointer"
-                  @click="confirmAndExecuteExplosion"
-                >
-                  <UIcon name="i-heroicons-rocket-launch" class="w-6 h-6" />
-                  Ejecutar Explosión
-                </UButton>
-              </div>
-
-              <!-- Estado completado -->
-              <div v-else class="space-y-4">
-                <div class="w-20 h-20 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-xl animate-pulse mx-auto">
-                  <UIcon name="i-heroicons-check" class="w-10 h-10 text-white" />
-                </div>
-                
-                <div class="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 p-4 rounded-lg border border-green-200 dark:border-green-700/50 max-w-md mx-auto">
-                  <h4 class="text-lg font-semibold text-green-700 dark:text-green-300 mb-2">
-                    ¡Explosión Completada!
-                  </h4>
-                  <p class="text-sm text-green-600 dark:text-green-400">
-                    La explosión de materiales se ha ejecutado exitosamente. Los resultados están disponibles para descarga.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ExplosionProcess
+            :explosion-id="explosionId"
+            :boom-id="explosion?.id"
+            :pversion="explosion?.version"
+            :is-completed="completedSteps['explocionar']"
+            @explosion-completed="handleExplosionCompleted"
+            @loading-state-changed="handleExplosionLoadingStateChanged"
+          />
         </template>
       </UStepper>
     </div>
@@ -240,6 +190,7 @@ import { useCargaInsumosData } from "~/composables/useCargaInsumosData";
 import CargaInsumosDataView from "~/components/CargaInsumosDataView.vue";
 import PlanProduccionProcess from "~/components/boom/PlanProduccionProcess.vue";
 import ValidacionAprovisionamiento from "~/components/boom/ValidacionAprovisionamiento.vue";
+import ExplosionProcess from "~/components/boom/ExplosionProcess.vue";
 
 // Cliente de Amplify
 const client = generateClient();
@@ -451,6 +402,7 @@ const checkValidacionAprovisionamientoState = async () => {
   }
 };
 
+
 // Computed para verificar si todos los procesos están completos
 const allProcessesCompleted = computed(() => {
   return Object.values(completedSteps.value).every(completed => completed === true);
@@ -483,6 +435,7 @@ const deleteExplosion = async () => {
     }
   }
 };
+
 
 // Método para manejar cuando el proceso BOOM se completa
 const handleBoomProcessCompleted = async () => {
@@ -639,58 +592,28 @@ const handleValidacionAprovisionamientoCompleted = async () => {
   }
 };
 
-const confirmAndExecuteExplosion = () => {
-  // Mostrar confirmación antes de ejecutar
-  if (confirm(
-    "¿Está seguro de que desea ejecutar la explosión final de materiales?\n\n" +
-    "Este proceso procesará todos los datos y generará los resultados finales. " +
-    "Esta acción no se puede deshacer una vez iniciada."
-  )) {
-    executeExplosion();
-  }
+// Método para manejar cuando el proceso de explosión se completa
+const handleExplosionCompleted = async () => {
+  // Marcar como completado
+  completedSteps.value['explocionar'] = true;
+
+  // Mostrar notificación de éxito
+  useToast().add({
+    title: "¡Proceso completado!",
+    description: "La explosión de materiales se ha ejecutado exitosamente",
+    color: "green",
+    timeout: 4000
+  });
+
+  console.log('✅ Proceso de explosión completado');
 };
 
-const executeExplosion = async () => {
-  try {
-    // Simular proceso de explosión (en producción aquí se llamaría a la API)
-    const loadingToast = useToast().add({
-      title: "Ejecutando explosión...",
-      description: "Procesando datos y generando resultados. Esto puede tomar varios minutos.",
-      color: "blue",
-      timeout: 0 // No se cierra automáticamente
-    });
-
-    // Simular delay del proceso
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // Marcar como completado
-    completedSteps.value['explocionar'] = true;
-
-    // Cerrar toast de carga
-    useToast().remove(loadingToast.id);
-
-    // Mostrar notificación de éxito
-    useToast().add({
-      title: "¡Explosión completada!",
-      description: "La explosión de materiales se ha ejecutado exitosamente. Los resultados están listos.",
-      color: "green",
-      timeout: 5000
-    });
-
-  } catch (error) {
-    console.error("Error ejecutando explosión:", error);
-    
-    useToast().add({
-      title: "Error en explosión",
-      description: "Ocurrió un error durante la ejecución de la explosión de materiales",
-      color: "red",
-      timeout: 4000
-    });
-  }
+// Método para manejar el cambio de estado de carga del proceso de explosión
+const handleExplosionLoadingStateChanged = (isLoading) => {
+  // Este método se puede usar para mostrar indicadores globales si es necesario
+  console.log('🔄 Estado de carga del proceso de explosión:', isLoading);
 };
 
-// Método legacy para compatibilidad
-const completeExplosion = confirmAndExecuteExplosion;
 
 
 const getStatusConfig = (status) => {
