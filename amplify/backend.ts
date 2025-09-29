@@ -1,4 +1,5 @@
 import { defineBackend } from "@aws-amplify/backend";
+import { FunctionUrlAuthType } from "aws-cdk-lib/aws-lambda";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { auth } from "./auth/resource";
 import { data } from "./data/resource";
@@ -14,12 +15,15 @@ import { assignUserToGroup } from "./functions/admin-users/AssignUserToGroup/res
 import { removeUserFromGroup } from "./functions/admin-users/RemoveUserFromGroup/resource";
 import { adminUserGlobalSignOut } from "./functions/admin-users/AdminUserGlobalSignOut/resource";
 import { microsoftGraphToken } from "./functions/microsoft-graph/token/resource";
+/* Functions Boom */
 import { saveSalePlan } from "./functions/boom/saveSalePlan/resource";
 import { runPipeline } from "./functions/boom/runPipeline/resource";
 import { cargaInsumosSaveBatch } from "./functions/carga-insumos/saveBatch/resource";
 import { cargaInsumosGetData } from "./functions/carga-insumos/getData/resource";
 import { BoomGetStatusPipeline } from "./functions/boom/GetStatusPipeline/resource";
 import { GetPlanProduccion } from "./functions/boom/GetPlanProduccion/resource";
+import { GetMaterialesSinAprovicionamiento } from "./functions/boom/GetMaterialesSinAprovicionamiento/resource";
+import { GetMaterialesSinCentroProduccion } from "./functions/boom/getMaterialesSinCentroProduccion/resource";
 
 /**
  * Configuración del backend de Amplify
@@ -42,6 +46,8 @@ export const backend = defineBackend({
   cargaInsumosGetData,
   BoomGetStatusPipeline,
   GetPlanProduccion,
+  GetMaterialesSinAprovicionamiento,
+  GetMaterialesSinCentroProduccion,
 });
 
 const resetPasswordLambda = backend.resetPassword.resources.lambda;
@@ -128,8 +134,8 @@ const getPlanProduccionPolicy = new iam.PolicyStatement({
 });
 getPlanProduccionLambda.addToRolePolicy(getPlanProduccionPolicy);
 
-// S3 permissions for GetPlanProduccion
-const getPlanProduccionS3Policy = new iam.PolicyStatement({
+
+const getBoomS3Policy = new iam.PolicyStatement({
   actions: [
     "s3:PutObject",
     "s3:PutObjectAcl",
@@ -142,7 +148,30 @@ const getPlanProduccionS3Policy = new iam.PolicyStatement({
     "arn:aws:s3:::explosion-materiales-uts/*"
   ],
 });
-getPlanProduccionLambda.addToRolePolicy(getPlanProduccionS3Policy);
+getPlanProduccionLambda.addToRolePolicy(getBoomS3Policy);
+getPlanProduccionLambda.addFunctionUrl(
+  {
+    authType: FunctionUrlAuthType.NONE,
+  }
+);
+
+const getMaterialesSinAprovicionamientoLambda = backend.GetMaterialesSinAprovicionamiento.resources.lambda;
+const getMaterialesSinAprovicionamientoPolicy = new iam.PolicyStatement(getBoomS3Policy);
+getMaterialesSinAprovicionamientoLambda.addToRolePolicy(getMaterialesSinAprovicionamientoPolicy);
+getMaterialesSinAprovicionamientoLambda.addFunctionUrl(
+  {
+    authType: FunctionUrlAuthType.NONE,
+  }
+);
+
+const getMaterialesSinCentroProduccionLambda = backend.GetMaterialesSinCentroProduccion.resources.lambda;
+const getMaterialesSinCentroProduccionPolicy = new iam.PolicyStatement(getBoomS3Policy);
+getMaterialesSinCentroProduccionLambda.addToRolePolicy(getMaterialesSinCentroProduccionPolicy);
+getMaterialesSinCentroProduccionLambda.addFunctionUrl(
+  {
+    authType: FunctionUrlAuthType.NONE,
+  }
+);
 
 /*
  * CREACION DE API REST

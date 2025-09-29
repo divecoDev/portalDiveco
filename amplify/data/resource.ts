@@ -7,16 +7,14 @@ import { assignUserToGroup } from "../functions/admin-users/AssignUserToGroup/re
 import { removeUserFromGroup } from "../functions/admin-users/RemoveUserFromGroup/resource";
 import { adminUserGlobalSignOut } from "../functions/admin-users/AdminUserGlobalSignOut/resource";
 import { microsoftGraphToken } from "../functions/microsoft-graph/token/resource";
+/* Functions Boom */
 import { cargaInsumosSaveBatch } from "../functions/carga-insumos/saveBatch/resource";
 import { cargaInsumosGetData } from "../functions/carga-insumos/getData/resource";
 import { runPipeline } from "../functions/boom/runPipeline/resource";
 import { BoomGetStatusPipeline } from "../functions/boom/GetStatusPipeline/resource";
-/*== STEP 1 ===============================================================
-The section below creates a Todo database table with a "content" field. Try
-adding a new "isDone" field as a boolean. The authorization rule below
-specifies that any unauthenticated user can "create", "read", "update",
-and "delete" any "Todo" records.
-=========================================================================*/
+import { GetMaterialesSinAprovicionamiento } from "../functions/boom/GetMaterialesSinAprovicionamiento/resource";
+import { GetMaterialesSinCentroProduccion } from "../functions/boom/getMaterialesSinCentroProduccion/resource";
+
 const schema = a.schema({
   Todo: a
     .model({
@@ -177,6 +175,26 @@ const schema = a.schema({
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(BoomGetStatusPipeline)),
+
+  /**
+   *  Obtener materiales sin aprovicionamiento
+   */
+  getMaterialesSinAprovicionamiento: a
+    .query()
+    .arguments({ boomId: a.string() })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(GetMaterialesSinAprovicionamiento)),
+
+  /**
+   *  Obtener materiales sin centro de produccion
+   */
+  getMaterialesSinCentroProduccion: a
+    .query()
+    .arguments({ boomId: a.string() })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(GetMaterialesSinCentroProduccion)),
 });
 
 export type Schema = ClientSchema<typeof schema>;
