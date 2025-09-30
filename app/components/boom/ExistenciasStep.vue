@@ -7,10 +7,14 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  boomVersion: {
+    type: String,
+    default: null,
+  },
 });
 
 // Emits para actualizar el valor en el componente padre
-const emit = defineEmits(["update:modelValue"]);
+const emit = defineEmits(["update:modelValue", "version-validation-changed"]);
 
 // Estado local del componente
 const existencias = ref(props.modelValue);
@@ -71,6 +75,72 @@ const clearData = () => {
 const hasData = computed(() => existencias.value.length > 0);
 const totalRecords = computed(() => existencias.value.length);
 
+// Validación de versión
+const versionValidation = computed(() => {
+  if (!hasData.value || !props.boomVersion) {
+    return { isValid: true, message: "" };
+  }
+
+  // LOG: Mostrar estructura del primer elemento para debugging
+  if (existencias.value.length > 0) {
+    console.log("🔍 DEBUG - Primer elemento de existencias:");
+    console.log("Headers:", headers.value);
+    console.log("Primer registro:", existencias.value[0]);
+    console.log("Versión del boom:", props.boomVersion);
+    console.log("Índices de columnas:");
+    headers.value.forEach((header, index) => {
+      console.log(`  ${header}: índice ${index}, valor: ${existencias.value[0][index]}`);
+    });
+  }
+
+  // La columna "version" está en la posición 0
+  const versionIndex = 0;
+  
+  // Verificar que todos los registros tengan la versión correcta
+  const invalidRecords = [];
+  const uniqueVersions = new Set();
+  let totalRecords = 0;
+  let validRecords = 0;
+  
+  existencias.value.forEach((row, index) => {
+    const rowVersion = row[versionIndex];
+    uniqueVersions.add(rowVersion);
+    totalRecords++;
+    
+    // Convertir ambos valores a string para comparación robusta
+    const boomVersionStr = String(props.boomVersion);
+    const rowVersionStr = String(rowVersion);
+    
+    if (rowVersionStr === boomVersionStr) {
+      validRecords++;
+    } else {
+      invalidRecords.push({ row: index + 1, version: rowVersionStr });
+    }
+  });
+  
+  // Log resumen solo si hay errores
+  if (invalidRecords.length > 0) {
+    console.log(`📊 RESUMEN VALIDACIÓN EXISTENCIAS (CON ERRORES):`);
+    console.log(`   Total registros: ${totalRecords}`);
+    console.log(`   Registros válidos: ${validRecords}`);
+    console.log(`   Registros con error: ${invalidRecords.length}`);
+    console.log(`   Versiones únicas encontradas: ${Array.from(uniqueVersions).join(", ")}`);
+    console.log(`   Versión del boom: ${props.boomVersion}`);
+  }
+
+  if (invalidRecords.length > 0) {
+    const message = `Las versiones en existencias no coinciden con la versión del boom (${props.boomVersion}). ${invalidRecords.length} de ${totalRecords} registros tienen versiones incorrectas.`;
+    return { isValid: false, message };
+  }
+
+  return { isValid: true, message: "" };
+});
+
+// Watch para emitir cambios en la validación de versión
+watch(versionValidation, (newValidation) => {
+  emit("version-validation-changed", newValidation.isValid);
+}, { immediate: true });
+
 // Watch para sincronizar con props
 watch(
   () => props.modelValue,
@@ -110,7 +180,7 @@ watch(
             v-if="!hasData"
             icon="i-heroicons-arrow-up-tray"
             label="Cargar archivo"
-            variant="ghost"
+            class="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             @click="isModalOpen = true"
           />
           <UButton
@@ -124,10 +194,31 @@ watch(
       </div>
     </div>
 
+    <!-- Mensaje de error de validación de versión -->
+    <div
+      v-if="!versionValidation.isValid"
+      class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4"
+    >
+      <div class="flex items-start">
+        <UIcon
+          name="i-heroicons-exclamation-triangle"
+          class="w-5 h-5 text-red-600 dark:text-red-400 mr-3 mt-0.5 flex-shrink-0"
+        />
+        <div>
+          <h4 class="text-sm font-semibold text-red-800 dark:text-red-200 mb-1">
+            Error de Validación de Versión
+          </h4>
+          <p class="text-sm text-red-700 dark:text-red-300">
+            {{ versionValidation.message }}
+          </p>
+        </div>
+      </div>
+    </div>
+
     <!-- Tabla de datos de existencias -->
     <div class="space-y-6">
       <div
-        v-if="hasData"
+        v-if="hasData && versionValidation.isValid"
         class="bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
       >
         <div class="bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-3">

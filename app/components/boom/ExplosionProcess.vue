@@ -121,6 +121,22 @@ const confirmAndExecuteExplosion = () => {
   }
 };
 
+// Función para limpiar completamente el estado de polling
+const limpiarEstadoPolling = () => {
+  console.log('🧹 Limpiando estado de polling completamente');
+  
+  // Detener polling activo si existe
+  if (explosionPollingInterval.value) {
+    clearInterval(explosionPollingInterval.value);
+    explosionPollingInterval.value = null;
+    console.log('🛑 Polling detenido para reinicio');
+  }
+  
+  // Resetear estado de UI
+  explosionInProgress.value = false;
+  console.log('🧹 Estado de UI reseteado');
+};
+
 // Función para re-ejecutar la explosión
 const reexecuteExplosion = async () => {
   if (
@@ -133,14 +149,8 @@ const reexecuteExplosion = async () => {
     try {
       reexecutingExplosion.value = true;
 
-      // Limpiar polling activo si existe
-      if (explosionPollingInterval.value) {
-        clearInterval(explosionPollingInterval.value);
-        explosionPollingInterval.value = null;
-      }
-
-      // Resetear estados
-      explosionInProgress.value = false;
+      // Limpiar completamente el estado de polling
+      limpiarEstadoPolling();
 
       // Limpiar el estado del Boom para permitir nueva ejecución
       await client.models.Boom.update({
@@ -181,6 +191,18 @@ const reexecuteExplosion = async () => {
 
 const executeExplosion = async () => {
   try {
+    // Validar que Pversion no esté vacío antes de ejecutar
+    if (!props.pversion || props.pversion.trim() === '') {
+      console.error('❌ Error: Pversion está vacío o no definido');
+      useToast().add({
+        title: "Error de configuración",
+        description: "La versión del boom no está definida. No se puede ejecutar la explosión.",
+        color: "red",
+        timeout: 5000
+      });
+      return;
+    }
+
     console.log('🚀 Ejecutando pipeline ExplocionarDesdePortal...');
 
     // Preparar argumentos del pipeline
@@ -195,9 +217,17 @@ const executeExplosion = async () => {
     }
 
     // Agregar Pversion para el pipeline de explosión
-    if (props.pversion) {
+    console.log('🔍 Debugging Pversion - props.pversion:', props.pversion);
+    console.log('🔍 Debugging Pversion - typeof:', typeof props.pversion);
+    console.log('🔍 Debugging Pversion - length:', props.pversion?.length);
+    console.log('🔍 Debugging Pversion - isEmpty:', props.pversion === '' || !props.pversion);
+    
+    if (props.pversion && props.pversion.trim() !== '') {
       pipelineArgs.Pversion = props.pversion;
       console.log(`📋 Enviando Pversion: ${props.pversion} para pipeline de explosión`);
+    } else {
+      console.warn('⚠️ Pversion está vacío o no definido, no se enviará al pipeline');
+      console.warn('⚠️ Esto podría causar problemas en el pipeline de Azure Data Factory');
     }
 
     // Mostrar toast de carga
@@ -318,6 +348,38 @@ const executeExplosion = async () => {
   }
 };
 
+// Función centralizada para manejar todo el polling del pipeline
+const managePolling = async (runId, status) => {
+  console.log(`🔄 managePolling llamado con runId: ${runId}, status: ${status}`);
+  
+  // Estados que requieren polling activo
+  const pollingStates = ['Queued', 'InProgress'];
+  
+  // Estados finales que detienen el polling COMPLETAMENTE
+  const finalStates = ['Succeeded', 'Failed', 'Canceling', 'Cancelled'];
+  
+  if (finalStates.includes(status)) {
+    // Detener polling si está activo y NO permitir más consultas
+    if (explosionPollingInterval.value) {
+      console.log('🛑 Pipeline terminado, deteniendo polling completamente - estado:', status);
+      clearInterval(explosionPollingInterval.value);
+      explosionPollingInterval.value = null;
+    }
+    console.log('🛑 Pipeline en estado final, no se realizarán más consultas hasta reinicio');
+    return;
+  }
+  
+  if (pollingStates.includes(status) || !status) {
+    // Solo iniciar polling si no hay uno activo
+    if (!explosionPollingInterval.value) {
+      console.log('🔄 Iniciando polling para estado:', status || 'desconocido');
+      await iniciarPollingExplosion(runId);
+    } else {
+      console.log('🔄 Polling ya activo, no iniciando nuevo interval');
+    }
+  }
+};
+
 // Función para iniciar polling del estado del pipeline de explosión
 const iniciarPollingExplosion = async (runId) => {
   try {
@@ -325,6 +387,12 @@ const iniciarPollingExplosion = async (runId) => {
     
     // Consultar el estado inicial
     await consultarEstadoPipelineExplosion(runId);
+    
+    // Si ya no hay intervalo (fue detenido por estado final), no continuar
+    if (!explosionPollingInterval.value) {
+      console.log('🛑 Polling fue detenido, no configurando interval');
+      return;
+    }
     
     // Configurar polling cada 10 segundos con timeout de 30 minutos
     const startTime = Date.now();
@@ -353,6 +421,13 @@ const iniciarPollingExplosion = async (runId) => {
         }
         
         await consultarEstadoPipelineExplosion(runId);
+        
+        // Si el intervalo fue detenido por estado final, no continuar
+        if (!explosionPollingInterval.value) {
+          console.log('🛑 Polling detenido por estado final, cancelando interval');
+          clearInterval(intervalId);
+          return;
+        }
       } catch (error) {
         console.error('Error en polling de explosión:', error);
         // No limpiar el interval aquí, continuar intentando
@@ -414,15 +489,11 @@ const consultarEstadoPipelineExplosion = async (runId) => {
     console.log('🔄 Llamando a procesarEstadoPipeline con status:', status, 'y runId:', runId);
     await procesarEstadoPipeline(status, runId);
     
-    console.log('🔄 Estado de explosionInProgress después de procesar:', explosionInProgress.value);
-    
-    // Si el pipeline está completado o falló, detener el polling
-    if (status === 'Succeeded' || status === 'Failed' || status === 'Canceling' || status === 'Cancelled') {
-      if (explosionPollingInterval.value) {
-        clearInterval(explosionPollingInterval.value);
-        explosionPollingInterval.value = null;
-        console.log('🛑 Polling detenido - pipeline finalizado');
-      }
+    // Si el pipeline está en estado final, no continuar con más consultas
+    const finalStates = ['Succeeded', 'Failed', 'Canceling', 'Cancelled'];
+    if (finalStates.includes(status)) {
+      console.log('🛑 Pipeline terminado, no se realizarán más consultas automáticas');
+      return;
     }
   } catch (error) {
     console.error('❌ Error consultando estado del pipeline de explosión:', error);
@@ -441,17 +512,14 @@ const consultarEstadoPipelineExplosion = async (runId) => {
 // Función para procesar el estado del pipeline directamente desde la respuesta
 const procesarEstadoPipeline = async (status, runId) => {
   console.log(`🔄 Procesando estado del pipeline: ${status} para runId: ${runId}`);
-  console.log('🔄 Estado actual de explosionInProgress al inicio de procesarEstadoPipeline:', explosionInProgress.value);
+  
+  // Actualizar estado de UI según el status
+  const inProgressStates = ['Queued', 'InProgress'];
+  explosionInProgress.value = inProgressStates.includes(status);
   
   switch (status) {
     case 'Succeeded':
-      console.log('✅ Pipeline completado exitosamente - actualizando UI y base de datos');
-      console.log('✅ Estado de explosionInProgress ANTES de cambiar a false:', explosionInProgress.value);
-      
-      // Pipeline completado exitosamente
-      explosionInProgress.value = false;
-      
-      console.log('✅ Estado de explosionInProgress DESPUÉS de cambiar a false:', explosionInProgress.value);
+      console.log('✅ Pipeline completado exitosamente');
       
       // Asegurar que el runId esté guardado antes de marcar como completado
       try {
@@ -468,14 +536,10 @@ const procesarEstadoPipeline = async (status, runId) => {
       }
       
       // Actualizar Boom con estado completado
-      console.log('✅ Actualizando Boom con estado Completado...');
       await actualizarBoomStatusExplosion('Completado');
-      console.log('✅ Boom actualizado exitosamente');
       
       // Emitir evento de completado
-      console.log('✅ Emitiendo evento explosion-completed...');
       emit('explosion-completed');
-      console.log('✅ Evento explosion-completed emitido');
       
       useToast().add({
         title: "¡Explosión completada!",
@@ -483,17 +547,12 @@ const procesarEstadoPipeline = async (status, runId) => {
         color: "green",
         timeout: 5000
       });
-      
-      console.log('✅ Pipeline de explosión completado exitosamente');
       break;
 
     case 'Failed':
     case 'Canceling':
     case 'Cancelled':
       console.log('❌ Pipeline de explosión falló con estado:', status);
-      
-      // Resetear estado de progreso
-      explosionInProgress.value = false;
       
       // Actualizar Boom con estado de error
       await actualizarBoomStatusExplosion('Error');
@@ -508,30 +567,18 @@ const procesarEstadoPipeline = async (status, runId) => {
 
     case 'Queued':
       console.log('⏳ Pipeline de explosión en cola, preparándose para ejecutar...');
-      explosionInProgress.value = true;
-      // Solo iniciar polling si no está ya ejecutándose
-      if (!explosionPollingInterval.value) {
-        await iniciarPollingExplosion(runId);
-      }
       break;
 
     case 'InProgress':
       console.log('⏳ Pipeline de explosión aún en progreso...');
-      explosionInProgress.value = true;
-      // Solo iniciar polling si no está ya ejecutándose
-      if (!explosionPollingInterval.value) {
-        await iniciarPollingExplosion(runId);
-      }
       break;
 
     default:
       console.warn('⚠️ Estado desconocido del pipeline de explosión:', status);
-      // Para estados desconocidos, iniciar polling
-      if (runId) {
-        explosionInProgress.value = true;
-        await iniciarPollingExplosion(runId);
-      }
   }
+  
+  // Manejar polling usando la función centralizada
+  await managePolling(runId, status);
 };
 
 // Función para actualizar el estado de explosión en Boom
@@ -572,25 +619,27 @@ const checkInitialExplosionState = async () => {
     console.log('🔍 Estado inicial del pipeline de explosión:', { runIdExplosion, statusExplosion });
 
     if (runIdExplosion && statusExplosion) {
-      // Si hay un runId y el estado es "En Proceso", iniciar polling
+      // Mapear estados de la base de datos a estados del pipeline
+      let pipelineStatus = null;
+      
       if (statusExplosion === 'En Proceso') {
-        console.log('🔄 Pipeline de explosión en progreso, iniciando polling...');
-        explosionInProgress.value = true; // Marcar como en progreso en la UI
-        await iniciarPollingExplosion(runIdExplosion);
-      }
-      // Si el estado es "Completado", marcar como completado
-      else if (statusExplosion === 'Completado') {
-        explosionInProgress.value = false; // Resetear estado de progreso
-        console.log('✅ Pipeline de explosión ya completado');
-        
-        // Emitir evento para notificar al componente padre que ya está completado
+        pipelineStatus = 'InProgress'; // Asumir que está en progreso si no sabemos el estado exacto
+      } else if (statusExplosion === 'Completado') {
+        pipelineStatus = 'Succeeded';
+        explosionInProgress.value = false;
         emit('explosion-completed');
-        console.log('✅ Evento explosion-completed emitido para estado inicial completado');
-      }
-      // Si el estado es "Error", permitir reintento
-      else if (statusExplosion === 'Error') {
-        explosionInProgress.value = false; // Resetear estado de progreso
+        console.log('✅ Pipeline de explosión ya completado');
+        return; // No necesitamos polling para estado completado
+      } else if (statusExplosion === 'Error') {
+        explosionInProgress.value = false;
         console.log('❌ Pipeline de explosión en estado de error, permitiendo reintento');
+        return; // No necesitamos polling para estado de error
+      }
+      
+      // Si necesitamos polling, usar la función centralizada
+      if (pipelineStatus) {
+        explosionInProgress.value = true;
+        await managePolling(runIdExplosion, pipelineStatus);
       }
     }
   } catch (error) {
@@ -605,10 +654,7 @@ onMounted(async () => {
 
 // Limpiar polling al desmontar el componente
 onUnmounted(() => {
-  if (explosionPollingInterval.value) {
-    clearInterval(explosionPollingInterval.value);
-    explosionPollingInterval.value = null;
-    console.log('🧹 Polling de explosión limpiado al desmontar componente');
-  }
+  limpiarEstadoPolling();
+  console.log('🧹 Componente desmontado, estado de polling limpiado');
 });
 </script>

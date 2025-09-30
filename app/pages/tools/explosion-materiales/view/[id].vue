@@ -283,6 +283,13 @@ const fetchExplosion = async () => {
     const { data } = await client.models.Boom.get({ id: explosionId });
     explosion.value = data;
 
+    // Debugging logs para verificar el valor de version
+    console.log('🔍 Parent Component Debugging - explosion data:', data);
+    console.log('🔍 Parent Component Debugging - explosion.version:', data?.version);
+    console.log('🔍 Parent Component Debugging - typeof version:', typeof data?.version);
+    console.log('🔍 Parent Component Debugging - version length:', data?.version?.length);
+    console.log('🔍 Parent Component Debugging - version isEmpty:', data?.version === '' || !data?.version);
+
     // Verificar si hay datos guardados para esta explosión
     await checkForSavedData();
   } catch (error) {
