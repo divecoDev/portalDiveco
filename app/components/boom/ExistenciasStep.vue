@@ -110,7 +110,7 @@ watch(
             v-if="!hasData"
             icon="i-heroicons-arrow-up-tray"
             label="Cargar archivo"
-            variant="ghost"
+            class="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             @click="isModalOpen = true"
           />
           <UButton
