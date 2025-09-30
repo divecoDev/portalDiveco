@@ -49,11 +49,24 @@ const currentStep = computed({
 // Estado para validación de versión del plan de ventas
 const planVentasVersionValid = ref(true);
 
+// Estado para validación de versión de existencias
+const existenciasVersionValid = ref(true);
+
 // Computed para validaciones desde el store
 const isPlanVentasValid = computed(() => cargaInsumosStore.isPlanVentasValid);
 const isExistenciasValid = computed(() => cargaInsumosStore.isExistenciasValid);
 const isCoberturaValid = computed(() => cargaInsumosStore.isCoberturaValid);
-const canGoNext = computed(() => cargaInsumosStore.canGoNext && planVentasVersionValid.value);
+const canGoNext = computed(() => {
+  // Validar según el paso actual
+  switch (cargaInsumosStore.currentStep) {
+    case 0: // Plan de ventas
+      return cargaInsumosStore.canGoNext && planVentasVersionValid.value;
+    case 1: // Existencias
+      return cargaInsumosStore.canGoNext && existenciasVersionValid.value;
+    default:
+      return cargaInsumosStore.canGoNext;
+  }
+});
 const canGoPrev = computed(() => cargaInsumosStore.canGoPrev);
 
 // Computed para los datos de cada paso desde el store
@@ -97,6 +110,11 @@ const handleCargaInsumosCompleted = () => {
 // Método para manejar cambios en la validación de versión
 const handleVersionValidationChanged = (isValid) => {
   planVentasVersionValid.value = isValid;
+};
+
+// Método para manejar cambios en la validación de versión de existencias
+const handleExistenciasVersionValidationChanged = (isValid) => {
+  existenciasVersionValid.value = isValid;
 };
 
 // Watcher para sincronizar el stepper con el store
@@ -181,6 +199,8 @@ watch(() => props.explosion, async (newExplosion) => {
         <ExistenciasStep
           :key="`existencias-${cargaInsumosStore.existencias.data.length}-${cargaInsumosStore.existencias.loadedAt?.getTime()}`"
           v-model="existenciasData"
+          :boom-version="explosion?.version"
+          @version-validation-changed="handleExistenciasVersionValidationChanged"
         />
       </template>
 
