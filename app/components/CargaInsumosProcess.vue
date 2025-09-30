@@ -46,11 +46,14 @@ const currentStep = computed({
   set: (value) => cargaInsumosStore.goToStep(value)
 });
 
+// Estado para validación de versión del plan de ventas
+const planVentasVersionValid = ref(true);
+
 // Computed para validaciones desde el store
 const isPlanVentasValid = computed(() => cargaInsumosStore.isPlanVentasValid);
 const isExistenciasValid = computed(() => cargaInsumosStore.isExistenciasValid);
 const isCoberturaValid = computed(() => cargaInsumosStore.isCoberturaValid);
-const canGoNext = computed(() => cargaInsumosStore.canGoNext);
+const canGoNext = computed(() => cargaInsumosStore.canGoNext && planVentasVersionValid.value);
 const canGoPrev = computed(() => cargaInsumosStore.canGoPrev);
 
 // Computed para los datos de cada paso desde el store
@@ -89,6 +92,11 @@ const goPrev = () => {
 // Método para manejar cuando el proceso de carga se completa
 const handleCargaInsumosCompleted = () => {
   emit('carga-insumos-completed');
+};
+
+// Método para manejar cambios en la validación de versión
+const handleVersionValidationChanged = (isValid) => {
+  planVentasVersionValid.value = isValid;
 };
 
 // Watcher para sincronizar el stepper con el store
@@ -164,6 +172,8 @@ watch(() => props.explosion, async (newExplosion) => {
         <PlanVentasStep
           :key="`plan-ventas-${cargaInsumosStore.planVentas.data.length}-${cargaInsumosStore.planVentas.loadedAt?.getTime()}`"
           v-model="planVentasData"
+          :boom-version="explosion?.version"
+          @version-validation-changed="handleVersionValidationChanged"
         />
       </template>
 
