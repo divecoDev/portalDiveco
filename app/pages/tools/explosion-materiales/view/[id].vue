@@ -186,6 +186,10 @@
 
 <script setup>
 import { generateClient } from "aws-amplify/data";
+definePageMeta({
+  middleware: ["require-role"],
+  requiredRole: "EXPLOSION",
+});
 import { useCargaInsumosData } from "~/composables/useCargaInsumosData";
 import CargaInsumosDataView from "~/components/CargaInsumosDataView.vue";
 import PlanProduccionProcess from "~/components/boom/PlanProduccionProcess.vue";

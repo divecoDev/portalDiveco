@@ -137,6 +137,10 @@
 
 <script setup>
 import { generateClient } from "aws-amplify/data";
+definePageMeta({
+  middleware: ["require-role"],
+  requiredRole: "EXPLOSION",
+});
 
 // Cliente de Amplify
 const client = generateClient();
