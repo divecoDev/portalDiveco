@@ -45,6 +45,14 @@ export const ROLES: Record<string, RoleConfig> = {
     color: "green",
     icon: "i-heroicons-user",
   },
+  EXPLOSION: {
+    name: "EXPLOSION",
+    displayName: "Explosión de Materiales",
+    description: "Acceso a la herramienta de explosión de materiales",
+    permissions: ["view_explosion"],
+    color: "cyan",
+    icon: "i-heroicons-sparkles",
+  },
 };
 
 // Definición de permisos disponibles
@@ -86,6 +94,17 @@ export const PERMISSIONS: Record<string, PermissionConfig> = {
     displayName: "Editar Perfil",
     description: "Permite editar el perfil propio del usuario",
     routes: ["/perfil", "/configuracion"],
+  },
+  view_explosion: {
+    name: "view_explosion",
+    displayName: "Explosión de Materiales",
+    description: "Permite acceder a la herramienta de explosión de materiales",
+    routes: [
+      "/tools/explosion-materiales",
+      "/tools/explosion-materiales/new",
+      "/tools/explosion-materiales/edit/:id",
+      "/tools/explosion-materiales/view/:id",
+    ],
   },
 };
 

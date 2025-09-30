@@ -25,7 +25,7 @@
       <!-- Grid de herramientas -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <!-- Herramienta: Contraseñas SAP -->
-        <div
+        <div v-if="hasGroup('ADMIN') || hasGroup('SAP-USER-ADMIN')"
           class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
         >
           <div class="p-6">
@@ -73,7 +73,7 @@
         </div>
 
         <!-- Herramienta: Explosión de Materiales -->
-        <div
+        <div v-if="hasGroup('EXPLOSION')"
           class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
         >
           <div class="p-6">
@@ -123,54 +123,7 @@
           </div>
         </div>
 
-        <!-- Herramienta: Test Reset Password -->
-        <div
-          class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-        >
-          <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center">
-                <div
-                  class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center"
-                >
-                  <UIcon name="i-heroicons-beaker" class="w-6 h-6 text-white" />
-                </div>
-                <div class="ml-3">
-                  <h3
-                    class="text-lg font-semibold text-gray-900 dark:text-white"
-                  >
-                    Test Reset Password
-                  </h3>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    Herramienta de pruebas
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <p class="text-gray-600 dark:text-gray-300 mb-4">
-              Página de pruebas para debugging del sistema de reinicio de
-              contraseñas
-            </p>
-
-            <div class="flex items-center justify-between">
-              <div
-                class="flex items-center text-sm text-gray-500 dark:text-gray-400"
-              >
-                <UIcon name="i-heroicons-bug-ant" class="w-4 h-4 mr-1" />
-                <span>Desarrollo</span>
-              </div>
-
-              <NuxtLink
-                to="/test-reset-password"
-                class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors duration-200"
-              >
-                Acceder
-                <UIcon name="i-heroicons-arrow-right" class="w-4 h-4 ml-2" />
-              </NuxtLink>
-            </div>
-          </div>
-        </div>
+        
 
         <!-- Placeholder para más herramientas -->
         <div
@@ -225,6 +178,7 @@
 </template>
 
 <script setup>
+const { hasGroup } = useUserGroups();
 // Meta tags para SEO
 useSeoMeta({
   title: "Herramientas - Portal Diveco",

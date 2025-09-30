@@ -516,7 +516,7 @@ const navigationSections = computed(() => {
     },
   ];
 
-  // Solo mostrar la sección de herramientas si el usuario es ADMIN o SAP-USER-ADMIN
+  // Solo mostrar "Contraseñas SAP" si el usuario es ADMIN o SAP-USER-ADMIN
   if (hasGroup("ADMIN") || hasGroup("SAP-USER-ADMIN")) {
     sections.push({
       title: "Herramientas",
@@ -528,15 +528,30 @@ const navigationSections = computed(() => {
           badge: "Nuevo",
           badgeColor: "green",
         },
-        {
-          name: "Explosión de Materiales",
-          href: "/tools/explosion-materiales",
-          icon: "i-heroicons-squares-2x2",
-          badge: "Nuevo",
-          badgeColor: "blue",
-        },
       ],
     });
+  }
+
+  // Agregar "Explosión de Materiales" solo si pertenece al grupo EXPLOSION
+  if (hasGroup("EXPLOSION")) {
+    // Buscar si ya existe la sección Herramientas para añadir ahí el item
+    const toolsSection = sections.find((s) => s.title === "Herramientas");
+    const explosionItem = {
+      name: "Explosión de Materiales",
+      href: "/tools/explosion-materiales",
+      icon: "i-heroicons-squares-2x2",
+      badge: "Nuevo",
+      badgeColor: "blue",
+    };
+
+    if (toolsSection) {
+      toolsSection.items.push(explosionItem);
+    } else {
+      sections.push({
+        title: "Herramientas",
+        items: [explosionItem],
+      });
+    }
   }
 
   // Solo mostrar la sección de administración si el usuario es ADMIN

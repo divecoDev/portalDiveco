@@ -142,7 +142,7 @@ const { hasGroup, isLoading: isLoadingGroups } = useUserGroups();
 const mainTools = computed(() => {
   const tools = [];
 
-  // Solo mostrar herramientas si el usuario es ADMIN o SAP-USER-ADMIN
+  // Mostrar herramienta de contraseñas si es ADMIN o SAP-USER-ADMIN
   if (hasGroup("ADMIN") || hasGroup("SAP-USER-ADMIN")) {
     tools.push({
       id: 1,
@@ -157,6 +157,10 @@ const mainTools = computed(() => {
       status: "active",
     });
 
+  }
+
+  // Mostrar herramienta de Explosión solo si el usuario pertenece al grupo EXPLOSION
+  if (hasGroup("EXPLOSION")) {
     tools.push({
       id: 2,
       name: "Explosión de Materiales",
