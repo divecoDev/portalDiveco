@@ -18,7 +18,7 @@ const props = defineProps({
 });
 
 // Emits para actualizar el valor en el componente padre
-const emit = defineEmits(["update:modelValue", "version-validation-changed"]);
+const emit = defineEmits(["update:modelValue", "version-validation-changed", "file-metadata-updated"]);
 
 // Estado local del componente
 const planVentas = ref(props.modelValue);
@@ -52,6 +52,8 @@ const isModalOpen = ref(false);
 
 // Manejar datos cargados desde el modal
 const handleDataLoaded = (payload) => {
+  console.log(`🔍 DEBUG PlanVentasStep handleDataLoaded - Payload completo:`, payload);
+  
   const { data, fileName: loadedFileName, fileMetadata: metadata, error } = payload;
 
   if (error) {
@@ -60,6 +62,12 @@ const handleDataLoaded = (payload) => {
     return;
   }
 
+  console.log(`🔍 DEBUG PlanVentasStep - Datos recibidos:`);
+  console.log(`  - data.length: ${data?.length || 0}`);
+  console.log(`  - fileName: ${loadedFileName}`);
+  console.log(`  - fileMetadata:`, metadata);
+  console.log(`  - fileMetadata.s3Path: ${metadata?.s3Path || 'undefined'}`);
+
   planVentas.value = data;
   fileName.value = loadedFileName;
   fileMetadata.value = metadata;
@@ -67,9 +75,18 @@ const handleDataLoaded = (payload) => {
   // Emitir el cambio al componente padre con metadatos de archivo
   emit("update:modelValue", data);
   
+  // Emitir también los metadatos del archivo
+  if (metadata) {
+    console.log("📁 Emitiendo metadatos de archivo al componente padre");
+    emit("file-metadata-updated", { tipo: 'planVentas', metadata });
+  }
+  
   // Si hay metadatos de archivo, también los pasamos
   if (metadata) {
     console.log("📁 Metadatos de archivo recibidos:", metadata);
+    console.log(`📁 S3 Path disponible: ${metadata.s3Path}`);
+  } else {
+    console.log("⚠️ No hay metadatos de archivo disponibles");
   }
 };
 

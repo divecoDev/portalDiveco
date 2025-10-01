@@ -117,6 +117,38 @@ const handleExistenciasVersionValidationChanged = (isValid) => {
   existenciasVersionValid.value = isValid;
 };
 
+// Método para manejar metadatos de archivo actualizados
+const handleFileMetadataUpdated = (payload) => {
+  console.log(`🔍 DEBUG CargaInsumosProcess handleFileMetadataUpdated - Payload:`, payload);
+  
+  const { tipo, metadata } = payload;
+  
+  console.log(`🔍 DEBUG: Actualizando metadatos para tipo: ${tipo}`);
+  console.log(`🔍 DEBUG: Metadatos recibidos:`, metadata);
+  console.log(`🔍 DEBUG: S3 Path: ${metadata?.s3Path || 'undefined'}`);
+  
+  // Actualizar el store con los metadatos del archivo
+  if (tipo === 'planVentas') {
+    cargaInsumosStore.updatePlanVentasData(
+      cargaInsumosStore.planVentas.data, 
+      cargaInsumosStore.planVentas.fileName, 
+      metadata
+    );
+  } else if (tipo === 'existencias') {
+    cargaInsumosStore.updateExistenciasData(
+      cargaInsumosStore.existencias.data, 
+      cargaInsumosStore.existencias.fileName, 
+      metadata
+    );
+  } else if (tipo === 'cobertura') {
+    cargaInsumosStore.updateCoberturaData(
+      cargaInsumosStore.cobertura.data, 
+      cargaInsumosStore.cobertura.fileName, 
+      metadata
+    );
+  }
+};
+
 // Watcher para sincronizar el stepper con el store
 watch(() => cargaInsumosStore.currentStep, (newStep) => {
   if (stepper.value && stepper.value.modelValue !== newStep) {
@@ -193,6 +225,7 @@ watch(() => props.explosion, async (newExplosion) => {
           :boom-version="explosion?.version"
           :document-id="explosion?.id"
           @version-validation-changed="handleVersionValidationChanged"
+          @file-metadata-updated="handleFileMetadataUpdated"
         />
       </template>
 
@@ -203,6 +236,7 @@ watch(() => props.explosion, async (newExplosion) => {
           :boom-version="explosion?.version"
           :document-id="explosion?.id"
           @version-validation-changed="handleExistenciasVersionValidationChanged"
+          @file-metadata-updated="handleFileMetadataUpdated"
         />
       </template>
 
@@ -211,6 +245,7 @@ watch(() => props.explosion, async (newExplosion) => {
           :key="`cobertura-${cargaInsumosStore.cobertura.data.length}-${cargaInsumosStore.cobertura.loadedAt?.getTime()}`"
           v-model="coberturaData"
           :document-id="explosion?.id"
+          @file-metadata-updated="handleFileMetadataUpdated"
         />
       </template>
 

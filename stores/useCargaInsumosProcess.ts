@@ -327,6 +327,12 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
      * Actualizar datos del plan de ventas
      */
     updatePlanVentasData(data: any[], fileName = "", fileMetadata?: FileMetadata) {
+      console.log(`🔍 DEBUG updatePlanVentasData - Iniciando:`);
+      console.log(`  - data.length: ${data?.length || 0}`);
+      console.log(`  - fileName: ${fileName}`);
+      console.log(`  - fileMetadata:`, fileMetadata);
+      console.log(`  - boomId: ${this.boomId}`);
+
       this.planVentas = {
         data: data || [],
         fileName,
@@ -336,6 +342,16 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
       };
 
       console.log(`📊 Carga Insumos Store: Plan de ventas actualizado - ${data.length} registros`);
+      
+      // Si hay metadatos de archivo con S3 path, actualizar el modelo Boom
+      if (fileMetadata?.s3Path && this.boomId) {
+        console.log(`🔄 DEBUG: Llamando updateBoomWithFilePath para planVentas con path: ${fileMetadata.s3Path}`);
+        this.updateBoomWithFilePath('planVentas', fileMetadata.s3Path);
+      } else {
+        console.log(`⚠️ DEBUG: No se actualiza Boom porque:`);
+        console.log(`  - fileMetadata?.s3Path: ${fileMetadata?.s3Path || 'undefined'}`);
+        console.log(`  - this.boomId: ${this.boomId || 'undefined'}`);
+      }
 
       if (this.autoSave && this.allStepsHaveData) {
         this.saveCurrentDataAsDraft();
@@ -346,6 +362,12 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
      * Actualizar datos de existencias
      */
     updateExistenciasData(data: any[], fileName = "", fileMetadata?: FileMetadata) {
+      console.log(`🔍 DEBUG updateExistenciasData - Iniciando:`);
+      console.log(`  - data.length: ${data?.length || 0}`);
+      console.log(`  - fileName: ${fileName}`);
+      console.log(`  - fileMetadata:`, fileMetadata);
+      console.log(`  - boomId: ${this.boomId}`);
+
       this.existencias = {
         data: data || [],
         fileName,
@@ -355,6 +377,16 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
       };
 
       console.log(`📦 Carga Insumos Store: Existencias actualizadas - ${data.length} registros`);
+      
+      // Si hay metadatos de archivo con S3 path, actualizar el modelo Boom
+      if (fileMetadata?.s3Path && this.boomId) {
+        console.log(`🔄 DEBUG: Llamando updateBoomWithFilePath para existencias con path: ${fileMetadata.s3Path}`);
+        this.updateBoomWithFilePath('existencias', fileMetadata.s3Path);
+      } else {
+        console.log(`⚠️ DEBUG: No se actualiza Boom porque:`);
+        console.log(`  - fileMetadata?.s3Path: ${fileMetadata?.s3Path || 'undefined'}`);
+        console.log(`  - this.boomId: ${this.boomId || 'undefined'}`);
+      }
 
       if (this.autoSave && this.allStepsHaveData) {
         this.saveCurrentDataAsDraft();
@@ -365,6 +397,12 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
      * Actualizar datos de cobertura
      */
     updateCoberturaData(data: any[], fileName = "", fileMetadata?: FileMetadata) {
+      console.log(`🔍 DEBUG updateCoberturaData - Iniciando:`);
+      console.log(`  - data.length: ${data?.length || 0}`);
+      console.log(`  - fileName: ${fileName}`);
+      console.log(`  - fileMetadata:`, fileMetadata);
+      console.log(`  - boomId: ${this.boomId}`);
+
       this.cobertura = {
         data: data || [],
         fileName,
@@ -374,6 +412,16 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
       };
 
       console.log(`🛡️ Carga Insumos Store: Cobertura actualizada - ${data.length} registros`);
+      
+      // Si hay metadatos de archivo con S3 path, actualizar el modelo Boom
+      if (fileMetadata?.s3Path && this.boomId) {
+        console.log(`🔄 DEBUG: Llamando updateBoomWithFilePath para cobertura con path: ${fileMetadata.s3Path}`);
+        this.updateBoomWithFilePath('cobertura', fileMetadata.s3Path);
+      } else {
+        console.log(`⚠️ DEBUG: No se actualiza Boom porque:`);
+        console.log(`  - fileMetadata?.s3Path: ${fileMetadata?.s3Path || 'undefined'}`);
+        console.log(`  - this.boomId: ${this.boomId || 'undefined'}`);
+      }
 
       if (this.autoSave && this.allStepsHaveData) {
         this.saveCurrentDataAsDraft();
@@ -467,6 +515,9 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
         await this.processBatches('planVentas', this.planVentas.data, this.planVentas.fileName, documentId, batchId);
         await this.processBatches('existencias', this.existencias.data, this.existencias.fileName, documentId, batchId);
         await this.processBatches('cobertura', this.cobertura.data, this.cobertura.fileName, documentId, batchId);
+
+        // Actualizar el modelo Boom con todos los paths de archivos S3
+        await this.updateBoomWithAllFilePaths();
 
         // Crear documento local con los metadatos
         const document = await this.createDocument(`Carga de Insumos - ${new Date().toLocaleString()}`);
@@ -912,6 +963,121 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
     setBoomId(boomId: string) {
       this.boomId = boomId;
       console.log(`🎯 Carga Insumos Store: Boom ID establecido - ${boomId}`);
+    },
+
+    /**
+     * Actualizar el modelo Boom con el path del archivo S3
+     */
+    async updateBoomWithFilePath(tipo: 'planVentas' | 'existencias' | 'cobertura', s3Path: string) {
+      console.log(`🔍 DEBUG updateBoomWithFilePath - Iniciando:`);
+      console.log(`  - tipo: ${tipo}`);
+      console.log(`  - s3Path: ${s3Path}`);
+      console.log(`  - boomId: ${this.boomId}`);
+
+      if (!this.boomId) {
+        console.warn('⚠️ No se puede actualizar Boom: boomId no está establecido');
+        return;
+      }
+
+      try {
+        console.log(`🔄 Actualizando Boom ${this.boomId} con path de ${tipo}: ${s3Path}`);
+        
+        const client = getAmplifyClient();
+        console.log(`🔍 DEBUG: Cliente Amplify obtenido:`, !!client);
+        
+        // Mapear el tipo a el campo correspondiente en el modelo Boom
+        const fieldMap = {
+          planVentas: 'insumoPlanVentasPath',
+          existencias: 'insumoExistenciasPath',
+          cobertura: 'insumoCoberturaPath'
+        };
+
+        const fieldName = fieldMap[tipo];
+        console.log(`🔍 DEBUG: Campo mapeado para ${tipo}: ${fieldName}`);
+        
+        if (!fieldName) {
+          console.error(`❌ Tipo de archivo no válido: ${tipo}`);
+          return;
+        }
+
+        // Actualizar el modelo Boom con el path del archivo
+        const updateData = {
+          id: this.boomId,
+          [fieldName]: s3Path
+        };
+
+        console.log(`📝 Actualizando campo ${fieldName} en Boom:`, updateData);
+
+        // Usar la mutation de Amplify para actualizar el modelo Boom
+        console.log(`🔍 DEBUG: Llamando client.models.Boom.update...`);
+        const { data } = await (client as any).models.Boom.update(updateData);
+
+        console.log(`✅ Boom actualizado exitosamente con path de ${tipo}:`, data);
+
+      } catch (error) {
+        console.error(`❌ Error actualizando Boom con path de ${tipo}:`, error);
+        console.error(`❌ Error details:`, {
+          message: error instanceof Error ? error.message : 'Error desconocido',
+          stack: error instanceof Error ? error.stack : 'No stack disponible',
+          tipo,
+          s3Path,
+          boomId: this.boomId
+        });
+        this.error = error instanceof Error ? error.message : 'Error desconocido al actualizar Boom';
+      }
+    },
+
+    /**
+     * Actualizar el modelo Boom con todos los paths de archivos S3
+     */
+    async updateBoomWithAllFilePaths() {
+      if (!this.boomId) {
+        console.warn('⚠️ No se puede actualizar Boom: boomId no está establecido');
+        return;
+      }
+
+      try {
+        console.log(`🔄 Actualizando Boom ${this.boomId} con todos los paths de archivos S3`);
+        
+        const client = getAmplifyClient();
+        
+        // Preparar los datos de actualización con todos los paths disponibles
+        const updateData: any = {
+          id: this.boomId
+        };
+
+        // Agregar paths de archivos si están disponibles
+        if (this.planVentas.fileMetadata?.s3Path) {
+          updateData.insumoPlanVentasPath = this.planVentas.fileMetadata.s3Path;
+          console.log(`📝 Agregando path de plan de ventas: ${this.planVentas.fileMetadata.s3Path}`);
+        }
+
+        if (this.existencias.fileMetadata?.s3Path) {
+          updateData.insumoExistenciasPath = this.existencias.fileMetadata.s3Path;
+          console.log(`📝 Agregando path de existencias: ${this.existencias.fileMetadata.s3Path}`);
+        }
+
+        if (this.cobertura.fileMetadata?.s3Path) {
+          updateData.insumoCoberturaPath = this.cobertura.fileMetadata.s3Path;
+          console.log(`📝 Agregando path de cobertura: ${this.cobertura.fileMetadata.s3Path}`);
+        }
+
+        // Solo actualizar si hay al menos un path
+        if (Object.keys(updateData).length > 1) { // Más de solo el ID
+          console.log(`📝 Actualizando Boom con paths:`, updateData);
+
+          // Usar la mutation de Amplify para actualizar el modelo Boom
+          const { data } = await (client as any).models.Boom.update(updateData);
+
+          console.log(`✅ Boom actualizado exitosamente con todos los paths:`, data);
+        } else {
+          console.log(`ℹ️ No hay paths de archivos para actualizar en Boom`);
+        }
+
+      } catch (error) {
+        console.error(`❌ Error actualizando Boom con todos los paths:`, error);
+        this.error = error instanceof Error ? error.message : 'Error desconocido al actualizar Boom';
+      }
     },
 
     /**
