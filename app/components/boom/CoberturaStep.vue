@@ -100,6 +100,17 @@ watch(
           <span v-if="hasData" class="text-sm text-gray-600 dark:text-gray-300"
             >{{ totalRecords }} registros</span
           >
+          <a
+            href="https://d1p0twkya81b3k.cloudfront.net/templates/Coberturas.xlsx"
+            target="_blank"
+            download
+          >
+            <UButton
+              icon="i-heroicons-arrow-down-tray"
+              label="Descargar plantilla"
+              class="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+            />
+          </a>
           <UButton
             v-if="!hasData"
             icon="i-heroicons-arrow-up-tray"
