@@ -217,6 +217,7 @@ watch(() => props.explosion, async (newExplosion) => {
           :plan-ventas-data="cargaInsumosStore.planVentas.data"
           :existencias-data="cargaInsumosStore.existencias.data"
           :cobertura-data="cargaInsumosStore.cobertura.data"
+          :boom-id="explosion?.id"
           @all-steps-completed="handleCargaInsumosCompleted"
         />
       </template>

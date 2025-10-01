@@ -451,10 +451,12 @@ const ejecutarPipeline = async (proceso, config) => {
       console.log(`📋 Enviando Pversion: ${props.pversion} para pipeline de ${pipelineType}`);
     }
 
-    // Agregar boomId para el pipeline de plan de demanda
-    if (config.pipelineName === 'EjecutarCalcularPlanDemadaBoom' && props.boomId) {
+    // Agregar boomId para pipelines que lo requieren
+    if ((config.pipelineName === 'EjecutarCalcularPlanDemadaBoom' ||
+         config.pipelineName === 'EjecutarExtraccionInsumos') && props.boomId) {
       pipelineArgs.boomId = props.boomId;
-      console.log(`📋 Enviando boomId: ${props.boomId} para pipeline de plan de demanda`);
+      const pipelineType = config.pipelineName === 'EjecutarExtraccionInsumos' ? 'sincronización de insumos' : 'plan de demanda';
+      console.log(`📋 Enviando boomId: ${props.boomId} para pipeline de ${pipelineType}`);
     }
 
     // Llamar a la mutación runPipeline
