@@ -25,6 +25,7 @@ import { GetPlanProduccion } from "./functions/boom/GetPlanProduccion/resource";
 import { GetMaterialesSinAprovicionamiento } from "./functions/boom/GetMaterialesSinAprovicionamiento/resource";
 import { GetMaterialesSinCentroProduccion } from "./functions/boom/getMaterialesSinCentroProduccion/resource";
 
+
 /**
  * Configuración del backend de Amplify
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
@@ -48,6 +49,7 @@ export const backend = defineBackend({
   GetPlanProduccion,
   GetMaterialesSinAprovicionamiento,
   GetMaterialesSinCentroProduccion,
+
 });
 
 const resetPasswordLambda = backend.resetPassword.resources.lambda;

@@ -1,5 +1,6 @@
 <script setup>
 import readXlsxFile from "read-excel-file";
+import { useFileUpload } from "~/composables/useFileUpload";
 
 // Props para comunicación con el componente padre
 const props = defineProps({
@@ -7,10 +8,17 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  documentId: {
+    type: String,
+    default: null,
+  },
 });
 
 // Emits para comunicación con el componente padre
 const emit = defineEmits(["update:isOpen", "data-loaded", "file-cleared"]);
+
+// Composable para manejo de archivos S3
+const { uploadFile, uploadProgress, isUploading, formatFileSize } = useFileUpload();
 
 // Headers específicos de existencias
 const headers = ref([
@@ -34,6 +42,8 @@ const isLoading = ref(false);
 const fileName = ref("");
 const validationError = ref("");
 const hasValidationError = computed(() => validationError.value.length > 0);
+const fileMetadata = ref(null);
+const showUploadProgress = ref(false);
 
 // Computed para el estado del modal
 const isModalOpen = computed({
@@ -84,8 +94,10 @@ const handleFileChangeExistencias = async (e) => {
   fileName.value = fileExistencias.name;
   validationError.value = "";
   isLoading.value = true;
+  showUploadProgress.value = false;
 
   try {
+    // Primero procesar el archivo Excel
     const data = await readXlsxFile(fileExistencias);
 
     if (data.length === 0) {
@@ -115,10 +127,33 @@ const handleFileChangeExistencias = async (e) => {
       return;
     }
 
+    // Mostrar progreso de carga a S3
+    showUploadProgress.value = true;
+
+    // Cargar archivo original a S3
+    const uploadResult = await uploadFile(
+      fileExistencias,
+      'existencias',
+      props.documentId,
+      (progress) => {
+        console.log(`📤 Progreso de carga: ${progress.percentage}%`);
+      }
+    );
+
+    if (!uploadResult.success) {
+      validationError.value = `Error al guardar archivo: ${uploadResult.error}`;
+      showUploadProgress.value = false;
+      return;
+    }
+
+    // Guardar metadatos del archivo
+    fileMetadata.value = uploadResult.metadata;
+
     // Emitir los datos cargados al componente padre
     emit("data-loaded", {
       data: filteredData,
       fileName: fileName.value,
+      fileMetadata: uploadResult.metadata,
     });
 
     // Cerrar modal solo si todo fue exitoso
@@ -128,6 +163,7 @@ const handleFileChangeExistencias = async (e) => {
     validationError.value = `Error al procesar el archivo: ${error.message}`;
   } finally {
     isLoading.value = false;
+    showUploadProgress.value = false;
   }
 };
 
@@ -135,6 +171,8 @@ const handleFileChangeExistencias = async (e) => {
 const clearData = () => {
   fileName.value = "";
   validationError.value = "";
+  fileMetadata.value = null;
+  showUploadProgress.value = false;
 
   // Limpiar el input file
   const fileInput = document.getElementById("file-input-existencias-modal");
@@ -151,6 +189,8 @@ const clearData = () => {
 const retryFileSelection = () => {
   fileName.value = "";
   validationError.value = "";
+  fileMetadata.value = null;
+  showUploadProgress.value = false;
 
   // Limpiar el input file
   const fileInput = document.getElementById("file-input-existencias-modal");
@@ -169,6 +209,8 @@ watch(
       fileName.value = "";
       validationError.value = "";
       isLoading.value = false;
+      fileMetadata.value = null;
+      showUploadProgress.value = false;
 
       // Limpiar el input file
       const fileInput = document.getElementById("file-input-existencias-modal");
@@ -219,9 +261,39 @@ watch(
               </div>
             </div>
 
+            <!-- Progreso de carga a S3 -->
+            <div
+              v-if="showUploadProgress"
+              class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700/50 rounded-md p-4"
+            >
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center">
+                  <UIcon
+                    name="i-heroicons-cloud-arrow-up"
+                    class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2"
+                  />
+                  <span class="text-sm font-medium text-blue-800 dark:text-blue-200">
+                    Guardando archivo en la nube...
+                  </span>
+                </div>
+                <span class="text-sm text-blue-600 dark:text-blue-400">
+                  {{ uploadProgress.percentage }}%
+                </span>
+              </div>
+              <div class="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+                <div
+                  class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  :style="{ width: `${uploadProgress.percentage}%` }"
+                ></div>
+              </div>
+              <div class="mt-2 text-xs text-blue-600 dark:text-blue-400">
+                {{ formatFileSize(uploadProgress.transferredBytes) }} de {{ formatFileSize(uploadProgress.totalBytes) }}
+              </div>
+            </div>
+
             <!-- Información del archivo exitoso -->
             <div
-              v-if="fileName && !isLoading && !hasValidationError"
+              v-if="fileName && !isLoading && !hasValidationError && !showUploadProgress"
               class="flex items-center justify-center"
             >
               <div
@@ -229,6 +301,7 @@ watch(
               >
                 <UIcon name="i-heroicons-document-text" class="w-4 h-4" />
                 <span>{{ fileName }}</span>
+                <UIcon name="i-heroicons-check-circle" class="w-4 h-4" />
               </div>
             </div>
 

@@ -1,5 +1,6 @@
 <script setup>
 import ExistenciasUploadModal from "./ExistenciasUploadModal.vue";
+import FileMetadataDisplay from "../FileMetadataDisplay.vue";
 
 // Props para comunicación con el componente padre
 const props = defineProps({
@@ -11,6 +12,10 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  documentId: {
+    type: String,
+    default: null,
+  },
 });
 
 // Emits para actualizar el valor en el componente padre
@@ -19,6 +24,7 @@ const emit = defineEmits(["update:modelValue", "version-validation-changed"]);
 // Estado local del componente
 const existencias = ref(props.modelValue);
 const fileName = ref("");
+const fileMetadata = ref(null);
 
 // Headers específicos de existencias
 const headers = ref([
@@ -42,7 +48,7 @@ const isModalOpen = ref(false);
 
 // Manejar datos cargados desde el modal
 const handleDataLoaded = (payload) => {
-  const { data, fileName: loadedFileName, error } = payload;
+  const { data, fileName: loadedFileName, fileMetadata: metadata, error } = payload;
 
   if (error) {
     console.error("Error al procesar el archivo:", error);
@@ -52,15 +58,22 @@ const handleDataLoaded = (payload) => {
 
   existencias.value = data;
   fileName.value = loadedFileName;
+  fileMetadata.value = metadata;
 
   // Emitir el cambio al componente padre
   emit("update:modelValue", data);
+  
+  // Si hay metadatos de archivo, también los pasamos
+  if (metadata) {
+    console.log("📁 Metadatos de archivo recibidos:", metadata);
+  }
 };
 
 // Manejar limpieza de datos desde el modal
 const handleFileCleared = () => {
   existencias.value = [];
   fileName.value = "";
+  fileMetadata.value = null;
   emit("update:modelValue", []);
 };
 
@@ -68,6 +81,7 @@ const handleFileCleared = () => {
 const clearData = () => {
   existencias.value = [];
   fileName.value = "";
+  fileMetadata.value = null;
   emit("update:modelValue", []);
 };
 
@@ -267,6 +281,12 @@ watch(
           </table>
         </div>
       </div>
+
+      <!-- Información del archivo original -->
+      <FileMetadataDisplay 
+        v-if="fileMetadata" 
+        :file-metadata="fileMetadata" 
+      />
     </div>
 
     <!-- Estado vacío -->
@@ -287,6 +307,7 @@ watch(
     <!-- Modal de carga de archivo -->
     <ExistenciasUploadModal
       v-model:is-open="isModalOpen"
+      :document-id="documentId"
       @data-loaded="handleDataLoaded"
       @file-cleared="handleFileCleared"
     />

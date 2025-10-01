@@ -1,11 +1,16 @@
 <script setup>
 import CoberturaUploadModal from "./CoberturaUploadModal.vue";
+import FileMetadataDisplay from "../FileMetadataDisplay.vue";
 
 // Props para comunicación con el componente padre
 const props = defineProps({
   modelValue: {
     type: Array,
     default: () => [],
+  },
+  documentId: {
+    type: String,
+    default: null,
   },
 });
 
@@ -15,6 +20,7 @@ const emit = defineEmits(["update:modelValue"]);
 // Estado local del componente
 const cobertura = ref(props.modelValue);
 const fileName = ref("");
+const fileMetadata = ref(null);
 
 // Headers específicos de días de cobertura
 const headers = ref([
@@ -32,7 +38,7 @@ const isModalOpen = ref(false);
 
 // Manejar datos cargados desde el modal
 const handleDataLoaded = (payload) => {
-  const { data, fileName: loadedFileName, error } = payload;
+  const { data, fileName: loadedFileName, fileMetadata: metadata, error } = payload;
 
   if (error) {
     console.error("Error al procesar el archivo:", error);
@@ -42,15 +48,22 @@ const handleDataLoaded = (payload) => {
 
   cobertura.value = data;
   fileName.value = loadedFileName;
+  fileMetadata.value = metadata;
 
   // Emitir el cambio al componente padre
   emit("update:modelValue", data);
+  
+  // Si hay metadatos de archivo, también los pasamos
+  if (metadata) {
+    console.log("📁 Metadatos de archivo recibidos:", metadata);
+  }
 };
 
 // Manejar limpieza de datos desde el modal
 const handleFileCleared = () => {
   cobertura.value = [];
   fileName.value = "";
+  fileMetadata.value = null;
   emit("update:modelValue", []);
 };
 
@@ -58,6 +71,7 @@ const handleFileCleared = () => {
 const clearData = () => {
   cobertura.value = [];
   fileName.value = "";
+  fileMetadata.value = null;
   emit("update:modelValue", []);
 };
 
@@ -170,6 +184,12 @@ watch(
           </table>
         </div>
       </div>
+
+      <!-- Información del archivo original -->
+      <FileMetadataDisplay 
+        v-if="fileMetadata" 
+        :file-metadata="fileMetadata" 
+      />
     </div>
 
     <!-- Estado vacío -->
@@ -190,6 +210,7 @@ watch(
     <!-- Modal de carga de archivo -->
     <CoberturaUploadModal
       v-model:is-open="isModalOpen"
+      :document-id="documentId"
       @data-loaded="handleDataLoaded"
       @file-cleared="handleFileCleared"
     />

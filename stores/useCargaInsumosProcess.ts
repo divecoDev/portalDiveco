@@ -2,11 +2,22 @@ import { defineStore } from "pinia";
 import { generateClient } from "aws-amplify/api";
 
 // Tipos para los datos del proceso de Carga de Insumos
+export interface FileMetadata {
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+  uploadedAt: string;
+  s3Path: string;
+  documentId?: string;
+  tipo?: 'planVentas' | 'existencias' | 'cobertura';
+}
+
 export interface CargaInsumosStepData {
   data: any[];
   fileName: string;
   loadedAt: Date | null;
   isValid: boolean;
+  fileMetadata?: FileMetadata;
 }
 
 export interface CargaInsumosDocument {
@@ -23,6 +34,11 @@ export interface CargaInsumosDocument {
     existenciasRecords: number;
     coberturaRecords: number;
     totalRecords: number;
+  };
+  fileMetadata?: {
+    planVentas?: FileMetadata;
+    existencias?: FileMetadata;
+    cobertura?: FileMetadata;
   };
 }
 
@@ -310,12 +326,13 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
     /**
      * Actualizar datos del plan de ventas
      */
-    updatePlanVentasData(data: any[], fileName = "") {
+    updatePlanVentasData(data: any[], fileName = "", fileMetadata?: FileMetadata) {
       this.planVentas = {
         data: data || [],
         fileName,
         loadedAt: data.length > 0 ? new Date() : null,
         isValid: data.length > 0,
+        fileMetadata,
       };
 
       console.log(`📊 Carga Insumos Store: Plan de ventas actualizado - ${data.length} registros`);
@@ -328,12 +345,13 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
     /**
      * Actualizar datos de existencias
      */
-    updateExistenciasData(data: any[], fileName = "") {
+    updateExistenciasData(data: any[], fileName = "", fileMetadata?: FileMetadata) {
       this.existencias = {
         data: data || [],
         fileName,
         loadedAt: data.length > 0 ? new Date() : null,
         isValid: data.length > 0,
+        fileMetadata,
       };
 
       console.log(`📦 Carga Insumos Store: Existencias actualizadas - ${data.length} registros`);
@@ -346,12 +364,13 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
     /**
      * Actualizar datos de cobertura
      */
-    updateCoberturaData(data: any[], fileName = "") {
+    updateCoberturaData(data: any[], fileName = "", fileMetadata?: FileMetadata) {
       this.cobertura = {
         data: data || [],
         fileName,
         loadedAt: data.length > 0 ? new Date() : null,
         isValid: data.length > 0,
+        fileMetadata,
       };
 
       console.log(`🛡️ Carga Insumos Store: Cobertura actualizada - ${data.length} registros`);

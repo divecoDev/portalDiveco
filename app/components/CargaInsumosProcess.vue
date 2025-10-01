@@ -191,6 +191,7 @@ watch(() => props.explosion, async (newExplosion) => {
           :key="`plan-ventas-${cargaInsumosStore.planVentas.data.length}-${cargaInsumosStore.planVentas.loadedAt?.getTime()}`"
           v-model="planVentasData"
           :boom-version="explosion?.version"
+          :document-id="explosion?.id"
           @version-validation-changed="handleVersionValidationChanged"
         />
       </template>
@@ -200,6 +201,7 @@ watch(() => props.explosion, async (newExplosion) => {
           :key="`existencias-${cargaInsumosStore.existencias.data.length}-${cargaInsumosStore.existencias.loadedAt?.getTime()}`"
           v-model="existenciasData"
           :boom-version="explosion?.version"
+          :document-id="explosion?.id"
           @version-validation-changed="handleExistenciasVersionValidationChanged"
         />
       </template>
@@ -208,6 +210,7 @@ watch(() => props.explosion, async (newExplosion) => {
         <CoberturaStep
           :key="`cobertura-${cargaInsumosStore.cobertura.data.length}-${cargaInsumosStore.cobertura.loadedAt?.getTime()}`"
           v-model="coberturaData"
+          :document-id="explosion?.id"
         />
       </template>
 
