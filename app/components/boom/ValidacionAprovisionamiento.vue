@@ -1,12 +1,26 @@
 <template>
   <div
-    class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+    class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 validacion-container"
   >
+    <!-- Botón para iniciar tour específico -->
+    <div class="flex justify-end mb-4">
+      <UButton
+        id="validacion-tour-trigger"
+        icon="i-heroicons-information-circle"
+        size="sm"
+        color="cyan"
+        variant="solid"
+        class="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+        @click="startTour"
+      >
+        Tour: Validación de Aprovisionamiento
+      </UButton>
+    </div>
     <div class="text-center py-12">
       <!-- Contenido específico de validación -->
       <div class="space-y-6">
         <!-- Botón de descarga del plan de producción -->
-        <div class="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/20 p-4 rounded-md border border-blue-200 dark:border-blue-700/50 shadow-sm">
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/20 p-4 rounded-md border border-blue-200 dark:border-blue-700/50 shadow-sm plan-download-section">
           <div class="flex items-center justify-between">
             <div class="flex items-center">
               <UIcon name="i-heroicons-document-arrow-down" class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3" />
@@ -31,12 +45,12 @@
 
 
         <!-- Pestañas de validación -->
-        <div class="space-y-4">
+        <div class="space-y-4 validation-tabs-section">
           <h4 class="text-lg font-semibold text-gray-900 dark:text-white">Análisis de Materiales:</h4>
           
           <UTabs v-model="activeTab" :items="tabItems" class="w-full">
             <template #materiales-no-aprovisionados>
-              <div class="p-4 space-y-4">
+              <div class="p-4 space-y-4 materiales-no-aprovisionados-tab">
                 <div class="flex items-center justify-between mb-4">
                   <div class="flex items-center">
                     <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-orange-500 mr-2" />
@@ -115,7 +129,7 @@
             </template>
 
             <template #materiales-sin-centro>
-              <div class="p-4 space-y-4">
+              <div class="p-4 space-y-4 materiales-sin-centro-tab">
                 <div class="flex items-center justify-between mb-4">
                   <div class="flex items-center">
                     <UIcon name="i-heroicons-building-office" class="w-5 h-5 text-red-500 mr-2" />
@@ -200,7 +214,7 @@
         </div>
 
         <!-- Botón simple para continuar -->
-        <div class="text-center py-6">
+        <div class="text-center py-6 continue-button-section">
           <UButton
             icon="i-heroicons-arrow-right"
             size="sm"
@@ -219,6 +233,9 @@
 </template>
 
 <script setup>
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
+
 // Props
 const props = defineProps({
   isCompleted: {
@@ -421,6 +438,101 @@ onMounted(() => {
   loadMaterialesData();
 });
 
+// Configuración del tour específico para Validación de Aprovisionamiento
+const driverObj = ref(null);
+
+const initializeTour = () => {
+  driverObj.value = driver({
+    showProgress: true,
+    showButtons: ['next', 'previous', 'close'],
+    allowClose: true,
+    overlayColor: 'rgba(0, 0, 0, 0.5)',
+    popoverClass: 'driver-popover-custom',
+    nextBtnText: 'Siguiente',
+    prevBtnText: 'Anterior',
+    doneBtnText: 'Finalizar',
+    steps: [
+      {
+        element: '#validacion-tour-trigger',
+        popover: {
+          title: '✅ Tour: Validación de Aprovisionamiento',
+          description: 'Este tour te mostrará cómo validar los materiales aprovisionados y descargar el plan de producción antes de la explosión.',
+          side: 'bottom',
+          align: 'start'
+        }
+      },
+      {
+        element: '.validacion-container',
+        popover: {
+          title: '📋 Proceso de Validación',
+          description: 'Aquí puedes validar la demanda de producción previa y realizar ajustes a los insumos si es necesario antes de la explosión.',
+          side: 'top',
+          align: 'start'
+        }
+      },
+      {
+        element: '.plan-download-section',
+        popover: {
+          title: '📥 Descarga del Plan de Producción',
+          description: 'Descarga el archivo CSV con el plan de producción generado para revisar la demanda previa a la explosión.',
+          side: 'bottom',
+          align: 'start'
+        }
+      },
+      {
+        element: '.validation-tabs-section',
+        popover: {
+          title: '🔍 Análisis de Materiales',
+          description: 'Revisa los materiales que necesitan atención: aquellos no aprovisionados y los sin centro de producción.',
+          side: 'right',
+          align: 'start'
+        }
+      },
+      {
+        element: '.materiales-no-aprovisionados-tab',
+        popover: {
+          title: '⚠️ Materiales No Aprovisionados',
+          description: 'Materiales que no tienen stock suficiente o proveedores asignados. Revisa esta lista y ajusta los insumos si es necesario.',
+          side: 'right',
+          align: 'start'
+        }
+      },
+      {
+        element: '.materiales-sin-centro-tab',
+        popover: {
+          title: '🏭 Materiales Sin Centro de Producción',
+          description: 'Materiales que no tienen centro de producción asignado. Verifica que todos tengan un centro válido antes de continuar.',
+          side: 'right',
+          align: 'start'
+        }
+      },
+      {
+        element: '.continue-button-section',
+        popover: {
+          title: '⚡ Continuar al Siguiente Paso',
+          description: 'Una vez validados los materiales y revisado el plan, puedes continuar al paso final de explosión.',
+          side: 'top',
+          align: 'center'
+        }
+      },
+      {
+        popover: {
+          title: '🎉 ¡Tour Completado!',
+          description: 'Ya conoces cómo validar los materiales y revisar el plan de producción. Asegúrate de revisar todos los materiales antes de continuar.',
+          side: 'center'
+        }
+      }
+    ]
+  });
+};
+
+const startTour = () => {
+  if (!driverObj.value) {
+    initializeTour();
+  }
+  driverObj.value.drive();
+};
+
 // Expose methods for parent component
 defineExpose({
   resetValidations,
@@ -429,3 +541,88 @@ defineExpose({
   loadMaterialesData
 });
 </script>
+
+<style>
+/* Estilos personalizados para el tour de Driver.js */
+.driver-popover-custom {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  border: 2px solid #0891b2;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.driver-popover-custom .driver-popover-title {
+  color: white;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.driver-popover-custom .driver-popover-description {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.driver-popover-custom .driver-popover-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding-top: 12px;
+}
+
+.driver-popover-custom .driver-popover-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.driver-popover-custom .driver-popover-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.driver-popover-custom .driver-popover-btn.driver-popover-btn-primary {
+  background: rgba(255, 255, 255, 0.9);
+  color: #0891b2;
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+.driver-popover-custom .driver-popover-btn.driver-popover-btn-primary:hover {
+  background: white;
+  color: #0e7490;
+}
+
+.driver-popover-custom .driver-popover-progress-bar {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  height: 4px;
+}
+
+.driver-popover-custom .driver-popover-progress-bar-fill {
+  background: white;
+  border-radius: 4px;
+}
+
+.driver-popover-custom .driver-popover-close-btn {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.2rem;
+}
+
+.driver-popover-custom .driver-popover-close-btn:hover {
+  color: white;
+}
+
+/* Animación suave para el overlay */
+.driver-overlay {
+  transition: opacity 0.3s ease;
+}
+
+/* Estilo para el elemento destacado */
+.driver-highlighted-element {
+  border-radius: 8px !important;
+  box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.3) !important;
+}
+</style>
