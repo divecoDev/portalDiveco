@@ -1,9 +1,23 @@
 <template>
   <div
-    class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+    class="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 plan-produccion-container"
   >
+    <!-- Botón para iniciar tour específico -->
+    <div class="flex justify-end mb-4">
+      <UButton
+        id="plan-produccion-tour-trigger"
+        icon="i-heroicons-information-circle"
+        size="sm"
+        color="cyan"
+        variant="solid"
+        class="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+        @click="startTour"
+      >
+        Tour: Plan de Producción
+      </UButton>
+    </div>
     <!-- Header del proceso -->
-    <div class="text-center mb-4">
+    <div class="text-center mb-4 process-header">
       <div
         :class="[
           'w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-md relative transition-all duration-500',
@@ -41,7 +55,7 @@
     </div>
 
     <!-- Lista de procesos -->
-    <div class="space-y-2 mb-4">
+    <div class="space-y-2 mb-4 processes-list">
       <div
         v-for="proceso in procesosProduccion"
         :key="proceso.id"
@@ -155,7 +169,7 @@
     </div>
 
     <!-- Botón de acción principal -->
-    <div class="text-center">
+    <div class="text-center main-action-section">
       <UButton
         v-if="!todosLosProcesosCompletados && !ejecucionGlobalEnProgreso"
         icon="i-heroicons-play"
@@ -239,6 +253,8 @@
 
 <script setup>
 import { generateClient } from "aws-amplify/data";
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
 
 const client = generateClient();
 
@@ -979,4 +995,193 @@ const progresoProcesos = computed(() => {
     porcentaje: total > 0 ? Math.round((completados / total) * 100) : 0
   };
 });
+
+// Configuración del tour específico para Plan de Producción
+const driverObj = ref(null);
+
+const initializeTour = () => {
+  driverObj.value = driver({
+    showProgress: true,
+    showButtons: ['next', 'previous', 'close'],
+    allowClose: true,
+    overlayColor: 'rgba(0, 0, 0, 0.5)',
+    popoverClass: 'driver-popover-custom',
+    nextBtnText: 'Siguiente',
+    prevBtnText: 'Anterior',
+    doneBtnText: 'Finalizar',
+    steps: [
+      {
+        element: '#plan-produccion-tour-trigger',
+        popover: {
+          title: '🏭 Tour: Plan de Producción',
+          description: 'Este tour te mostrará cómo ejecutar los procesos de generación del plan de producción.',
+          side: 'bottom',
+          align: 'start'
+        }
+      },
+      {
+        element: '.plan-produccion-container',
+        popover: {
+          title: '📋 Proceso de Plan de Producción',
+          description: 'Aquí se ejecutan los procesos necesarios para generar el plan de producción basado en los insumos cargados.',
+          side: 'top',
+          align: 'start'
+        }
+      },
+      {
+        element: '.process-header',
+        popover: {
+          title: '🎯 Estado del Proceso',
+          description: 'El icono y color indican el estado actual: verde si está completado, cyan si está en proceso.',
+          side: 'bottom',
+          align: 'center'
+        }
+      },
+      {
+        element: '.processes-list',
+        popover: {
+          title: '📝 Lista de Procesos',
+          description: 'Aquí se muestran los 3 procesos que se ejecutan secuencialmente: Sincronizar Insumos, Plan de Ventas y Plan de Demanda.',
+          side: 'right',
+          align: 'start'
+        }
+      },
+      {
+        element: '.processes-list > div:first-child',
+        popover: {
+          title: '🔄 Proceso 1: Sincronizar Insumos',
+          description: 'Primer proceso que extrae y prepara los datos de insumos cargados previamente.',
+          side: 'right',
+          align: 'start'
+        }
+      },
+      {
+        element: '.processes-list > div:nth-child(2)',
+        popover: {
+          title: '📊 Proceso 2: Sincronizar Plan de Ventas',
+          description: 'Segundo proceso que sincroniza el plan de ventas actual con los datos procesados.',
+          side: 'right',
+          align: 'start'
+        }
+      },
+      {
+        element: '.processes-list > div:nth-child(3)',
+        popover: {
+          title: '📈 Proceso 3: Calcular Plan de Demanda',
+          description: 'Tercer proceso que calcula el plan de demanda basado en todos los datos sincronizados.',
+          side: 'right',
+          align: 'start'
+        }
+      },
+      {
+        element: '.main-action-section',
+        popover: {
+          title: '⚡ Control de Ejecución',
+          description: 'Desde aquí puedes iniciar todos los procesos secuencialmente o ejecutar procesos individuales. Los procesos se ejecutan en orden.',
+          side: 'top',
+          align: 'center'
+        }
+      },
+      {
+        popover: {
+          title: '🎉 ¡Tour Completado!',
+          description: 'Ya conoces cómo funciona el proceso de generación del plan de producción. Los procesos se ejecutan automáticamente en secuencia.',
+          side: 'center'
+        }
+      }
+    ]
+  });
+};
+
+const startTour = () => {
+  if (!driverObj.value) {
+    initializeTour();
+  }
+  driverObj.value.drive();
+};
 </script>
+
+<style>
+/* Estilos personalizados para el tour de Driver.js */
+.driver-popover-custom {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  border: 2px solid #0891b2;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.driver-popover-custom .driver-popover-title {
+  color: white;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.driver-popover-custom .driver-popover-description {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.driver-popover-custom .driver-popover-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding-top: 12px;
+}
+
+.driver-popover-custom .driver-popover-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.driver-popover-custom .driver-popover-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.driver-popover-custom .driver-popover-btn.driver-popover-btn-primary {
+  background: rgba(255, 255, 255, 0.9);
+  color: #0891b2;
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+.driver-popover-custom .driver-popover-btn.driver-popover-btn-primary:hover {
+  background: white;
+  color: #0e7490;
+}
+
+.driver-popover-custom .driver-popover-progress-bar {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  height: 4px;
+}
+
+.driver-popover-custom .driver-popover-progress-bar-fill {
+  background: white;
+  border-radius: 4px;
+}
+
+.driver-popover-custom .driver-popover-close-btn {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.2rem;
+}
+
+.driver-popover-custom .driver-popover-close-btn:hover {
+  color: white;
+}
+
+/* Animación suave para el overlay */
+.driver-overlay {
+  transition: opacity 0.3s ease;
+}
+
+/* Estilo para el elemento destacado */
+.driver-highlighted-element {
+  border-radius: 8px !important;
+  box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.3) !important;
+}
+</style>
