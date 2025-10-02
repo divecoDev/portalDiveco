@@ -362,17 +362,37 @@ const downloadFile = async (tipo: 'planVentas' | 'existencias' | 'cobertura', s3
     console.log(`✅ URL de descarga obtenida:`, url.toString());
     console.log(`⏰ URL expira en:`, expiresAt);
 
-    // Crear enlace de descarga y activarlo
+    // Forzar descarga usando fetch para evitar que Edge abra el visor de Office
+    const response = await fetch(url.toString());
+    
+    if (!response.ok) {
+      throw new Error(`Error al obtener el archivo: ${response.status} ${response.statusText}`);
+    }
+
+    // Obtener el blob del archivo
+    const blob = await response.blob();
+    
+    // Crear URL del blob
+    const blobUrl = URL.createObjectURL(blob);
+    
+    // Crear enlace de descarga con el blob
     const link = document.createElement('a');
-    link.href = url.toString();
+    link.href = blobUrl;
     link.download = getFileName(s3Path);
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
+    
+    // Agregar atributos para forzar descarga
+    link.style.display = 'none';
+    link.setAttribute('download', getFileName(s3Path));
     
     // Agregar al DOM, hacer click y remover
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    
+    // Limpiar la URL del blob después de un breve delay
+    setTimeout(() => {
+      URL.revokeObjectURL(blobUrl);
+    }, 1000);
 
     useToast().add({
       title: 'Descarga iniciada',
