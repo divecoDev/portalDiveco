@@ -21,6 +21,19 @@
 
         <!-- Botones de acción -->
         <div class="flex items-center space-x-3">
+          <!-- Botón para iniciar tour guiado -->
+          <UButton
+            id="tour-trigger"
+            icon="i-heroicons-information-circle"
+            size="lg"
+            color="cyan"
+            variant="solid"
+            class="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+            @click="startTour"
+          >
+            Tour General
+          </UButton>
+
           <NuxtLink :to="`/tools/explosion-materiales/edit/${explosionId}`">
             <UButton
               icon="i-heroicons-pencil"
@@ -49,8 +62,10 @@
     </div>
 
     <div
+      id="stepper-container"
       class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6 bg-cyan-50/40 dark:bg-gray-800/80 backdrop-blur-sm rounded-md shadow-xl border border-cyan-200/50 dark:border-cyan-700/50 overflow-hidden"
     >
+
       <UStepper
         v-if="availableSteps.length > 0"
         ref="mainStepper"
@@ -58,10 +73,11 @@
         :items="availableSteps"
         color="primary"
         class="w-full"
+        id="main-stepper"
       >
 
         <template #carga-de-insumos>
-          <div class="relative">
+          <div id="step-carga-insumos" class="relative">
             <!-- Spinner de carga mientras se verifica si hay datos guardados -->
             <div 
               v-if="checkingSavedData"
@@ -132,7 +148,7 @@
         </template>
 
         <template #generar-plan-de-produccion>
-          <div class="relative">
+          <div id="step-plan-produccion" class="relative">
             <!-- Spinner de carga sobre el componente -->
             <div 
               v-if="loadingPlanProduccion"
@@ -161,16 +177,19 @@
         </template>
 
         <template #validacion-de-aprovisionamiento>
-          <ValidacionAprovisionamiento
+          <div id="step-validacion-aprovisionamiento">
+            <ValidacionAprovisionamiento
             :is-completed="completedSteps['validacion-de-aprovisionamiento']"
             :explosion-id="explosionId"
             :boom-id="explosion?.id"
             @validation-completed="handleValidacionAprovisionamientoCompleted"
           />
+          </div>
         </template>
 
         <template #explocionar>
-          <ExplosionProcess
+          <div id="step-explosionar">
+            <ExplosionProcess
             :explosion-id="explosionId"
             :boom-id="explosion?.id"
             :pversion="explosion?.version"
@@ -178,6 +197,7 @@
             @explosion-completed="handleExplosionCompleted"
             @loading-state-changed="handleExplosionLoadingStateChanged"
           />
+          </div>
         </template>
       </UStepper>
     </div>
@@ -186,6 +206,9 @@
 
 <script setup>
 import { generateClient } from "aws-amplify/data";
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
+
 definePageMeta({
   middleware: ["require-role"],
   requiredRole: "EXPLOSION",
@@ -701,6 +724,92 @@ const formatRelativeDate = (date) => {
   }
 };
 
+// Configuración del tour guiado
+const driverObj = ref(null);
+
+const initializeTour = () => {
+  driverObj.value = driver({
+    showProgress: true,
+    showButtons: ['next', 'previous', 'close'],
+    allowClose: true,
+    overlayColor: 'rgba(0, 0, 0, 0.5)',
+    popoverClass: 'driver-popover-custom',
+    nextBtnText: 'Siguiente',
+    prevBtnText: 'Anterior',
+    doneBtnText: 'Finalizar',
+    steps: [
+      {
+        element: '#tour-trigger',
+        popover: {
+          title: '🎯 Tour General del Proceso',
+          description: '¡Bienvenido! Este tour te mostrará los pasos generales del proceso de explosión de materiales.',
+          side: 'bottom',
+          align: 'start'
+        }
+      },
+      {
+        element: '#main-stepper',
+        popover: {
+          title: '📋 Proceso de 4 Pasos',
+          description: 'El proceso completo consta de 4 pasos secuenciales que debes completar en orden.',
+          side: 'top',
+          align: 'start'
+        }
+      },
+      {
+        element: '#main-stepper .stepper-item:nth-child(1)',
+        popover: {
+          title: '📦 Paso 1: Carga de Insumos',
+          description: 'Carga los documentos necesarios de acuerdo a las plantillas establecidas.',
+          side: 'bottom',
+          align: 'center'
+        }
+      },
+      {
+        element: '#main-stepper .stepper-item:nth-child(2)',
+        popover: {
+          title: '🏭 Paso 2: Generar Plan de Producción',
+          description: 'Este paso ejecutarás los procesos de extracción y preparación de la información en base a los documentos que cargaste.',
+          side: 'bottom',
+          align: 'center'
+        }
+      },
+      {
+        element: '#main-stepper .stepper-item:nth-child(3)',
+        popover: {
+          title: '✅ Paso 3: Validación de Aprovisionamiento',
+          description: 'Revisa que todos los materiales estén correctamente configurados y valida el plan de producción a explotar.',
+          side: 'bottom',
+          align: 'center'
+        }
+      },
+      {
+        element: '#main-stepper .stepper-item:nth-child(4)',
+        popover: {
+          title: '💥 Paso 4: Explosionar',
+          description: 'Se ejecutará el proceso principal y podrás descargar la información resultante.',
+          side: 'bottom',
+          align: 'center'
+        }
+      },
+      {
+        popover: {
+          title: '🎉 ¡Tour General Completado!',
+          description: 'Ya conoces los 4 pasos principales. Cada paso se habilita al completar el anterior.',
+          side: 'center'
+        }
+      }
+    ]
+  });
+};
+
+const startTour = () => {
+  if (!driverObj.value) {
+    initializeTour();
+  }
+  driverObj.value.drive();
+};
+
 // Cargar datos al montar el componente
 onMounted(async () => {
   await fetchExplosion();
@@ -708,3 +817,88 @@ onMounted(async () => {
   await checkProcessStates();
 });
 </script>
+
+<style>
+/* Estilos personalizados para el tour de Driver.js */
+.driver-popover-custom {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  border: 2px solid #0891b2;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.driver-popover-custom .driver-popover-title {
+  color: white;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.driver-popover-custom .driver-popover-description {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.driver-popover-custom .driver-popover-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding-top: 12px;
+}
+
+.driver-popover-custom .driver-popover-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.driver-popover-custom .driver-popover-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.driver-popover-custom .driver-popover-btn.driver-popover-btn-primary {
+  background: rgba(255, 255, 255, 0.9);
+  color: #0891b2;
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+.driver-popover-custom .driver-popover-btn.driver-popover-btn-primary:hover {
+  background: white;
+  color: #0e7490;
+}
+
+.driver-popover-custom .driver-popover-progress-bar {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  height: 4px;
+}
+
+.driver-popover-custom .driver-popover-progress-bar-fill {
+  background: white;
+  border-radius: 4px;
+}
+
+.driver-popover-custom .driver-popover-close-btn {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.2rem;
+}
+
+.driver-popover-custom .driver-popover-close-btn:hover {
+  color: white;
+}
+
+/* Animación suave para el overlay */
+.driver-overlay {
+  transition: opacity 0.3s ease;
+}
+
+/* Estilo para el elemento destacado */
+.driver-highlighted-element {
+  border-radius: 8px !important;
+  box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.3) !important;
+}
+</style>
