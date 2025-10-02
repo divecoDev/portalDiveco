@@ -1,13 +1,27 @@
 <template>
   <div
-    class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+    class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 explosion-container"
   >
+    <!-- Botón para iniciar tour específico -->
+    <div class="flex justify-end mb-4">
+      <UButton
+        id="explosion-tour-trigger"
+        icon="i-heroicons-rocket-launch"
+        size="sm"
+        color="cyan"
+        variant="solid"
+        class="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+        @click="startTour"
+      >
+        Tour: Explosión de Materiales
+      </UButton>
+    </div>
     <div class="text-center py-8">
       <!-- Botón de ejecución o estado en progreso -->
       <div v-if="!isCompleted">
         
         <!-- Estado en progreso -->
-        <div v-if="explosionInProgress" class="space-y-4">
+        <div v-if="explosionInProgress" class="space-y-4 explosion-progress-section">
           <div class="w-20 h-20 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-xl animate-pulse mx-auto">
             <div class="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
           </div>
@@ -23,7 +37,7 @@
         </div>
 
         <!-- Botón de ejecución -->
-        <div v-else>
+        <div v-else class="explosion-execution-section">
           <UButton
             icon="i-heroicons-bolt"
             size="lg"
@@ -37,7 +51,7 @@
       </div>
 
       <!-- Estado completado -->
-      <div v-else class="space-y-6">
+      <div v-else class="space-y-6 explosion-completed-section">
         <div class="w-20 h-20 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-xl animate-pulse mx-auto">
           <UIcon name="i-heroicons-check" class="w-10 h-10 text-white" />
         </div>
@@ -52,7 +66,7 @@
         </div>
 
         <!-- Botón para re-ejecutar explosión -->
-        <div class="flex justify-center">
+        <div class="flex justify-center re-execution-section">
           <UButton
             icon="i-heroicons-arrow-path"
             size="lg"
@@ -72,6 +86,8 @@
 
 <script setup>
 import { generateClient } from "aws-amplify/data";
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
 
 // Props
 const props = defineProps({
@@ -652,9 +668,187 @@ onMounted(async () => {
   await checkInitialExplosionState();
 });
 
+// Configuración del tour específico para ExplosionProcess
+const driverObj = ref(null);
+
+const initializeTour = () => {
+  driverObj.value = driver({
+    showProgress: true,
+    showButtons: ['next', 'previous', 'close'],
+    allowClose: true,
+    overlayColor: 'rgba(0, 0, 0, 0.5)',
+    popoverClass: 'driver-popover-custom',
+    nextBtnText: 'Siguiente',
+    prevBtnText: 'Anterior',
+    doneBtnText: 'Finalizar',
+    steps: [
+      {
+        element: '#explosion-tour-trigger',
+        popover: {
+          title: '🚀 Tour: Explosión de Materiales',
+          description: 'Este tour te mostrará el proceso final de explosión de materiales y los reportes que se generan como resultado.',
+          side: 'bottom',
+          align: 'start'
+        }
+      },
+      {
+        element: '.explosion-container',
+        popover: {
+          title: '💥 Proceso de Explosión Final',
+          description: 'Aquí se ejecuta el proceso principal que genera todos los reportes finales: Aprovisionamiento, Explosión por modelo, Explosión por materia prima, Plan de Ventas y Plan de Producción.',
+          side: 'top',
+          align: 'start'
+        }
+      },
+      {
+        element: '.explosion-execution-section',
+        popover: {
+          title: '⚡ Ejecutar Explosión',
+          description: 'Botón principal para iniciar el proceso de explosión. Una vez ejecutado, se generarán todos los reportes finales del análisis de materiales.',
+          side: 'top',
+          align: 'center'
+        }
+      },
+      {
+        element: '.explosion-progress-section',
+        popover: {
+          title: '⏳ Proceso en Ejecución',
+          description: 'Durante la ejecución, el sistema procesa todos los datos y genera los reportes. Este proceso puede tomar varios minutos.',
+          side: 'top',
+          align: 'center'
+        }
+      },
+      {
+        element: '.explosion-completed-section',
+        popover: {
+          title: '✅ Explosión Completada',
+          description: 'Una vez completada la explosión, todos los reportes estarán disponibles: Aprovisionamiento configurado, Explosión por modelo, Explosión por materia prima, Plan de Ventas y Plan de Producción.',
+          side: 'top',
+          align: 'center'
+        }
+      },
+      {
+        element: '.re-execution-section',
+        popover: {
+          title: '🔄 Re-ejecutar Explosión',
+          description: 'Si necesitas regenerar los reportes con datos actualizados, puedes re-ejecutar el proceso de explosión en cualquier momento.',
+          side: 'top',
+          align: 'center'
+        }
+      },
+      {
+        popover: {
+          title: '📊 Reportes Generados',
+          description: 'Como resultado de la explosión obtendrás: Aprovisionamiento configurado, Explosión del plan por modelo con semielaborados, Explosión del plan por materia prima con semielaborados, Plan de Ventas y Plan de Producción.',
+          side: 'center'
+        }
+      },
+      {
+        popover: {
+          title: '🎉 ¡Tour Completado!',
+          description: 'Ya conoces el proceso final de explosión de materiales. Recuerda que este paso genera todos los reportes finales necesarios para el análisis completo.',
+          side: 'center'
+        }
+      }
+    ]
+  });
+};
+
+const startTour = () => {
+  if (!driverObj.value) {
+    initializeTour();
+  }
+  driverObj.value.drive();
+};
+
 // Limpiar polling al desmontar el componente
 onUnmounted(() => {
   limpiarEstadoPolling();
   console.log('🧹 Componente desmontado, estado de polling limpiado');
 });
 </script>
+
+<style>
+/* Estilos personalizados para el tour de Driver.js */
+.driver-popover-custom {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  border: 2px solid #0891b2;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.driver-popover-custom .driver-popover-title {
+  color: white;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.driver-popover-custom .driver-popover-description {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.driver-popover-custom .driver-popover-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding-top: 12px;
+}
+
+.driver-popover-custom .driver-popover-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.driver-popover-custom .driver-popover-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.driver-popover-custom .driver-popover-btn.driver-popover-btn-primary {
+  background: rgba(255, 255, 255, 0.9);
+  color: #0891b2;
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+.driver-popover-custom .driver-popover-btn.driver-popover-btn-primary:hover {
+  background: white;
+  color: #0e7490;
+}
+
+.driver-popover-custom .driver-popover-progress-bar {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  height: 4px;
+}
+
+.driver-popover-custom .driver-popover-progress-bar-fill {
+  background: white;
+  border-radius: 4px;
+}
+
+.driver-popover-custom .driver-popover-close-btn {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.2rem;
+}
+
+.driver-popover-custom .driver-popover-close-btn:hover {
+  color: white;
+}
+
+/* Animación suave para el overlay */
+.driver-overlay {
+  transition: opacity 0.3s ease;
+}
+
+/* Estilo para el elemento destacado */
+.driver-highlighted-element {
+  border-radius: 8px !important;
+  box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.3) !important;
+}
+</style>
