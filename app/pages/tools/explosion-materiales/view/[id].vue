@@ -40,7 +40,7 @@
               size="lg"
               color="blue"
               variant="outline"
-              class="hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-300"
+               class="bg-gradient-to-r from-gray-500 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
             >
               Editar
             </UButton>
@@ -52,7 +52,7 @@
               size="lg"
               color="gray"
               variant="outline"
-              class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-300"
+               class="bg-gradient-to-r from-gray-500 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
             >
               Volver al Listado
             </UButton>
