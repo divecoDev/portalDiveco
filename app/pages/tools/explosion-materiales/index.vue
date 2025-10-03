@@ -95,18 +95,6 @@
                     <UIcon name="i-heroicons-hashtag" class="w-6 h-6 mr-2" />
                     {{ explosion.version }}
                   </h3>
-                  <UBadge
-                    :color="getStatusConfig(explosion.status).color"
-                    variant="subtle"
-                    size="sm"
-                    class="flex items-center gap-1"
-                  >
-                    <UIcon
-                      :name="getStatusConfig(explosion.status).icon"
-                      class="w-3 h-3"
-                    />
-                    {{ getStatusConfig(explosion.status).label }}
-                  </UBadge>
                 </div>
 
                 <!-- Descripción con Fecha -->
