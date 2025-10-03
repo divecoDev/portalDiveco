@@ -1,5 +1,6 @@
 <script setup>
 import { useCargaInsumosProcessStore } from './../stores/useCargaInsumosProcess'
+import { generateClient } from "aws-amplify/data";
 
 // Props para recibir los datos de los pasos anteriores
 const props = defineProps({
@@ -14,6 +15,10 @@ const props = defineProps({
   coberturaData: {
     type: Array,
     default: () => [],
+  },
+  boomId: {
+    type: String,
+    default: null,
   },
 });
 
@@ -108,12 +113,25 @@ const guardarDocumentos = async () => {
       cargaInsumosStore.cobertura.isValid = true;
     }
 
+    // Establecer el boomId en el store si está disponible
+    if (props.boomId) {
+      cargaInsumosStore.setBoomId(props.boomId);
+      console.log(`📋 BoomId establecido en el store: ${props.boomId}`);
+    }
+
     // Procesar los documentos usando el store (esto enviará a MySQL)
     console.log('🚀 Iniciando guardado de documentos...');
     const result = await cargaInsumosStore.processDocuments();
 
     if (result.success) {
       console.log('✅ Documentos guardados exitosamente');
+      
+      // Ejecutar pipeline de Azure Data Factory si hay boomId
+      if (props.boomId) {
+        console.log('🚀 Ejecutando pipeline de Azure Data Factory...');
+        await ejecutarPipelineADF(props.boomId);
+      }
+
       useToast().add({
         title: 'Éxito',
         description: 'Documentos guardados exitosamente en la base de datos',
@@ -133,6 +151,64 @@ const guardarDocumentos = async () => {
       title: 'Error',
       description: `Error inesperado: ${error instanceof Error ? error.message : 'Error desconocido'}`,
       color: 'red',
+    });
+  }
+};
+
+// Función para ejecutar el pipeline de Azure Data Factory
+const ejecutarPipelineADF = async (boomId) => {
+  try {
+    const client = generateClient();
+    
+    // Preparar argumentos del pipeline
+    const pipelineArgs = {
+      pipelineName: 'ProcesarCargaInsumos', // Nombre del pipeline específico para carga de insumos
+      boomId: boomId
+    };
+
+    console.log(`📋 Ejecutando pipeline con argumentos:`, pipelineArgs);
+
+    // Llamar a la mutación runPipeline
+    const { data } = await client.mutations.runPipeline(pipelineArgs);
+
+    console.log('📋 Respuesta del pipeline:', data);
+
+    // Procesar la respuesta del pipeline
+    let runId = null;
+    const raw = data?.runPipeline ?? data;
+
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        runId = parsed?.runId ?? null;
+      } catch (e) {
+        console.warn('No se pudo parsear runPipeline string:', e);
+      }
+    } else if (raw && typeof raw === 'object') {
+      runId = raw?.runId ?? raw?.data?.runId ?? null;
+    }
+
+    if (runId) {
+      console.log(`✅ Pipeline de carga de insumos iniciado con runId: ${runId}`);
+      
+      useToast().add({
+        title: "Pipeline iniciado",
+        description: `Pipeline de procesamiento iniciado. ID: ${runId}`,
+        color: "blue",
+        timeout: 3000
+      });
+    } else {
+      console.warn('⚠️ No se recibió runId válido del pipeline');
+    }
+
+  } catch (error) {
+    console.error('❌ Error ejecutando pipeline de Azure Data Factory:', error);
+    
+    useToast().add({
+      title: "Error en pipeline",
+      description: `Error al ejecutar pipeline: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+      color: "red",
+      timeout: 5000
     });
   }
 };

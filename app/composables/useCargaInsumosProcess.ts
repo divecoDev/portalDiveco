@@ -1,5 +1,5 @@
 import { useCargaInsumosProcessStore } from "~/stores/useCargaInsumosProcess";
-import type { CargaInsumosDocument } from "~/stores/useCargaInsumosProcess";
+import type { CargaInsumosDocument, FileMetadata } from "~/stores/useCargaInsumosProcess";
 
 /**
  * Composable para facilitar el uso del store de Carga de Insumos
@@ -33,14 +33,14 @@ export const useCargaInsumosProcess = () => {
 
   // Métodos de gestión de datos
   const dataManagement = {
-    updatePlanVentas: (data: any[], fileName = "") => 
-      store.updatePlanVentasData(data, fileName),
+    updatePlanVentas: (data: any[], fileName = "", fileMetadata?: FileMetadata) => 
+      store.updatePlanVentasData(data, fileName, fileMetadata),
     
-    updateExistencias: (data: any[], fileName = "") => 
-      store.updateExistenciasData(data, fileName),
+    updateExistencias: (data: any[], fileName = "", fileMetadata?: FileMetadata) => 
+      store.updateExistenciasData(data, fileName, fileMetadata),
     
-    updateCobertura: (data: any[], fileName = "") => 
-      store.updateCoberturaData(data, fileName),
+    updateCobertura: (data: any[], fileName = "", fileMetadata?: FileMetadata) => 
+      store.updateCoberturaData(data, fileName, fileMetadata),
     
     clearStepData: (step: 'planVentas' | 'existencias' | 'cobertura') => 
       store.clearStepData(step),

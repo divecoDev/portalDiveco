@@ -110,6 +110,9 @@ const schema = a.schema({
       reportePlanDemanda: a.json(),
       materialesSinAprovicion: a.json(),
       materialesSinCentroProduccion: a.json(),
+      insumoPlanVentasPath: a.string(),
+      insumoExistenciasPath: a.string(),
+      insumoCoberturaPath: a.string(),
     })
     .authorization((allow) => [allow.publicApiKey()]),
 

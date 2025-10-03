@@ -1,5 +1,6 @@
 <script setup>
 import ExistenciasUploadModal from "./ExistenciasUploadModal.vue";
+import FileMetadataDisplay from "../FileMetadataDisplay.vue";
 
 // Props para comunicación con el componente padre
 const props = defineProps({
@@ -11,14 +12,19 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  documentId: {
+    type: String,
+    default: null,
+  },
 });
 
 // Emits para actualizar el valor en el componente padre
-const emit = defineEmits(["update:modelValue", "version-validation-changed"]);
+const emit = defineEmits(["update:modelValue", "version-validation-changed", "file-metadata-updated"]);
 
 // Estado local del componente
 const existencias = ref(props.modelValue);
 const fileName = ref("");
+const fileMetadata = ref(null);
 
 // Headers específicos de existencias
 const headers = ref([
@@ -42,7 +48,9 @@ const isModalOpen = ref(false);
 
 // Manejar datos cargados desde el modal
 const handleDataLoaded = (payload) => {
-  const { data, fileName: loadedFileName, error } = payload;
+  console.log(`🔍 DEBUG ExistenciasStep handleDataLoaded - Payload completo:`, payload);
+  
+  const { data, fileName: loadedFileName, fileMetadata: metadata, error } = payload;
 
   if (error) {
     console.error("Error al procesar el archivo:", error);
@@ -50,17 +58,39 @@ const handleDataLoaded = (payload) => {
     return;
   }
 
+  console.log(`🔍 DEBUG ExistenciasStep - Datos recibidos:`);
+  console.log(`  - data.length: ${data?.length || 0}`);
+  console.log(`  - fileName: ${loadedFileName}`);
+  console.log(`  - fileMetadata:`, metadata);
+  console.log(`  - fileMetadata.s3Path: ${metadata?.s3Path || 'undefined'}`);
+
   existencias.value = data;
   fileName.value = loadedFileName;
+  fileMetadata.value = metadata;
 
   // Emitir el cambio al componente padre
   emit("update:modelValue", data);
+  
+  // Emitir también los metadatos del archivo
+  if (metadata) {
+    console.log("📁 Emitiendo metadatos de archivo al componente padre");
+    emit("file-metadata-updated", { tipo: 'existencias', metadata });
+  }
+  
+  // Si hay metadatos de archivo, también los pasamos
+  if (metadata) {
+    console.log("📁 Metadatos de archivo recibidos:", metadata);
+    console.log(`📁 S3 Path disponible: ${metadata.s3Path}`);
+  } else {
+    console.log("⚠️ No hay metadatos de archivo disponibles");
+  }
 };
 
 // Manejar limpieza de datos desde el modal
 const handleFileCleared = () => {
   existencias.value = [];
   fileName.value = "";
+  fileMetadata.value = null;
   emit("update:modelValue", []);
 };
 
@@ -68,6 +98,7 @@ const handleFileCleared = () => {
 const clearData = () => {
   existencias.value = [];
   fileName.value = "";
+  fileMetadata.value = null;
   emit("update:modelValue", []);
 };
 
@@ -176,6 +207,17 @@ watch(
           <span v-if="hasData" class="text-sm text-gray-600 dark:text-gray-300"
             >{{ totalRecords }} registros</span
           >
+          <a
+            href="https://d1p0twkya81b3k.cloudfront.net/templates/Existencias.xlsx"
+            target="_blank"
+            download
+          >
+            <UButton
+              icon="i-heroicons-arrow-down-tray"
+              label="Descargar plantilla"
+              class="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+            />
+          </a>
           <UButton
             v-if="!hasData"
             icon="i-heroicons-arrow-up-tray"
@@ -256,6 +298,12 @@ watch(
           </table>
         </div>
       </div>
+
+      <!-- Información del archivo original -->
+      <FileMetadataDisplay 
+        v-if="fileMetadata" 
+        :file-metadata="fileMetadata" 
+      />
     </div>
 
     <!-- Estado vacío -->
@@ -276,6 +324,7 @@ watch(
     <!-- Modal de carga de archivo -->
     <ExistenciasUploadModal
       v-model:is-open="isModalOpen"
+      :document-id="documentId"
       @data-loaded="handleDataLoaded"
       @file-cleared="handleFileCleared"
     />
