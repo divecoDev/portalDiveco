@@ -19,18 +19,34 @@
           </p>
         </div>
 
-        <!-- Botón para volver al listado -->
-        <NuxtLink to="/tools/explosion-materiales">
+        <!-- Botones de acción del header -->
+        <div class="flex items-center space-x-3">
+          <!-- Botón para iniciar tour guiado -->
           <UButton
-            icon="i-heroicons-arrow-left"
+            id="tour-trigger"
+            icon="i-heroicons-information-circle"
             size="lg"
-            color="gray"
-            variant="outline"
-            class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-300"
+            color="cyan"
+            variant="solid"
+            class="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+            @click="startTour"
           >
-            Volver al Listado
+            🎯 Tour Guiado
           </UButton>
-        </NuxtLink>
+
+          <!-- Botón para volver al listado -->
+          <NuxtLink to="/tools/explosion-materiales">
+            <UButton
+              icon="i-heroicons-arrow-left"
+              size="lg"
+              color="gray"
+              variant="outline"
+              class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-300"
+            >
+              Volver al Listado
+            </UButton>
+          </NuxtLink>
+        </div>
       </div>
     </div>
 
@@ -76,7 +92,7 @@
         class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-md shadow-xl border border-cyan-200/50 dark:border-cyan-700/50 overflow-hidden"
       >
         <!-- Header del formulario con gradiente -->
-        <div class="bg-gradient-to-r from-cyan-500 to-cyan-600 px-6 py-4">
+        <div id="form-header" class="bg-gradient-to-r from-cyan-500 to-cyan-600 px-6 py-4">
           <div class="flex items-center justify-between">
             <div class="flex items-center">
               <UIcon
@@ -93,17 +109,38 @@
         </div>
 
         <div class="p-6">
+          <!-- Botón de prueba del tour -->
+          <div class="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-md">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <UIcon name="i-heroicons-light-bulb" class="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-2" />
+                <span class="text-sm text-yellow-800 dark:text-yellow-200">
+                  ¿Primera vez aquí? Inicia el tour guiado para conocer todas las funciones
+                </span>
+              </div>
+              <UButton
+                size="sm"
+                color="yellow"
+                variant="solid"
+                @click="startTour"
+                class="ml-3"
+              >
+                Iniciar Tour
+              </UButton>
+            </div>
+          </div>
+
           <!-- Formulario -->
           <form @submit.prevent="updateExplosion" class="space-y-6">
             <!-- Campos en una sola fila compacta -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <!-- Número de Versión (Destacado) -->
-              <div class="relative">
+              <div id="version-field" class="relative">
                 <div
                   class="bg-gradient-to-br from-cyan-50 to-cyan-100/50 dark:from-cyan-900/20 dark:to-cyan-800/20 p-4 rounded-md border border-cyan-200 dark:border-cyan-700/50 shadow-sm"
                 >
                   <label
-                    class="block text-sm font-semibold text-cyan-700 dark:text-cyan-300 mb-2 flex items-center"
+                    class="text-sm font-semibold text-cyan-700 dark:text-cyan-300 mb-2 flex items-center"
                   >
                     <UIcon name="i-heroicons-hashtag" class="w-4 h-4 mr-1.5" />
                     Número de Versión *
@@ -125,10 +162,10 @@
               </div>
 
               <!-- Descripción -->
-              <div class="relative">
+              <div id="description-field" class="relative">
                 <div class="p-4">
                   <label
-                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center"
+                    class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center"
                   >
                     <UIcon
                       name="i-heroicons-document-text"
@@ -149,10 +186,10 @@
             </div>
 
             <!-- Estado -->
-            <div class="relative">
+            <div id="status-field" class="relative">
               <div class="p-4">
                 <label
-                  class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center"
+                  class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center"
                 >
                   <UIcon name="i-heroicons-flag" class="w-4 h-4 mr-1.5" />
                   Estado
@@ -169,6 +206,7 @@
 
             <!-- Botones de acción -->
             <div
+              id="action-buttons"
               class="flex justify-end space-x-3 pt-4 border-t border-gray-100 dark:border-gray-700"
             >
               <NuxtLink
@@ -210,6 +248,13 @@
 
 <script setup>
 import { generateClient } from "aws-amplify/data";
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
+
+definePageMeta({
+  middleware: ["require-role"],
+  requiredRole: "EXPLOSION",
+});
 
 // Cliente de Amplify
 const client = generateClient();
@@ -399,8 +444,176 @@ watch(
   },
 );
 
+// Configuración del tour guiado
+const driverObj = ref(null);
+
+const initializeTour = () => {
+  driverObj.value = driver({
+    showProgress: true,
+    showButtons: ['next', 'previous', 'close'],
+    allowClose: true,
+    overlayColor: 'rgba(0, 0, 0, 0.5)',
+    popoverClass: 'driver-popover-custom',
+    steps: [
+      {
+        element: '#tour-trigger',
+        popover: {
+          title: '🎯 Tour Guiado',
+          description: '¡Bienvenido! Este tour te guiará a través de la página de edición de explosión de materiales. Puedes iniciarlo en cualquier momento desde este botón.',
+          side: 'bottom',
+          align: 'start'
+        }
+      },
+      {
+        element: '#form-header',
+        popover: {
+          title: '📋 Información del Formulario',
+          description: 'Aquí puedes ver el título del formulario y la fecha de creación de la explosión. Esta información te ayuda a identificar qué estás editando.',
+          side: 'bottom',
+          align: 'start'
+        }
+      },
+      {
+        element: '#version-field',
+        popover: {
+          title: '🔢 Número de Versión',
+          description: 'Este es el campo más importante. El número de versión identifica únicamente cada explosión de materiales. Debe ser un número entero positivo.',
+          side: 'right',
+          align: 'start'
+        }
+      },
+      {
+        element: '#description-field',
+        popover: {
+          title: '📝 Descripción',
+          description: 'Aquí puedes agregar una descripción descriptiva de la explosión. Por ejemplo, puedes usar el formato de plan como "08-04 2025".',
+          side: 'left',
+          align: 'start'
+        }
+      },
+      {
+        element: '#status-field',
+        popover: {
+          title: '🏷️ Estado',
+          description: 'Selecciona el estado actual de la explosión: Activo, Inactivo, En Proceso o Completado. Esto ayuda a gestionar el flujo de trabajo.',
+          side: 'top',
+          align: 'start'
+        }
+      },
+      {
+        element: '#action-buttons',
+        popover: {
+          title: '⚡ Acciones Disponibles',
+          description: 'Desde aquí puedes ver los detalles de la explosión o guardar los cambios realizados. El botón de guardar se habilita cuando todos los campos requeridos están completos.',
+          side: 'top',
+          align: 'end'
+        }
+      },
+      {
+        popover: {
+          title: '🎉 ¡Tour Completado!',
+          description: 'Ya conoces todos los elementos principales de la página de edición. ¡Ahora puedes editar explosiones de materiales con confianza!',
+          side: 'center'
+        }
+      }
+    ]
+  });
+};
+
+const startTour = () => {
+  if (!driverObj.value) {
+    initializeTour();
+  }
+  driverObj.value.drive();
+};
+
 // Cargar datos al montar el componente
 onMounted(() => {
   fetchExplosion();
 });
 </script>
+
+<style>
+/* Estilos personalizados para el tour de Driver.js */
+.driver-popover-custom {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  border: 2px solid #0891b2;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.driver-popover-custom .driver-popover-title {
+  color: white;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.driver-popover-custom .driver-popover-description {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.driver-popover-custom .driver-popover-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding-top: 12px;
+}
+
+.driver-popover-custom .driver-popover-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.driver-popover-custom .driver-popover-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.driver-popover-custom .driver-popover-btn.driver-popover-btn-primary {
+  background: rgba(255, 255, 255, 0.9);
+  color: #0891b2;
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+.driver-popover-custom .driver-popover-btn.driver-popover-btn-primary:hover {
+  background: white;
+  color: #0e7490;
+}
+
+.driver-popover-custom .driver-popover-progress-bar {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  height: 4px;
+}
+
+.driver-popover-custom .driver-popover-progress-bar-fill {
+  background: white;
+  border-radius: 4px;
+}
+
+.driver-popover-custom .driver-popover-close-btn {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.2rem;
+}
+
+.driver-popover-custom .driver-popover-close-btn:hover {
+  color: white;
+}
+
+/* Animación suave para el overlay */
+.driver-overlay {
+  transition: opacity 0.3s ease;
+}
+
+/* Estilo para el elemento destacado */
+.driver-highlighted-element {
+  border-radius: 8px !important;
+  box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.3) !important;
+}
+</style>

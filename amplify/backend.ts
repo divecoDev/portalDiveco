@@ -24,6 +24,7 @@ import { BoomGetStatusPipeline } from "./functions/boom/GetStatusPipeline/resour
 import { GetPlanProduccion } from "./functions/boom/GetPlanProduccion/resource";
 import { GetMaterialesSinAprovicionamiento } from "./functions/boom/GetMaterialesSinAprovicionamiento/resource";
 import { GetMaterialesSinCentroProduccion } from "./functions/boom/getMaterialesSinCentroProduccion/resource";
+import { boomFilesStore } from "./functions/boom/boomFilesStore.ts/resource";
 
 /**
  * Configuración del backend de Amplify
@@ -48,6 +49,7 @@ export const backend = defineBackend({
   GetPlanProduccion,
   GetMaterialesSinAprovicionamiento,
   GetMaterialesSinCentroProduccion,
+  boomFilesStore,
 });
 
 const resetPasswordLambda = backend.resetPassword.resources.lambda;
@@ -168,6 +170,15 @@ const getMaterialesSinCentroProduccionLambda = backend.GetMaterialesSinCentroPro
 const getMaterialesSinCentroProduccionPolicy = new iam.PolicyStatement(getBoomS3Policy);
 getMaterialesSinCentroProduccionLambda.addToRolePolicy(getMaterialesSinCentroProduccionPolicy);
 getMaterialesSinCentroProduccionLambda.addFunctionUrl(
+  {
+    authType: FunctionUrlAuthType.NONE,
+  }
+);
+
+const boomFilesStoreLambda = backend.boomFilesStore.resources.lambda;
+const boomFilesStorePolicy = new iam.PolicyStatement(getBoomS3Policy);
+boomFilesStoreLambda.addToRolePolicy(boomFilesStorePolicy);
+boomFilesStoreLambda.addFunctionUrl(
   {
     authType: FunctionUrlAuthType.NONE,
   }

@@ -1,9 +1,25 @@
 import { json2csv } from 'json-2-csv';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
+/**
+ * 
+ * Files type: AprovisionamientoConfigurado, PlanModeloConSemielaborados,  PlanModeloMateriasPrimaConSemielaborados, , PlanVentas, PlanProduccion 
+ * @
+ */
+
+
 export const handler = async (event: any) => {
+    const boomId = event.headers.boom_id;
+    const fileType = event.headers.file_type;
+    
+    if (!boomId || !fileType) {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({ message: "boom_id and file_type are required" }),
+        };
+    }
+
     try {
-        const boomId = event.headers.boom_id;
         let data = event.body;
         
         if (typeof data === 'string') {
@@ -39,7 +55,7 @@ export const handler = async (event: any) => {
         const s3Client = new S3Client({});
         
         // Generate filename with boom ID
-        const fileName = `plan-produccion-${boomId}.csv`;
+        const fileName = `${boomId}/${fileType}.csv`;
         const bucketName = 'explosion-materiales-uts';
         
         // Upload CSV to S3
@@ -71,4 +87,4 @@ export const handler = async (event: any) => {
             error: errorMessage
         };
     }
-}
+};

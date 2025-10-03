@@ -21,13 +21,26 @@
 
         <!-- Botones de acción -->
         <div class="flex items-center space-x-3">
+          <!-- Botón para iniciar tour guiado -->
+          <UButton
+            id="tour-trigger"
+            icon="i-heroicons-information-circle"
+            size="lg"
+            color="cyan"
+            variant="solid"
+            class="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+            @click="startTour"
+          >
+            Tour General
+          </UButton>
+
           <NuxtLink :to="`/tools/explosion-materiales/edit/${explosionId}`">
             <UButton
               icon="i-heroicons-pencil"
               size="lg"
               color="blue"
               variant="outline"
-              class="hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-300"
+               class="bg-gradient-to-r from-gray-500 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
             >
               Editar
             </UButton>
@@ -39,7 +52,7 @@
               size="lg"
               color="gray"
               variant="outline"
-              class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-300"
+               class="bg-gradient-to-r from-gray-500 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
             >
               Volver al Listado
             </UButton>
@@ -49,8 +62,10 @@
     </div>
 
     <div
+      id="stepper-container"
       class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6 bg-cyan-50/40 dark:bg-gray-800/80 backdrop-blur-sm rounded-md shadow-xl border border-cyan-200/50 dark:border-cyan-700/50 overflow-hidden"
     >
+
       <UStepper
         v-if="availableSteps.length > 0"
         ref="mainStepper"
@@ -58,10 +73,11 @@
         :items="availableSteps"
         color="primary"
         class="w-full"
+        id="main-stepper"
       >
 
         <template #carga-de-insumos>
-          <div class="relative">
+          <div id="step-carga-insumos" class="relative">
             <!-- Spinner de carga mientras se verifica si hay datos guardados -->
             <div 
               v-if="checkingSavedData"
@@ -132,7 +148,7 @@
         </template>
 
         <template #generar-plan-de-produccion>
-          <div class="relative">
+          <div id="step-plan-produccion" class="relative">
             <!-- Spinner de carga sobre el componente -->
             <div 
               v-if="loadingPlanProduccion"
@@ -161,72 +177,26 @@
         </template>
 
         <template #validacion-de-aprovisionamiento>
-          <ValidacionAprovisionamiento
+          <div id="step-validacion-aprovisionamiento">
+            <ValidacionAprovisionamiento
             :is-completed="completedSteps['validacion-de-aprovisionamiento']"
             :explosion-id="explosionId"
             :boom-id="explosion?.id"
             @validation-completed="handleValidacionAprovisionamientoCompleted"
           />
+          </div>
         </template>
 
         <template #explocionar>
-          <div
-            class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-          >
-            <div class="text-center py-8">
-              <!-- Icono principal -->
-              <div
-                :class="[
-                  'w-32 h-32 rounded-md flex items-center justify-center mx-auto mb-6 shadow-lg relative transition-all duration-500',
-                  completedSteps['explocionar']
-                    ? 'bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30'
-                    : 'bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30'
-                ]"
-              >
-                <UIcon
-                  name="i-heroicons-bolt"
-                  :class="[
-                    'w-16 h-16 transition-all duration-500',
-                    completedSteps['explocionar']
-                      ? 'text-green-600 dark:text-green-400'
-                      : 'text-cyan-600 dark:text-cyan-400'
-                  ]"
-                />
-                <div v-if="completedSteps['explocionar']" class="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                  <UIcon name="i-heroicons-check" class="w-5 h-5 text-white" />
-                </div>
-              </div>
-
-              <!-- Botón de ejecución o estado completado -->
-              <div v-if="!completedSteps['explocionar']">
-                <UButton
-                  icon="i-heroicons-bolt"
-                  size="lg"
-                  color="cyan"
-                  class="rounded-md inline-flex items-center px-8 py-4 text-base gap-3 shadow-xl bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-bold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-2xl border-0 cursor-pointer"
-                  @click="confirmAndExecuteExplosion"
-                >
-                  <UIcon name="i-heroicons-rocket-launch" class="w-6 h-6" />
-                  Ejecutar Explosión
-                </UButton>
-              </div>
-
-              <!-- Estado completado -->
-              <div v-else class="space-y-4">
-                <div class="w-20 h-20 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-xl animate-pulse mx-auto">
-                  <UIcon name="i-heroicons-check" class="w-10 h-10 text-white" />
-                </div>
-                
-                <div class="bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-900/20 dark:to-green-800/20 p-4 rounded-lg border border-green-200 dark:border-green-700/50 max-w-md mx-auto">
-                  <h4 class="text-lg font-semibold text-green-700 dark:text-green-300 mb-2">
-                    ¡Explosión Completada!
-                  </h4>
-                  <p class="text-sm text-green-600 dark:text-green-400">
-                    La explosión de materiales se ha ejecutado exitosamente. Los resultados están disponibles para descarga.
-                  </p>
-                </div>
-              </div>
-            </div>
+          <div id="step-explosionar">
+            <ExplosionProcess
+            :explosion-id="explosionId"
+            :boom-id="explosion?.id"
+            :pversion="explosion?.version"
+            :is-completed="completedSteps['explocionar']"
+            @explosion-completed="handleExplosionCompleted"
+            @loading-state-changed="handleExplosionLoadingStateChanged"
+          />
           </div>
         </template>
       </UStepper>
@@ -236,16 +206,24 @@
 
 <script setup>
 import { generateClient } from "aws-amplify/data";
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
+
+definePageMeta({
+  middleware: ["require-role"],
+  requiredRole: "EXPLOSION",
+});
 import { useCargaInsumosData } from "~/composables/useCargaInsumosData";
 import CargaInsumosDataView from "~/components/CargaInsumosDataView.vue";
 import PlanProduccionProcess from "~/components/boom/PlanProduccionProcess.vue";
 import ValidacionAprovisionamiento from "~/components/boom/ValidacionAprovisionamiento.vue";
+import ExplosionProcess from "~/components/boom/ExplosionProcess.vue";
 
 // Cliente de Amplify
 const client = generateClient();
 
 // Composable para consultar datos de carga de insumos
-const { getSummary, hasData } = useCargaInsumosData();
+const { getDataByDocument, hasData } = useCargaInsumosData();
 
 const stepperItems = ref([
   {
@@ -295,10 +273,11 @@ const explosion = ref(null);
 const checkingSavedData = ref(false);
 const showCargaProcess = ref(false);
 const loadingPlanProduccion = ref(true); // Estado de carga del plan de producción
+const boomHasSavedData = ref(false); // Estado específico para datos guardados de este boom
 
 // Computed para verificar si hay datos guardados
 const hasSavedData = computed(() => {
-  return completedSteps.value['carga-de-insumos'] && hasData.value;
+  return boomHasSavedData.value;
 });
 
 // Estado para el stepper principal
@@ -327,6 +306,13 @@ const fetchExplosion = async () => {
     const { data } = await client.models.Boom.get({ id: explosionId });
     explosion.value = data;
 
+    // Debugging logs para verificar el valor de version
+    console.log('🔍 Parent Component Debugging - explosion data:', data);
+    console.log('🔍 Parent Component Debugging - explosion.version:', data?.version);
+    console.log('🔍 Parent Component Debugging - typeof version:', typeof data?.version);
+    console.log('🔍 Parent Component Debugging - version length:', data?.version?.length);
+    console.log('🔍 Parent Component Debugging - version isEmpty:', data?.version === '' || !data?.version);
+
     // Verificar si hay datos guardados para esta explosión
     await checkForSavedData();
   } catch (error) {
@@ -345,24 +331,30 @@ const checkForSavedData = async () => {
     checkingSavedData.value = true;
     console.log('🔍 Verificando datos guardados para explosión:', explosion.value.id);
 
-    // Intentar obtener un resumen para ver si hay datos
-    const response = await getSummary();
+    // Consultar datos específicos para este boom usando el boom_id como document_id
+    const response = await getDataByDocument(explosion.value.id);
 
-    if (response.success && response.summary && response.summary.totalRecords > 0) {
-      console.log('✅ Se encontraron datos guardados:', response.summary);
-      console.log('📊 Resumen de datos:', {
-        totalDocuments: response.summary.totalDocuments,
-        totalRecords: response.summary.totalRecords,
-        types: response.summary.types
-      });
-      // Si hay datos, marcar como completado el primer paso
+    console.log('📊 Respuesta de consulta específica:', response);
+
+    if (response.success && response.data && response.data.length > 0) {
+      console.log('✅ Se encontraron datos guardados para este boom:', response.data.length, 'conjuntos');
+      console.log('📊 Resumen específico:', response.summary);
+      
+      // Si hay datos específicos para este boom, marcar como completado
+      boomHasSavedData.value = true;
       completedSteps.value['carga-de-insumos'] = true;
     } else {
-      console.log('📭 No se encontraron datos guardados');
-      console.log('🔍 Respuesta recibida:', response);
+      console.log('📭 No se encontraron datos guardados para este boom específico');
+      console.log('🔍 Resumen específico:', response.summary);
+      
+      // No hay datos específicos para este boom
+      boomHasSavedData.value = false;
+      completedSteps.value['carga-de-insumos'] = false;
     }
   } catch (error) {
     console.error('❌ Error verificando datos guardados:', error);
+    boomHasSavedData.value = false;
+    completedSteps.value['carga-de-insumos'] = false;
   } finally {
     checkingSavedData.value = false;
   }
@@ -444,6 +436,7 @@ const checkValidacionAprovisionamientoState = async () => {
   }
 };
 
+
 // Computed para verificar si todos los procesos están completos
 const allProcessesCompleted = computed(() => {
   return Object.values(completedSteps.value).every(completed => completed === true);
@@ -477,10 +470,12 @@ const deleteExplosion = async () => {
   }
 };
 
+
 // Método para manejar cuando el proceso BOOM se completa
 const handleBoomProcessCompleted = async () => {
   // Marcar el primer paso como completado
   completedSteps.value['carga-de-insumos'] = true;
+  boomHasSavedData.value = true;
 
   // Esperar a que el DOM se actualice
   await nextTick();
@@ -631,58 +626,28 @@ const handleValidacionAprovisionamientoCompleted = async () => {
   }
 };
 
-const confirmAndExecuteExplosion = () => {
-  // Mostrar confirmación antes de ejecutar
-  if (confirm(
-    "¿Está seguro de que desea ejecutar la explosión final de materiales?\n\n" +
-    "Este proceso procesará todos los datos y generará los resultados finales. " +
-    "Esta acción no se puede deshacer una vez iniciada."
-  )) {
-    executeExplosion();
-  }
+// Método para manejar cuando el proceso de explosión se completa
+const handleExplosionCompleted = async () => {
+  // Marcar como completado
+  completedSteps.value['explocionar'] = true;
+
+  // Mostrar notificación de éxito
+  useToast().add({
+    title: "¡Proceso completado!",
+    description: "La explosión de materiales se ha ejecutado exitosamente",
+    color: "green",
+    timeout: 4000
+  });
+
+  console.log('✅ Proceso de explosión completado');
 };
 
-const executeExplosion = async () => {
-  try {
-    // Simular proceso de explosión (en producción aquí se llamaría a la API)
-    const loadingToast = useToast().add({
-      title: "Ejecutando explosión...",
-      description: "Procesando datos y generando resultados. Esto puede tomar varios minutos.",
-      color: "blue",
-      timeout: 0 // No se cierra automáticamente
-    });
-
-    // Simular delay del proceso
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // Marcar como completado
-    completedSteps.value['explocionar'] = true;
-
-    // Cerrar toast de carga
-    useToast().remove(loadingToast.id);
-
-    // Mostrar notificación de éxito
-    useToast().add({
-      title: "¡Explosión completada!",
-      description: "La explosión de materiales se ha ejecutado exitosamente. Los resultados están listos.",
-      color: "green",
-      timeout: 5000
-    });
-
-  } catch (error) {
-    console.error("Error ejecutando explosión:", error);
-    
-    useToast().add({
-      title: "Error en explosión",
-      description: "Ocurrió un error durante la ejecución de la explosión de materiales",
-      color: "red",
-      timeout: 4000
-    });
-  }
+// Método para manejar el cambio de estado de carga del proceso de explosión
+const handleExplosionLoadingStateChanged = (isLoading) => {
+  // Este método se puede usar para mostrar indicadores globales si es necesario
+  console.log('🔄 Estado de carga del proceso de explosión:', isLoading);
 };
 
-// Método legacy para compatibilidad
-const completeExplosion = confirmAndExecuteExplosion;
 
 
 const getStatusConfig = (status) => {
@@ -759,6 +724,92 @@ const formatRelativeDate = (date) => {
   }
 };
 
+// Configuración del tour guiado
+const driverObj = ref(null);
+
+const initializeTour = () => {
+  driverObj.value = driver({
+    showProgress: true,
+    showButtons: ['next', 'previous', 'close'],
+    allowClose: true,
+    overlayColor: 'rgba(0, 0, 0, 0.5)',
+    popoverClass: 'driver-popover-custom',
+    nextBtnText: 'Siguiente',
+    prevBtnText: 'Anterior',
+    doneBtnText: 'Finalizar',
+    steps: [
+      {
+        element: '#tour-trigger',
+        popover: {
+          title: '🎯 Tour General del Proceso',
+          description: '¡Bienvenido! Este tour te mostrará los pasos generales del proceso de explosión de materiales.',
+          side: 'bottom',
+          align: 'start'
+        }
+      },
+      {
+        element: '#main-stepper',
+        popover: {
+          title: '📋 Proceso de 4 Pasos',
+          description: 'El proceso completo consta de 4 pasos secuenciales que debes completar en orden.',
+          side: 'top',
+          align: 'start'
+        }
+      },
+      {
+        element: '#main-stepper .stepper-item:nth-child(1)',
+        popover: {
+          title: '📦 Paso 1: Carga de Insumos',
+          description: 'Carga los documentos necesarios de acuerdo a las plantillas establecidas.',
+          side: 'bottom',
+          align: 'center'
+        }
+      },
+      {
+        element: '#main-stepper .stepper-item:nth-child(2)',
+        popover: {
+          title: '🏭 Paso 2: Generar Plan de Producción',
+          description: 'Este paso ejecutarás los procesos de extracción y preparación de la información en base a los documentos que cargaste.',
+          side: 'bottom',
+          align: 'center'
+        }
+      },
+      {
+        element: '#main-stepper .stepper-item:nth-child(3)',
+        popover: {
+          title: '✅ Paso 3: Validación de Aprovisionamiento',
+          description: 'Revisa que todos los materiales estén correctamente configurados y valida el plan de producción a explotar.',
+          side: 'bottom',
+          align: 'center'
+        }
+      },
+      {
+        element: '#main-stepper .stepper-item:nth-child(4)',
+        popover: {
+          title: '💥 Paso 4: Explosionar',
+          description: 'Se ejecutará el proceso principal y podrás descargar la información resultante.',
+          side: 'bottom',
+          align: 'center'
+        }
+      },
+      {
+        popover: {
+          title: '🎉 ¡Tour General Completado!',
+          description: 'Ya conoces los 4 pasos principales. Cada paso se habilita al completar el anterior.',
+          side: 'center'
+        }
+      }
+    ]
+  });
+};
+
+const startTour = () => {
+  if (!driverObj.value) {
+    initializeTour();
+  }
+  driverObj.value.drive();
+};
+
 // Cargar datos al montar el componente
 onMounted(async () => {
   await fetchExplosion();
@@ -766,3 +817,88 @@ onMounted(async () => {
   await checkProcessStates();
 });
 </script>
+
+<style>
+/* Estilos personalizados para el tour de Driver.js */
+.driver-popover-custom {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  border: 2px solid #0891b2;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.driver-popover-custom .driver-popover-title {
+  color: white;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.driver-popover-custom .driver-popover-description {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.driver-popover-custom .driver-popover-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding-top: 12px;
+}
+
+.driver-popover-custom .driver-popover-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.driver-popover-custom .driver-popover-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.driver-popover-custom .driver-popover-btn.driver-popover-btn-primary {
+  background: rgba(255, 255, 255, 0.9);
+  color: #0891b2;
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+.driver-popover-custom .driver-popover-btn.driver-popover-btn-primary:hover {
+  background: white;
+  color: #0e7490;
+}
+
+.driver-popover-custom .driver-popover-progress-bar {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  height: 4px;
+}
+
+.driver-popover-custom .driver-popover-progress-bar-fill {
+  background: white;
+  border-radius: 4px;
+}
+
+.driver-popover-custom .driver-popover-close-btn {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.2rem;
+}
+
+.driver-popover-custom .driver-popover-close-btn:hover {
+  color: white;
+}
+
+/* Animación suave para el overlay */
+.driver-overlay {
+  transition: opacity 0.3s ease;
+}
+
+/* Estilo para el elemento destacado */
+.driver-highlighted-element {
+  border-radius: 8px !important;
+  box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.3) !important;
+}
+</style>

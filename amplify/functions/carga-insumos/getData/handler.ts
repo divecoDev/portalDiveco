@@ -91,6 +91,10 @@ export const handler = async (event: any): Promise<QueryResponse> => {
     console.log('🔍 Parámetros de consulta originales:', queryParams);
     console.log('🔍 Parámetros de consulta limpios:', cleanParams);
     console.log('🔍 Tipo de consulta:', (!cleanParams.documentId && !cleanParams.tipo) ? 'RESUMEN GENERAL' : 'CONSULTA ESPECÍFICA');
+    
+    if (cleanParams.documentId) {
+      console.log(`🎯 Consultando datos específicos para documentId: ${cleanParams.documentId}`);
+    }
 
     // Conectar a MySQL
     console.log('🔌 Conectando a MySQL...');
@@ -100,11 +104,9 @@ export const handler = async (event: any): Promise<QueryResponse> => {
     let result: QueryResponse;
 
     try {
-      // Obtener resumen general
-      const summary = await getDataSummary(connection);
-
-      // Si no hay parámetros específicos, devolver resumen
+      // Si no hay parámetros específicos, devolver resumen general
       if (!cleanParams.documentId && !cleanParams.tipo) {
+        const summary = await getDataSummary(connection);
         result = {
           success: true,
           summary,
@@ -115,6 +117,16 @@ export const handler = async (event: any): Promise<QueryResponse> => {
       } else {
         // Obtener datos específicos
         const data = await getSpecificData(connection, cleanParams);
+        
+        // Si se consulta por documentId específico, obtener summary específico
+        let summary = null;
+        if (cleanParams.documentId) {
+          summary = await getDataSummaryByDocument(connection, cleanParams.documentId);
+        } else {
+          // Si solo se consulta por tipo, usar resumen general
+          summary = await getDataSummary(connection);
+        }
+        
         result = {
           success: true,
           data,
@@ -192,6 +204,66 @@ async function getDataSummary(connection: mysql.Connection): Promise<QueryRespon
 
   } catch (error) {
     console.error('❌ Error obteniendo resumen:', error);
+    throw error;
+  }
+}
+
+// Función para obtener resumen de datos específico por documentId
+async function getDataSummaryByDocument(connection: mysql.Connection, documentId: string): Promise<QueryResponse['summary']> {
+  console.log(`📊 Obteniendo resumen de datos para documentId: ${documentId}`);
+
+  try {
+    // Contar documentos únicos por tipo para el documentId específico
+    const [planVentasCount] = await connection.execute(`
+      SELECT COUNT(DISTINCT document_id) as count
+      FROM plan_ventas
+      WHERE document_id = ?
+    `, [documentId]);
+
+    const [existenciasCount] = await connection.execute(`
+      SELECT COUNT(DISTINCT document_id) as count
+      FROM existencias
+      WHERE document_id = ?
+    `, [documentId]);
+
+    const [coberturaCount] = await connection.execute(`
+      SELECT COUNT(DISTINCT document_id) as count
+      FROM cobertura
+      WHERE document_id = ?
+    `, [documentId]);
+
+    // Contar registros totales para el documentId específico
+    const [totalRecordsResult] = await connection.execute(`
+      SELECT
+        (SELECT COUNT(*) FROM plan_ventas WHERE document_id = ?) +
+        (SELECT COUNT(*) FROM existencias WHERE document_id = ?) +
+        (SELECT COUNT(*) FROM cobertura WHERE document_id = ?) as total
+    `, [documentId, documentId, documentId]);
+
+    const planVentasDocuments = (planVentasCount as any[])[0]?.count || 0;
+    const existenciasDocuments = (existenciasCount as any[])[0]?.count || 0;
+    const coberturaDocuments = (coberturaCount as any[])[0]?.count || 0;
+    const totalRecords = (totalRecordsResult as any[])[0]?.total || 0;
+
+    console.log(`📊 Resumen específico para documentId ${documentId}:`, {
+      planVentasDocuments,
+      existenciasDocuments,
+      coberturaDocuments,
+      totalRecords
+    });
+
+    return {
+      totalDocuments: planVentasDocuments + existenciasDocuments + coberturaDocuments,
+      totalRecords,
+      types: {
+        planVentas: planVentasDocuments,
+        existencias: existenciasDocuments,
+        cobertura: coberturaDocuments
+      }
+    };
+
+  } catch (error) {
+    console.error('❌ Error obteniendo resumen específico:', error);
     throw error;
   }
 }

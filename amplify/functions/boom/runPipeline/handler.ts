@@ -10,7 +10,12 @@ export const handler = async (event: any) => {
   const subscriptionId = process.env.AZURE_SUBSCRIPTION_ID || "";
   const factoryName = process.env.AZURE_DATA_FACTORY_NAME || "";
 
-
+  // Debugging logs para Pversion
+  console.log("🔍 Backend Debugging - event.arguments:", event.arguments);
+  console.log("🔍 Backend Debugging - Pversion recibido:", Pversion);
+  console.log("🔍 Backend Debugging - typeof Pversion:", typeof Pversion);
+  console.log("🔍 Backend Debugging - Pversion length:", Pversion?.length);
+  console.log("🔍 Backend Debugging - Pversion isEmpty:", Pversion === "" || !Pversion);
   
   console.log("AZURE_TENANT_ID", process.env.AZURE_TENANT_ID);
   console.log("AZURE_CLIENT_ID", process.env.AZURE_CLIENT_ID);
@@ -20,7 +25,7 @@ export const handler = async (event: any) => {
 
   const credential = new DefaultAzureCredential();
 
-  console.log("Pversion", Pversion);
+  console.log("📋 Pversion final que se enviará al pipeline:", Pversion);
 
 
   const referencePipelineRunId = undefined;
