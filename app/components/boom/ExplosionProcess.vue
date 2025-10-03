@@ -65,6 +65,119 @@
           </p>
         </div>
 
+        <!-- Botones de descarga de archivos -->
+        <div class="download-files-section mb-8">
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+            📁 Archivos Generados
+          </h3>
+          <div class="space-y-3 max-w-2xl mx-auto">
+            <!-- AprovisionamientoConfigurado.csv -->
+            <button
+              @click="downloadFile('AprovisionamientoConfigurado.csv')"
+              class="group w-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg border border-cyan-200/30 dark:border-cyan-700/30 hover:shadow-xl hover:border-cyan-300/50 dark:hover:border-cyan-600/50 transition-all duration-300 hover:-translate-y-1 p-4 text-left"
+            >
+              <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 flex-shrink-0">
+                  <UIcon name="i-heroicons-document-text" class="w-6 h-6 text-white" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                    Aprovisionamiento configurado
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    460.1 KB • CSV
+                  </p>
+                </div>
+                <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />
+              </div>
+            </button>
+
+            <!-- PlanModeloConSemielaborados.csv -->
+            <button
+              @click="downloadFile('PlanModeloConSemielaborados.csv')"
+              class="group w-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg border border-cyan-200/30 dark:border-cyan-700/30 hover:shadow-xl hover:border-cyan-300/50 dark:hover:border-cyan-600/50 transition-all duration-300 hover:-translate-y-1 p-4 text-left"
+            >
+              <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 flex-shrink-0">
+                  <UIcon name="i-heroicons-document-text" class="w-6 h-6 text-white" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                    Explosión del plan por modelo con semielaborados
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    19.1 KB • CSV
+                  </p>
+                </div>
+                <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />
+              </div>
+            </button>
+
+            <!-- PlanModeloMateriasPrimaConSemielaborados.csv -->
+            <button
+              @click="downloadFile('PlanModeloMateriasPrimaConSemielaborados.csv')"
+              class="group w-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg border border-cyan-200/30 dark:border-cyan-700/30 hover:shadow-xl hover:border-cyan-300/50 dark:hover:border-cyan-600/50 transition-all duration-300 hover:-translate-y-1 p-4 text-left"
+            >
+              <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 flex-shrink-0">
+                  <UIcon name="i-heroicons-document-text" class="w-6 h-6 text-white" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                    Explosión del plan por materia prima con semielaborados
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    435.8 KB • CSV
+                  </p>
+                </div>
+                <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />
+              </div>
+            </button>
+
+            <!-- PlanVentas.csv -->
+            <button
+              @click="downloadFile('PlanVentas.csv')"
+              class="group w-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg border border-cyan-200/30 dark:border-cyan-700/30 hover:shadow-xl hover:border-cyan-300/50 dark:hover:border-cyan-600/50 transition-all duration-300 hover:-translate-y-1 p-4 text-left"
+            >
+              <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 flex-shrink-0">
+                  <UIcon name="i-heroicons-document-text" class="w-6 h-6 text-white" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                    Plan de Ventas
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    90.2 KB • CSV
+                  </p>
+                </div>
+                <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />
+              </div>
+            </button>
+
+            <!-- PlanProduccion.csv -->
+            <button
+              @click="downloadFile('PlanProduccion.csv')"
+              class="group w-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg border border-cyan-200/30 dark:border-cyan-700/30 hover:shadow-xl hover:border-cyan-300/50 dark:hover:border-cyan-600/50 transition-all duration-300 hover:-translate-y-1 p-4 text-left"
+            >
+              <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 flex-shrink-0">
+                  <UIcon name="i-heroicons-document-text" class="w-6 h-6 text-white" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                    Plan de Producción
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    86.1 KB • CSV
+                  </p>
+                </div>
+                <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />
+              </div>
+            </button>
+          </div>
+        </div>
+
         <!-- Botón para re-ejecutar explosión -->
         <div class="flex justify-center re-execution-section">
           <UButton
@@ -134,6 +247,37 @@ const confirmAndExecuteExplosion = () => {
     "Esta acción no se puede deshacer una vez iniciada."
   )) {
     executeExplosion();
+  }
+};
+
+// Función para descargar archivos desde CloudFront
+const downloadFile = (fileName) => {
+  try {
+    // Construir la URL de CloudFront con el boom_id
+    const cloudfrontUrl = `https://d1p0twkya81b3k.cloudfront.net/${props.boomId}/${fileName}`;
+    
+    console.log(`📥 Descargando archivo: ${fileName} desde: ${cloudfrontUrl}`);
+    
+    // Abrir la URL en una nueva pestaña para iniciar la descarga
+    window.open(cloudfrontUrl, '_blank');
+    
+    // Mostrar notificación de descarga iniciada
+    useToast().add({
+      title: "Descarga iniciada",
+      description: `Iniciando descarga de ${fileName}`,
+      color: "green",
+      timeout: 3000
+    });
+    
+  } catch (error) {
+    console.error('Error al descargar archivo:', error);
+    
+    useToast().add({
+      title: "Error en descarga",
+      description: `No se pudo descargar el archivo ${fileName}`,
+      color: "red",
+      timeout: 4000
+    });
   }
 };
 
@@ -723,6 +867,15 @@ const initializeTour = () => {
         popover: {
           title: '✅ Explosión Completada',
           description: 'Una vez completada la explosión, todos los reportes estarán disponibles: Aprovisionamiento configurado, Explosión por modelo, Explosión por materia prima, Plan de Ventas y Plan de Producción.',
+          side: 'top',
+          align: 'center'
+        }
+      },
+      {
+        element: '.download-files-section',
+        popover: {
+          title: '📁 Archivos para Descargar',
+          description: 'Una vez completada la explosión, aquí encontrarás 5 archivos CSV listos para descargar: Aprovisionamiento configurado, Explosión del plan por modelo con semielaborados, Explosión del plan por materia prima con semielaborados, Plan de Ventas y Plan de Producción.',
           side: 'top',
           align: 'center'
         }
