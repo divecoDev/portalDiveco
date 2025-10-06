@@ -84,9 +84,6 @@
                   <p class="text-sm font-semibold text-gray-900 dark:text-white">
                     Aprovisionamiento configurado
                   </p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
-                    460.1 KB • CSV
-                  </p>
                 </div>
                 <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />
               </div>
@@ -104,9 +101,6 @@
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-semibold text-gray-900 dark:text-white">
                     Explosión del plan por modelo con semielaborados
-                  </p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
-                    19.1 KB • CSV
                   </p>
                 </div>
                 <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />
@@ -126,9 +120,6 @@
                   <p class="text-sm font-semibold text-gray-900 dark:text-white">
                     Explosión del plan por materia prima con semielaborados
                   </p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
-                    435.8 KB • CSV
-                  </p>
                 </div>
                 <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />
               </div>
@@ -147,9 +138,6 @@
                   <p class="text-sm font-semibold text-gray-900 dark:text-white">
                     Plan de Ventas
                   </p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
-                    90.2 KB • CSV
-                  </p>
                 </div>
                 <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />
               </div>
@@ -167,9 +155,6 @@
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-semibold text-gray-900 dark:text-white">
                     Plan de Producción
-                  </p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
-                    86.1 KB • CSV
                   </p>
                 </div>
                 <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />

@@ -47,8 +47,13 @@ export const handler = async (event: any) => {
             };
         }
 
+
+        const options = {
+            excelBOM: true 
+          };
+
         // Convert to CSV
-        const csv = await json2csv(dataArray);
+        const csv = await json2csv(dataArray, options);
         console.log("CSV generated successfully");
         
         // Initialize S3 client
@@ -63,8 +68,9 @@ export const handler = async (event: any) => {
             Bucket: bucketName,
             Key: fileName,
             Body: csv,
-            ContentType: 'text/csv',
-            ContentDisposition: `attachment; filename="${fileName}"`
+            ContentType: 'text/csv; charset=utf-8', 
+            ContentEncoding: 'utf-8',
+            ContentDisposition: `attachment; filename="${fileName}"`,
         };
         
         await s3Client.send(new PutObjectCommand(uploadParams));

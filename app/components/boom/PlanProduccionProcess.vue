@@ -170,18 +170,9 @@
 
     <!-- Botón de acción principal -->
     <div class="text-center main-action-section">
-      <UButton
-        v-if="!todosLosProcesosCompletados && !ejecucionGlobalEnProgreso"
-        icon="i-heroicons-play"
-        size="md"
-        color="cyan"
-        class="rounded-md inline-flex items-center px-4 py-2 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
-        @click="iniciarPlanProduccion"
-      >
-        {{ planProduccionIniciado ? 'Continuar Procesos' : 'Iniciar Procesos' }}
-      </UButton>
 
-      <div v-else-if="ejecucionGlobalEnProgreso" class="text-center">
+
+      <div v-if="ejecucionGlobalEnProgreso" class="text-center">
         <div class="w-6 h-6 border-3 border-cyan-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
         <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
           Ejecutando procesos secuencialmente...
