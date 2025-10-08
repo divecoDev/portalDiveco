@@ -122,11 +122,51 @@
                   {{ porcentaje.centroIdAprov }}
                 </td>
                 <td class="px-4 py-4 whitespace-nowrap text-center">
-                  <div class="flex items-center justify-center space-x-2">
+                  <div v-if="editingRow !== `${porcentaje.centroIdOrigen}-${porcentaje.materialId}-${porcentaje.centroIdAprov}`" 
+                       class="flex items-center justify-center space-x-2 cursor-pointer hover:bg-cyan-50 dark:hover:bg-cyan-900/20 rounded-md p-2 transition-colors duration-200"
+                       @click="startEditing(porcentaje)">
                     <UIcon name="i-heroicons-percent-badge" class="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                     <span class="text-sm font-bold text-cyan-600 dark:text-cyan-400">
                       {{ formatPorcentaje(porcentaje.porcentaje) }}%
                     </span>
+                    <UIcon name="i-heroicons-pencil" class="w-3 h-3 text-gray-400 ml-1" />
+                  </div>
+                  
+                  <div v-else class="flex items-center justify-center space-x-2">
+                    <UInput
+                      v-model="editingValue"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      size="sm"
+                      class="w-20 text-center"
+                      :disabled="updating"
+                      @keyup.enter="saveEdit(porcentaje)"
+                      @keyup.escape="cancelEdit"
+                      autofocus
+                    />
+                    <span class="text-sm text-gray-500">%</span>
+                    <div class="flex items-center space-x-1 ml-2">
+                      <UButton
+                        icon="i-heroicons-check"
+                        size="xs"
+                        color="green"
+                        variant="ghost"
+                        @click="saveEdit(porcentaje)"
+                        :loading="updating"
+                        class="hover:bg-green-50 dark:hover:bg-green-900/20"
+                      />
+                      <UButton
+                        icon="i-heroicons-x-mark"
+                        size="xs"
+                        color="red"
+                        variant="ghost"
+                        @click="cancelEdit"
+                        :disabled="updating"
+                        class="hover:bg-red-50 dark:hover:bg-red-900/20"
+                      />
+                    </div>
                   </div>
                 </td>
                 <td class="px-4 py-4 whitespace-nowrap text-center">
@@ -252,6 +292,11 @@ const searchQuery = ref("");
 const total = ref(0);
 const limit = ref(20);
 const offset = ref(0);
+
+// Estado para edición inline
+const editingRow = ref(null);
+const editingValue = ref("");
+const updating = ref(false);
 
 
 // Computed para búsqueda con debounce
@@ -391,6 +436,99 @@ const scrollToTop = () => {
 const refreshData = () => {
   fetchPorcentajes();
   scrollToTop();
+};
+
+// Funciones para edición inline
+const startEditing = (porcentaje) => {
+  const rowKey = `${porcentaje.centroIdOrigen}-${porcentaje.materialId}-${porcentaje.centroIdAprov}`;
+  editingRow.value = rowKey;
+  editingValue.value = formatPorcentaje(porcentaje.porcentaje);
+};
+
+const cancelEdit = () => {
+  editingRow.value = null;
+  editingValue.value = "";
+};
+
+const saveEdit = async (porcentaje) => {
+  if (updating.value) return;
+  
+  const newValue = parseFloat(editingValue.value);
+  
+  // Validaciones
+  if (isNaN(newValue) || newValue < 0 || newValue > 100) {
+    useToast().add({
+      title: "Error de validación",
+      description: "El porcentaje debe estar entre 0.00 y 100.00",
+      color: "red",
+    });
+    return;
+  }
+  
+  // Si el valor no cambió, solo cancelar
+  if (newValue === parseFloat(porcentaje.porcentaje)) {
+    cancelEdit();
+    return;
+  }
+  
+  try {
+    updating.value = true;
+    
+    const { data } = await client.queries.aprovisionamiento({
+      operation: "update",
+      centroIdOrigen: porcentaje.centroIdOrigen,
+      materialId: porcentaje.materialId,
+      centroIdAprov: porcentaje.centroIdAprov,
+      porcentaje: newValue,
+    });
+
+    // Parsear la respuesta JSON que viene como string
+    let responseData;
+    try {
+      responseData = typeof data === 'string' ? JSON.parse(data) : data;
+    } catch (parseError) {
+      console.error('Error parsing response:', parseError);
+      throw new Error('Error al procesar la respuesta del servidor');
+    }
+
+    if (responseData?.success) {
+      // Actualizar el valor en la lista local
+      const index = porcentajes.value.findIndex(p => 
+        p.centroIdOrigen === porcentaje.centroIdOrigen &&
+        p.materialId === porcentaje.materialId &&
+        p.centroIdAprov === porcentaje.centroIdAprov
+      );
+      
+      if (index !== -1) {
+        porcentajes.value[index].porcentaje = newValue;
+      }
+      
+      useToast().add({
+        title: "Porcentaje actualizado",
+        description: `El porcentaje se ha actualizado a ${newValue}%`,
+        color: "green",
+      });
+      
+      cancelEdit();
+    } else {
+      throw new Error(responseData?.message || "Error desconocido");
+    }
+  } catch (error) {
+    console.error("Error al actualizar porcentaje:", error);
+    
+    let errorMessage = "No se pudo actualizar el porcentaje. Intenta nuevamente.";
+    if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    useToast().add({
+      title: "Error al actualizar",
+      description: errorMessage,
+      color: "red",
+    });
+  } finally {
+    updating.value = false;
+  }
 };
 
 // Cargar datos al montar el componente
