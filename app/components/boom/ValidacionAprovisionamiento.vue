@@ -373,42 +373,25 @@ const downloadMaterialesSinAprovisionamiento = async () => {
     
     const fileName = 'materialesSinAprovisionamiento.csv';
     
-    // Usar el endpoint API de Nuxt como proxy para evitar problemas de CORS
-    const apiUrl = `/api/download-csv?boomId=${props.boomId}&fileName=${fileName}`;
+    // Descargar directamente desde CloudFront
+    const fileUrl = `https://d1p0twkya81b3k.cloudfront.net/${props.boomId}/${fileName}`;
     
-    // Descargar el archivo a través del proxy
-    const response = await fetch(apiUrl);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    // Obtener el contenido como blob
-    const blob = await response.blob();
-    
-    // Crear una URL temporal para el blob
-    const blobUrl = window.URL.createObjectURL(blob);
-    
-    // Crear un enlace temporal para forzar la descarga
+    // Crear un enlace temporal para forzar la descarga directa
     const link = document.createElement('a');
-    link.href = blobUrl;
+    link.href = fileUrl;
     link.download = fileName;
     link.style.display = 'none';
+    link.target = '_blank';
     
     // Agregar al DOM, hacer clic y remover
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     
-    // Liberar la URL del blob después de un momento
-    setTimeout(() => {
-      window.URL.revokeObjectURL(blobUrl);
-    }, 100);
-    
     // Mostrar notificación de éxito
     useToast().add({
-      title: "Descarga completada",
-      description: `El archivo ${fileName} se ha descargado correctamente`,
+      title: "Descarga iniciada",
+      description: `El archivo ${fileName} se está descargando`,
       color: "green",
       timeout: 3000
     });
@@ -418,7 +401,7 @@ const downloadMaterialesSinAprovisionamiento = async () => {
     
     useToast().add({
       title: "Error en descarga",
-      description: "El archivo no está disponible o no existe",
+      description: "No se pudo iniciar la descarga del archivo",
       color: "red",
       timeout: 3000
     });
@@ -435,42 +418,25 @@ const downloadMaterialesSinCentroProduccion = async () => {
     
     const fileName = 'materialesSinCentroProduccion.csv';
     
-    // Usar el endpoint API de Nuxt como proxy para evitar problemas de CORS
-    const apiUrl = `/api/download-csv?boomId=${props.boomId}&fileName=${fileName}`;
+    // Descargar directamente desde CloudFront
+    const fileUrl = `https://d1p0twkya81b3k.cloudfront.net/${props.boomId}/${fileName}`;
     
-    // Descargar el archivo a través del proxy
-    const response = await fetch(apiUrl);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    // Obtener el contenido como blob
-    const blob = await response.blob();
-    
-    // Crear una URL temporal para el blob
-    const blobUrl = window.URL.createObjectURL(blob);
-    
-    // Crear un enlace temporal para forzar la descarga
+    // Crear un enlace temporal para forzar la descarga directa
     const link = document.createElement('a');
-    link.href = blobUrl;
+    link.href = fileUrl;
     link.download = fileName;
     link.style.display = 'none';
+    link.target = '_blank';
     
     // Agregar al DOM, hacer clic y remover
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     
-    // Liberar la URL del blob después de un momento
-    setTimeout(() => {
-      window.URL.revokeObjectURL(blobUrl);
-    }, 100);
-    
     // Mostrar notificación de éxito
     useToast().add({
-      title: "Descarga completada",
-      description: `El archivo ${fileName} se ha descargado correctamente`,
+      title: "Descarga iniciada",
+      description: `El archivo ${fileName} se está descargando`,
       color: "green",
       timeout: 3000
     });
@@ -480,7 +446,7 @@ const downloadMaterialesSinCentroProduccion = async () => {
     
     useToast().add({
       title: "Error en descarga",
-      description: "El archivo no está disponible o no existe",
+      description: "No se pudo iniciar la descarga del archivo",
       color: "red",
       timeout: 3000
     });
