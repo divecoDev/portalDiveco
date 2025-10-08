@@ -44,133 +44,96 @@
         </div>
 
 
-        <!-- Pestañas de validación -->
-        <div class="space-y-4 validation-tabs-section">
+        <!-- Análisis de Materiales sin tabs -->
+        <div class="space-y-6 validation-section">
           <h4 class="text-lg font-semibold text-gray-900 dark:text-white">Análisis de Materiales:</h4>
           
-          <UTabs v-model="activeTab" :items="tabItems" class="w-full">
-            <template #materiales-no-aprovisionados>
-              <div class="p-4 space-y-4 materiales-no-aprovisionados-tab">
-                <div class="flex items-center justify-between mb-4">
-                  <div class="flex items-center">
-                    <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-orange-500 mr-2" />
-                    <h5 class="text-sm font-semibold text-gray-900 dark:text-white">Materiales No Aprovisionados</h5>
-                  </div>
-                </div>
-                
-                <!-- Estado: Verificando archivo -->
-                <div v-if="checkingFileExistence" class="text-center py-8">
-                  <div class="w-12 h-12 border-4 border-orange-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                  <p class="text-gray-600 dark:text-gray-300">Verificando disponibilidad del archivo...</p>
-                </div>
-                
-                <!-- Estado: Archivo no existe (todos los materiales están aprovisionados) -->
-                <div v-else-if="!materialesSinAprovisionamientoExists" class="text-center py-8">
-                  <div class="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 rounded-md flex items-center justify-center mx-auto mb-4 shadow-lg">
-                    <UIcon name="i-heroicons-check-circle" class="w-8 h-8 text-green-600 dark:text-green-400" />
-                  </div>
-                  <h6 class="text-sm font-semibold text-green-600 dark:text-green-400 mb-2">¡Excelente!</h6>
-                  <p class="text-sm text-gray-600 dark:text-gray-300">Todos los materiales están aprovisionados correctamente</p>
-                </div>
-                
-                <!-- Estado: Archivo existe (hay materiales sin aprovisionamiento) -->
-                <div v-else class="text-center py-8">
-                  <div class="w-20 h-20 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 rounded-md flex items-center justify-center mx-auto mb-6 shadow-lg">
-                    <UIcon name="i-heroicons-document-arrow-down" class="w-10 h-10 text-orange-600 dark:text-orange-400" />
-                  </div>
-                  <h6 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Materiales Sin Aprovisionamiento</h6>
-                  <p class="text-sm text-gray-600 dark:text-gray-300 mb-6 max-w-md mx-auto">
-                    Descarga el archivo CSV con el detalle de los materiales que no tienen aprovisionamiento asignado
-                  </p>
-                  
-                  <div class="bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-900/20 dark:to-orange-800/20 p-6 rounded-md border border-orange-200 dark:border-orange-700/50 shadow-sm max-w-lg mx-auto">
-                    <div class="flex items-center justify-between mb-4">
-                      <div class="flex items-center">
-                        <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-orange-600 dark:text-orange-400 mr-3" />
-                        <div class="text-left">
-                          <h4 class="text-sm font-semibold text-orange-800 dark:text-orange-200">materialesSinAprovisionamiento.csv</h4>
-                          <p class="text-xs text-orange-700 dark:text-orange-300">Listado completo de materiales sin aprovisionamiento</p>
-                        </div>
-                      </div>
-                    </div>
-                    <UButton
-                      icon="i-heroicons-arrow-down-tray"
-                      size="md"
-                      color="orange"
-                      variant="solid"
-                      :loading="isDownloadingMateriales"
-                      :disabled="!materialesSinAprovisionamientoExists"
-                      @click="downloadMaterialesSinAprovisionamiento"
-                      class="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:from-orange-500 disabled:hover:to-orange-600"
-                    >
-                      {{ isDownloadingMateriales ? 'Descargando...' : 'Descargar Archivo' }}
-                    </UButton>
-                  </div>
-                </div>
-              </div>
-            </template>
+          <!-- Estado: Verificando archivos -->
+          <div v-if="checkingFileExistence || checkingFileSinCentroExistence" class="text-center py-12">
+            <div class="w-12 h-12 border-4 border-cyan-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p class="text-gray-600 dark:text-gray-300">Verificando disponibilidad de archivos...</p>
+          </div>
 
-            <template #materiales-sin-centro>
-              <div class="p-4 space-y-4 materiales-sin-centro-tab">
-                <div class="flex items-center justify-between mb-4">
-                  <div class="flex items-center">
-                    <UIcon name="i-heroicons-building-office" class="w-5 h-5 text-red-500 mr-2" />
-                    <h5 class="text-sm font-semibold text-gray-900 dark:text-white">Materiales Sin Centro de Producción</h5>
-                  </div>
+          <!-- Estado: Sin problemas - Todo está bien -->
+          <div v-else-if="!materialesSinAprovisionamientoExists && !materialesSinCentroProduccionExists" class="text-center py-12">
+            <div class="w-24 h-24 bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 rounded-md flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <UIcon name="i-heroicons-check-circle" class="w-12 h-12 text-green-600 dark:text-green-400" />
+            </div>
+            <h6 class="text-2xl font-bold text-green-600 dark:text-green-400 mb-3">¡Excelente!</h6>
+            <p class="text-lg text-gray-600 dark:text-gray-300 mb-2">Todos los materiales están correctamente configurados</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">No hay materiales sin aprovisionamiento ni sin centro de producción</p>
+          </div>
+
+          <!-- Estado: Hay archivos para descargar -->
+          <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Card: Materiales Sin Aprovisionamiento -->
+            <div v-if="materialesSinAprovisionamientoExists" class="bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-900/20 dark:to-orange-800/20 p-6 rounded-md border border-orange-200 dark:border-orange-700/50 shadow-lg hover:shadow-xl transition-all duration-300">
+              <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-md flex items-center justify-center mr-4 shadow-lg">
+                  <UIcon name="i-heroicons-exclamation-triangle" class="w-6 h-6 text-white" />
                 </div>
-                
-                <!-- Estado: Verificando archivo -->
-                <div v-if="checkingFileSinCentroExistence" class="text-center py-8">
-                  <div class="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                  <p class="text-gray-600 dark:text-gray-300">Verificando disponibilidad del archivo...</p>
-                </div>
-                
-                <!-- Estado: Archivo no existe (todos los materiales tienen centro asignado) -->
-                <div v-else-if="!materialesSinCentroProduccionExists" class="text-center py-8">
-                  <div class="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 rounded-md flex items-center justify-center mx-auto mb-4 shadow-lg">
-                    <UIcon name="i-heroicons-check-circle" class="w-8 h-8 text-green-600 dark:text-green-400" />
-                  </div>
-                  <h6 class="text-sm font-semibold text-green-600 dark:text-green-400 mb-2">¡Perfecto!</h6>
-                  <p class="text-sm text-gray-600 dark:text-gray-300">Todos los materiales tienen centro de producción asignado</p>
-                </div>
-                
-                <!-- Estado: Archivo existe (hay materiales sin centro de producción) -->
-                <div v-else class="text-center py-8">
-                  <div class="w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/30 dark:to-red-800/30 rounded-md flex items-center justify-center mx-auto mb-6 shadow-lg">
-                    <UIcon name="i-heroicons-document-arrow-down" class="w-10 h-10 text-red-600 dark:text-red-400" />
-                  </div>
-                  <h6 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Materiales Sin Centro de Producción</h6>
-                  <p class="text-sm text-gray-600 dark:text-gray-300 mb-6 max-w-md mx-auto">
-                    Descarga el archivo CSV con el detalle de los materiales que no tienen centro de producción asignado
-                  </p>
-                  
-                  <div class="bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-900/20 dark:to-red-800/20 p-6 rounded-md border border-red-200 dark:border-red-700/50 shadow-sm max-w-lg mx-auto">
-                    <div class="flex items-center justify-between mb-4">
-                      <div class="flex items-center">
-                        <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-red-600 dark:text-red-400 mr-3" />
-                        <div class="text-left">
-                          <h4 class="text-sm font-semibold text-red-800 dark:text-red-200">materialesSinCentroProduccion.csv</h4>
-                          <p class="text-xs text-red-700 dark:text-red-300">Listado completo de materiales sin centro de producción</p>
-                        </div>
-                      </div>
-                    </div>
-                    <UButton
-                      icon="i-heroicons-arrow-down-tray"
-                      size="md"
-                      color="red"
-                      variant="solid"
-                      :loading="isDownloadingMaterialesSinCentro"
-                      :disabled="!materialesSinCentroProduccionExists"
-                      @click="downloadMaterialesSinCentroProduccion"
-                      class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:from-red-500 disabled:hover:to-red-600"
-                    >
-                      {{ isDownloadingMaterialesSinCentro ? 'Descargando...' : 'Descargar Archivo' }}
-                    </UButton>
-                  </div>
+                <div>
+                  <h5 class="text-lg font-bold text-orange-800 dark:text-orange-200">Materiales Sin Aprovisionamiento</h5>
+                  <p class="text-xs text-orange-700 dark:text-orange-300">Archivo disponible para descarga</p>
                 </div>
               </div>
-            </template>
-          </UTabs>
+              
+              <p class="text-sm text-gray-700 dark:text-gray-300 mb-4">
+                Hay materiales que no tienen aprovisionamiento asignado. Descarga el archivo para revisar el detalle.
+              </p>
+              
+              <div class="flex items-center mb-3">
+                <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-orange-600 dark:text-orange-400 mr-2" />
+                <span class="text-sm font-medium text-orange-800 dark:text-orange-200">materialesSinAprovisionamiento.csv</span>
+              </div>
+              
+              <UButton
+                icon="i-heroicons-arrow-down-tray"
+                size="md"
+                color="orange"
+                variant="solid"
+                :loading="isDownloadingMateriales"
+                @click="downloadMaterialesSinAprovisionamiento"
+                class="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                {{ isDownloadingMateriales ? 'Descargando...' : 'Descargar Archivo' }}
+              </UButton>
+            </div>
+
+            <!-- Card: Materiales Sin Centro de Producción -->
+            <div v-if="materialesSinCentroProduccionExists" class="bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-900/20 dark:to-red-800/20 p-6 rounded-md border border-red-200 dark:border-red-700/50 shadow-lg hover:shadow-xl transition-all duration-300">
+              <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-md flex items-center justify-center mr-4 shadow-lg">
+                  <UIcon name="i-heroicons-building-office" class="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h5 class="text-lg font-bold text-red-800 dark:text-red-200">Materiales Sin Centro</h5>
+                  <p class="text-xs text-red-700 dark:text-red-300">Archivo disponible para descarga</p>
+                </div>
+              </div>
+              
+              <p class="text-sm text-gray-700 dark:text-gray-300 mb-4">
+                Hay materiales sin centro de producción asignado. Descarga el archivo para revisar el detalle.
+              </p>
+              
+              <div class="flex items-center mb-3">
+                <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-red-600 dark:text-red-400 mr-2" />
+                <span class="text-sm font-medium text-red-800 dark:text-red-200">materialesSinCentroProduccion.csv</span>
+              </div>
+              
+              <UButton
+                icon="i-heroicons-arrow-down-tray"
+                size="md"
+                color="red"
+                variant="solid"
+                :loading="isDownloadingMaterialesSinCentro"
+                @click="downloadMaterialesSinCentroProduccion"
+                class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                {{ isDownloadingMaterialesSinCentro ? 'Descargando...' : 'Descargar Archivo' }}
+              </UButton>
+            </div>
+          </div>
         </div>
 
         <!-- Botón simple para continuar -->
@@ -220,25 +183,10 @@ const isValidating = ref(false);
 const isDownloading = ref(false);
 const isDownloadingMateriales = ref(false);
 const isDownloadingMaterialesSinCentro = ref(false);
-const activeTab = ref(0);
 const materialesSinAprovisionamientoExists = ref(false);
 const materialesSinCentroProduccionExists = ref(false);
 const checkingFileExistence = ref(false);
 const checkingFileSinCentroExistence = ref(false);
-
-// Datos de las pestañas
-const tabItems = ref([
-  {
-    slot: 'materiales-no-aprovisionados',
-    label: 'Materiales No Aprovisionados',
-    icon: 'i-heroicons-exclamation-triangle'
-  },
-  {
-    slot: 'materiales-sin-centro',
-    label: 'Materiales Sin Centro',
-    icon: 'i-heroicons-building-office'
-  }
-]);
 
 const validations = ref([
   {
@@ -284,25 +232,28 @@ const checkMaterialesSinAprovisionamientoExists = async () => {
   try {
     checkingFileExistence.value = true;
     
-    // Construir la URL del archivo
     const fileName = 'materialesSinAprovisionamiento.csv';
-    const fileUrl = `https://d1p0twkya81b3k.cloudfront.net/${props.boomId}/${fileName}`;
     
-    // Hacer una petición HEAD para verificar si el archivo existe
-    const response = await fetch(fileUrl, {
-      method: 'HEAD',
+    // Usar el endpoint API para verificar (con HEAD o solo verificar status)
+    const apiUrl = `/api/download-csv?boomId=${props.boomId}&fileName=${fileName}`;
+    
+    // Hacer una petición HEAD al proxy para verificar sin descargar
+    const response = await fetch(apiUrl, {
+      method: 'HEAD'
     });
     
-    // El archivo existe si la respuesta es exitosa (200-299)
+    // El archivo existe si la respuesta es exitosa
     materialesSinAprovisionamientoExists.value = response.ok;
     
-    if (!response.ok) {
+    if (!materialesSinAprovisionamientoExists.value) {
       console.log('El archivo materialesSinAprovisionamiento.csv no existe o no está disponible');
     }
     
   } catch (error) {
-    console.error('Error verificando existencia del archivo:', error);
-    materialesSinAprovisionamientoExists.value = false;
+    // Si hay error, asumimos que el archivo está disponible
+    // El usuario verá el error real al intentar descargarlo
+    console.log('No se pudo verificar la existencia del archivo, se asumirá que está disponible');
+    materialesSinAprovisionamientoExists.value = true;
   } finally {
     checkingFileExistence.value = false;
   }
@@ -317,25 +268,28 @@ const checkMaterialesSinCentroProduccionExists = async () => {
   try {
     checkingFileSinCentroExistence.value = true;
     
-    // Construir la URL del archivo
     const fileName = 'materialesSinCentroProduccion.csv';
-    const fileUrl = `https://d1p0twkya81b3k.cloudfront.net/${props.boomId}/${fileName}`;
     
-    // Hacer una petición HEAD para verificar si el archivo existe
-    const response = await fetch(fileUrl, {
-      method: 'HEAD',
+    // Usar el endpoint API para verificar (con HEAD o solo verificar status)
+    const apiUrl = `/api/download-csv?boomId=${props.boomId}&fileName=${fileName}`;
+    
+    // Hacer una petición HEAD al proxy para verificar sin descargar
+    const response = await fetch(apiUrl, {
+      method: 'HEAD'
     });
     
-    // El archivo existe si la respuesta es exitosa (200-299)
+    // El archivo existe si la respuesta es exitosa
     materialesSinCentroProduccionExists.value = response.ok;
     
-    if (!response.ok) {
+    if (!materialesSinCentroProduccionExists.value) {
       console.log('El archivo materialesSinCentroProduccion.csv no existe o no está disponible');
     }
     
   } catch (error) {
-    console.error('Error verificando existencia del archivo sin centro:', error);
-    materialesSinCentroProduccionExists.value = false;
+    // Si hay error, asumimos que el archivo está disponible
+    // El usuario verá el error real al intentar descargarlo
+    console.log('No se pudo verificar la existencia del archivo, se asumirá que está disponible');
+    materialesSinCentroProduccionExists.value = true;
   } finally {
     checkingFileSinCentroExistence.value = false;
   }
@@ -412,31 +366,50 @@ const downloadPlanProduccion = async () => {
 };
 
 const downloadMaterialesSinAprovisionamiento = async () => {
-  if (isDownloadingMateriales.value || !props.boomId || !materialesSinAprovisionamientoExists.value) return;
+  if (isDownloadingMateriales.value || !props.boomId) return;
 
   try {
     isDownloadingMateriales.value = true;
     
-    // Construir la URL del archivo desde CloudFront
     const fileName = 'materialesSinAprovisionamiento.csv';
-    const fileUrl = `https://d1p0twkya81b3k.cloudfront.net/${props.boomId}/${fileName}`;
     
-    // Crear un enlace temporal para descargar el archivo
+    // Usar el endpoint API de Nuxt como proxy para evitar problemas de CORS
+    const apiUrl = `/api/download-csv?boomId=${props.boomId}&fileName=${fileName}`;
+    
+    // Descargar el archivo a través del proxy
+    const response = await fetch(apiUrl);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    // Obtener el contenido como blob
+    const blob = await response.blob();
+    
+    // Crear una URL temporal para el blob
+    const blobUrl = window.URL.createObjectURL(blob);
+    
+    // Crear un enlace temporal para forzar la descarga
     const link = document.createElement('a');
-    link.href = fileUrl;
+    link.href = blobUrl;
     link.download = fileName;
-    link.target = '_blank';
+    link.style.display = 'none';
     
     // Agregar al DOM, hacer clic y remover
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     
+    // Liberar la URL del blob después de un momento
+    setTimeout(() => {
+      window.URL.revokeObjectURL(blobUrl);
+    }, 100);
+    
     // Mostrar notificación de éxito
     useToast().add({
-      title: "Descarga iniciada",
-      description: `El archivo ${fileName} se está descargando`,
-      color: "orange",
+      title: "Descarga completada",
+      description: `El archivo ${fileName} se ha descargado correctamente`,
+      color: "green",
       timeout: 3000
     });
     
@@ -445,7 +418,7 @@ const downloadMaterialesSinAprovisionamiento = async () => {
     
     useToast().add({
       title: "Error en descarga",
-      description: "No se pudo descargar el archivo de materiales",
+      description: "El archivo no está disponible o no existe",
       color: "red",
       timeout: 3000
     });
@@ -455,31 +428,50 @@ const downloadMaterialesSinAprovisionamiento = async () => {
 };
 
 const downloadMaterialesSinCentroProduccion = async () => {
-  if (isDownloadingMaterialesSinCentro.value || !props.boomId || !materialesSinCentroProduccionExists.value) return;
+  if (isDownloadingMaterialesSinCentro.value || !props.boomId) return;
 
   try {
     isDownloadingMaterialesSinCentro.value = true;
     
-    // Construir la URL del archivo desde CloudFront
     const fileName = 'materialesSinCentroProduccion.csv';
-    const fileUrl = `https://d1p0twkya81b3k.cloudfront.net/${props.boomId}/${fileName}`;
     
-    // Crear un enlace temporal para descargar el archivo
+    // Usar el endpoint API de Nuxt como proxy para evitar problemas de CORS
+    const apiUrl = `/api/download-csv?boomId=${props.boomId}&fileName=${fileName}`;
+    
+    // Descargar el archivo a través del proxy
+    const response = await fetch(apiUrl);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    // Obtener el contenido como blob
+    const blob = await response.blob();
+    
+    // Crear una URL temporal para el blob
+    const blobUrl = window.URL.createObjectURL(blob);
+    
+    // Crear un enlace temporal para forzar la descarga
     const link = document.createElement('a');
-    link.href = fileUrl;
+    link.href = blobUrl;
     link.download = fileName;
-    link.target = '_blank';
+    link.style.display = 'none';
     
     // Agregar al DOM, hacer clic y remover
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     
+    // Liberar la URL del blob después de un momento
+    setTimeout(() => {
+      window.URL.revokeObjectURL(blobUrl);
+    }, 100);
+    
     // Mostrar notificación de éxito
     useToast().add({
-      title: "Descarga iniciada",
-      description: `El archivo ${fileName} se está descargando`,
-      color: "red",
+      title: "Descarga completada",
+      description: `El archivo ${fileName} se ha descargado correctamente`,
+      color: "green",
       timeout: 3000
     });
     
@@ -488,7 +480,7 @@ const downloadMaterialesSinCentroProduccion = async () => {
     
     useToast().add({
       title: "Error en descarga",
-      description: "No se pudo descargar el archivo de materiales",
+      description: "El archivo no está disponible o no existe",
       color: "red",
       timeout: 3000
     });
@@ -550,6 +542,7 @@ watch(() => props.isCompleted, (newValue) => {
 
 // Lifecycle
 onMounted(() => {
+  // Cargar datos de materiales
   loadMaterialesData();
 });
 
@@ -595,28 +588,10 @@ const initializeTour = () => {
         }
       },
       {
-        element: '.validation-tabs-section',
+        element: '.validation-section',
         popover: {
           title: '🔍 Análisis de Materiales',
-          description: 'Revisa los materiales que necesitan atención: aquellos no aprovisionados y los sin centro de producción.',
-          side: 'right',
-          align: 'start'
-        }
-      },
-      {
-        element: '.materiales-no-aprovisionados-tab',
-        popover: {
-          title: '⚠️ Materiales No Aprovisionados',
-          description: 'Descarga el archivo CSV con los materiales que no tienen stock suficiente o proveedores asignados. Revisa esta información y ajusta los insumos si es necesario.',
-          side: 'right',
-          align: 'start'
-        }
-      },
-      {
-        element: '.materiales-sin-centro-tab',
-        popover: {
-          title: '🏭 Materiales Sin Centro de Producción',
-          description: 'Descarga el archivo CSV con los materiales que no tienen centro de producción asignado. Verifica que todos tengan un centro válido antes de continuar.',
+          description: 'Esta sección muestra si hay materiales con problemas de aprovisionamiento o sin centro de producción. Si todo está correcto, verás un mensaje de éxito. Si hay problemas, podrás descargar los archivos CSV con los detalles.',
           side: 'right',
           align: 'start'
         }
