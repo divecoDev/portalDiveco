@@ -9,6 +9,7 @@ import { adminUserGlobalSignOut } from "../functions/admin-users/AdminUserGlobal
 import { microsoftGraphToken } from "../functions/microsoft-graph/token/resource";
 /* Functions Boom */
 import { cargaInsumosSaveBatch } from "../functions/carga-insumos/saveBatch/resource";
+import { cargaInsumosDeleteBatch } from "../functions/carga-insumos/deleteBatch/resource";
 import { cargaInsumosGetData } from "../functions/carga-insumos/getData/resource";
 import { runPipeline } from "../functions/boom/runPipeline/resource";
 import { BoomGetStatusPipeline } from "../functions/boom/GetStatusPipeline/resource";
@@ -155,6 +156,18 @@ const schema = a.schema({
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(cargaInsumosGetData)),
+
+  /**
+   *  Carga de Insumos - Eliminar datos por document_id
+   */
+  deleteCargaInsumosBatch: a
+    .mutation()
+    .arguments({
+      documentId: a.string().required(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(cargaInsumosDeleteBatch)),
 
   /**
    *  Ejeucuion de Pipelines ADF

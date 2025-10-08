@@ -13,6 +13,10 @@ const props = defineProps({
   explosion: {
     type: Object,
     required: true
+  },
+  skipLoadExistingData: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -33,8 +37,13 @@ onMounted(async () => {
   await cargaInsumosStore.initialize();
 
   // Establecer el boom_id en el store y verificar datos existentes
-  if (props.explosion?.id) {
+  // Solo si NO se está saltando la carga de datos existentes (modo recarga)
+  if (props.explosion?.id && !props.skipLoadExistingData) {
     await checkAndLoadExistingData(props.explosion.id);
+  } else if (props.explosion?.id && props.skipLoadExistingData) {
+    // Si estamos en modo recarga, solo establecer el boom_id sin cargar datos
+    console.log('🔄 Modo recarga activado - Saltando carga de datos existentes');
+    cargaInsumosStore.setBoomId(props.explosion.id);
   }
 });
 
@@ -194,7 +203,8 @@ const checkAndLoadExistingData = async (boomId) => {
 
 // Watcher para detectar cambios en la prop explosion
 watch(() => props.explosion, async (newExplosion) => {
-  if (newExplosion?.id) {
+  // Solo cargar datos existentes si NO estamos en modo recarga
+  if (newExplosion?.id && !props.skipLoadExistingData) {
     await checkAndLoadExistingData(newExplosion.id);
   }
 }, { immediate: true });

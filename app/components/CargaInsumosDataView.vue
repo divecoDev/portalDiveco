@@ -70,6 +70,22 @@
 
         <!-- Lista de archivos disponibles -->
         <div v-else class="space-y-4">
+          <!-- Botón para recargar archivos -->
+          <div v-if="hasAnyFiles" class="flex justify-end">
+            <UButton
+              icon="i-heroicons-arrow-path"
+              label="Recargar Archivos"
+              size="sm"
+              variant="outline"
+              class="text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 border-cyan-300 dark:border-cyan-700"
+              @click="reloadProcess"
+            >
+              <template #trailing>
+                <UIcon name="i-heroicons-arrow-up-tray" class="w-4 h-4 ml-1" />
+              </template>
+            </UButton>
+          </div>
+
           <!-- Plan de Ventas -->
           <div v-if="boomData.insumoPlanVentasPath" class="bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-700/50 dark:to-gray-600/50 rounded-md border border-gray-200/50 dark:border-gray-600/50 p-4 transition-all duration-300 hover:shadow-md hover:border-cyan-300/40 dark:hover:border-cyan-600/40">
             <div class="flex items-center justify-between">
@@ -173,6 +189,8 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useCargaInsumosData } from '~/composables/useCargaInsumosData';
 import { getUrl } from 'aws-amplify/storage';
 import { generateClient } from 'aws-amplify/data';
+
+const toast = useToast();
 
 // Props
 const props = withDefaults(defineProps<{
@@ -336,7 +354,7 @@ const getFileName = (path: string) => {
 // Función para descargar archivos usando la API de Amplify Storage
 const downloadFile = async (tipo: 'planVentas' | 'existencias' | 'cobertura', s3Path: string) => {
   if (!s3Path) {
-    useToast().add({
+    toast.add({
       title: 'Error',
       description: 'No hay archivo disponible para descargar',
       color: 'error'
@@ -394,7 +412,7 @@ const downloadFile = async (tipo: 'planVentas' | 'existencias' | 'cobertura', s3
       URL.revokeObjectURL(blobUrl);
     }, 1000);
 
-    useToast().add({
+    toast.add({
       title: 'Descarga iniciada',
       description: `El archivo ${tipo} se está descargando`,
       color: 'success'
@@ -405,7 +423,7 @@ const downloadFile = async (tipo: 'planVentas' | 'existencias' | 'cobertura', s3
     
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
     
-    useToast().add({
+    toast.add({
       title: 'Error al descargar',
       description: `No se pudo descargar el archivo: ${errorMessage}`,
       color: 'error'
@@ -452,6 +470,15 @@ watch(() => props.explosionId, (newExplosionId) => {
     loadBoomData();
   }
 });
+
+// Emits para comunicar eventos al componente padre
+const emit = defineEmits(['reload-process']);
+
+// Método para solicitar recarga del proceso
+const reloadProcess = () => {
+  console.log('🔄 Solicitando recarga del proceso de carga de insumos');
+  emit('reload-process');
+};
 
 // Exponer métodos para uso externo
 defineExpose({

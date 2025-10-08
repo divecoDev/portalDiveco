@@ -136,11 +136,13 @@
                 v-if="hasSavedData && !showCargaProcess && !checkingSavedData"
                 :document-id="explosion?.id"
                 :explosion-id="explosionId"
+                @reload-process="handleReloadProcess"
               />
 
               <CargaInsumosProcess
                 v-if="(!hasSavedData || showCargaProcess) && !checkingSavedData"
                 :explosion="explosion"
+                :skip-load-existing-data="showCargaProcess"
                 @carga-insumos-completed="handleBoomProcessCompleted"
               />
             </div>
@@ -371,6 +373,51 @@ const refreshSavedData = async () => {
   });
 };
 
+// Método para manejar la recarga del proceso de carga de insumos
+const handleReloadProcess = async () => {
+  console.log('🔄 Recargando proceso de carga de insumos');
+  
+  try {
+    // Importar dinámicamente el store
+    const { useCargaInsumosProcessStore } = await import('../stores/useCargaInsumosProcess');
+    const cargaInsumosStore = useCargaInsumosProcessStore();
+    
+    // Limpiar todos los datos del store
+    console.log('🧹 Limpiando datos previos del store...');
+    cargaInsumosStore.clearAllData();
+    
+    // Restablecer el boom_id en el store para la nueva carga
+    if (explosion.value?.id) {
+      cargaInsumosStore.setBoomId(explosion.value.id);
+      console.log(`🎯 Boom ID restablecido: ${explosion.value.id}`);
+    }
+    
+    // Mostrar el componente de proceso en lugar de la vista de datos
+    showCargaProcess.value = true;
+    
+    useToast().add({
+      title: "Proceso reiniciado",
+      description: "Los datos anteriores han sido limpiados. Puedes cargar nuevos archivos",
+      color: "cyan",
+      timeout: 3000
+    });
+    
+    console.log('✅ Store limpiado y proceso de recarga iniciado');
+  } catch (error) {
+    console.error('❌ Error al limpiar datos del store:', error);
+    
+    // Aún así mostrar el proceso de carga
+    showCargaProcess.value = true;
+    
+    useToast().add({
+      title: "Recargando proceso",
+      description: "Puedes cargar nuevos archivos para actualizar los datos",
+      color: "cyan",
+      timeout: 3000
+    });
+  }
+};
+
 // Función para verificar los estados de todos los procesos
 const checkProcessStates = async () => {
   if (!explosion.value?.id) return;
@@ -476,6 +523,9 @@ const handleBoomProcessCompleted = async () => {
   // Marcar el primer paso como completado
   completedSteps.value['carga-de-insumos'] = true;
   boomHasSavedData.value = true;
+  
+  // Ocultar el proceso de carga y volver a la vista de datos
+  showCargaProcess.value = false;
 
   // Esperar a que el DOM se actualice
   await nextTick();
