@@ -9,11 +9,13 @@ import { adminUserGlobalSignOut } from "../functions/admin-users/AdminUserGlobal
 import { microsoftGraphToken } from "../functions/microsoft-graph/token/resource";
 /* Functions Boom */
 import { cargaInsumosSaveBatch } from "../functions/carga-insumos/saveBatch/resource";
+import { cargaInsumosDeleteBatch } from "../functions/carga-insumos/deleteBatch/resource";
 import { cargaInsumosGetData } from "../functions/carga-insumos/getData/resource";
 import { runPipeline } from "../functions/boom/runPipeline/resource";
 import { BoomGetStatusPipeline } from "../functions/boom/GetStatusPipeline/resource";
 import { GetMaterialesSinAprovicionamiento } from "../functions/boom/GetMaterialesSinAprovicionamiento/resource";
 import { GetMaterialesSinCentroProduccion } from "../functions/boom/getMaterialesSinCentroProduccion/resource";
+import { aprovisionamiento } from "../functions/porcentajes-asignacion/resource";
 
 const schema = a.schema({
   Todo: a
@@ -156,6 +158,18 @@ const schema = a.schema({
     .handler(a.handler.function(cargaInsumosGetData)),
 
   /**
+   *  Carga de Insumos - Eliminar datos por document_id
+   */
+  deleteCargaInsumosBatch: a
+    .mutation()
+    .arguments({
+      documentId: a.string().required(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(cargaInsumosDeleteBatch)),
+
+  /**
    *  Ejeucuion de Pipelines ADF
    */
   runPipeline: a
@@ -198,6 +212,25 @@ const schema = a.schema({
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(GetMaterialesSinCentroProduccion)),
+
+  /**
+   *  CRUD de Aprovisionamiento
+   */
+  aprovisionamiento: a
+    .query()
+    .arguments({
+      operation: a.string(),
+      centroIdOrigen: a.integer(),
+      materialId: a.integer(),
+      centroIdAprov: a.integer(),
+      porcentaje: a.float(),
+      limit: a.integer(),
+      offset: a.integer(),
+      search: a.string(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(aprovisionamiento)),
 });
 
 export type Schema = ClientSchema<typeof schema>;

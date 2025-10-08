@@ -437,12 +437,22 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
         fileName: "",
         loadedAt: null,
         isValid: false,
+        fileMetadata: undefined,
       };
 
       // Resetear el estado de procesado del paso
       this.processedSteps[step] = false;
 
       console.log(`🧹 Carga Insumos Store: Datos de ${step} limpiados`);
+    },
+
+    /**
+     * Recargar un paso específico (limpiar y permitir nueva carga)
+     */
+    reloadStep(step: 'planVentas' | 'existencias' | 'cobertura') {
+      console.log(`🔄 Carga Insumos Store: Recargando paso ${step}...`);
+      this.clearStepData(step);
+      console.log(`✅ Carga Insumos Store: Paso ${step} listo para recargar`);
     },
 
     /**
@@ -511,7 +521,11 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
         console.log(`📄 Document ID: ${documentId}`);
         console.log(`🏷️ Batch ID: ${batchId}`);
 
-        // Procesar cada tipo de datos por lotes secuencialmente
+        // PASO 1: Eliminar datos existentes para este document_id antes de insertar nuevos
+        console.log(`🗑️ Eliminando datos existentes para document_id: ${documentId}`);
+        await this.deleteExistingData(documentId);
+
+        // PASO 2: Procesar cada tipo de datos por lotes secuencialmente
         await this.processBatches('planVentas', this.planVentas.data, this.planVentas.fileName, documentId, batchId);
         await this.processBatches('existencias', this.existencias.data, this.existencias.fileName, documentId, batchId);
         await this.processBatches('cobertura', this.cobertura.data, this.cobertura.fileName, documentId, batchId);
@@ -542,6 +556,55 @@ export const useCargaInsumosProcessStore = defineStore("cargaInsumosProcess", {
         };
       } finally {
         this.isProcessing = false;
+      }
+    },
+
+    /**
+     * Eliminar datos existentes para un document_id específico
+     */
+    async deleteExistingData(documentId: string) {
+      if (!documentId) {
+        console.warn('⚠️ No se puede eliminar: documentId no proporcionado');
+        return { success: false, error: 'documentId es requerido' };
+      }
+
+      try {
+        console.log(`🗑️ Llamando a deleteCargaInsumosBatch para documentId: ${documentId}`);
+        
+        // Obtener cliente de Amplify
+        const client = getAmplifyClient();
+        
+        // Llamar a la mutation para eliminar datos
+        const { data } = await (client as any).mutations.deleteCargaInsumosBatch({
+          documentId
+        });
+        
+        console.log(`📡 Respuesta de eliminación:`, data);
+        
+        // Parsear la respuesta
+        const result = typeof data === 'string' ? JSON.parse(data) : data;
+        
+        if (result.success) {
+          console.log(`✅ Datos eliminados exitosamente:`);
+          console.log(`   - Plan de Ventas: ${result.deletedRecords.planVentas} registros`);
+          console.log(`   - Existencias: ${result.deletedRecords.existencias} registros`);
+          console.log(`   - Cobertura: ${result.deletedRecords.cobertura} registros`);
+          console.log(`   - Total: ${result.deletedRecords.total} registros`);
+          
+          return result;
+        } else {
+          console.warn(`⚠️ Eliminación completada con advertencias:`, result.message);
+          return result;
+        }
+        
+      } catch (error) {
+        console.error(`❌ Error eliminando datos existentes:`, error);
+        // No lanzar error, solo registrar - podría ser que no existan datos previos
+        return { 
+          success: false, 
+          error: error instanceof Error ? error.message : 'Error desconocido',
+          deletedRecords: { planVentas: 0, existencias: 0, cobertura: 0, total: 0 }
+        };
       }
     },
 

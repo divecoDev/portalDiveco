@@ -223,6 +223,7 @@ watch(
             <UButton
               icon="i-heroicons-arrow-down-tray"
               label="Descargar plantilla"
+              size="sm"
               class="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             />
           </a>
@@ -235,7 +236,17 @@ watch(
           />
           <UButton
             v-if="hasData"
+            icon="i-heroicons-arrow-path"
+            label="Recargar"
+            size="sm"
+            variant="outline"
+            class="text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 border-cyan-300 dark:border-cyan-700"
+            @click="isModalOpen = true"
+          />
+          <UButton
+            v-if="hasData"
             icon="i-heroicons-trash"
+            size="sm"
             variant="ghost"
             class="hover:text-red-500 cursor-pointer text-gray-500"
             @click="clearData"

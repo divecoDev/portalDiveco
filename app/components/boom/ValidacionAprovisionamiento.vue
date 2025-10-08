@@ -56,12 +56,16 @@
                     <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-orange-500 mr-2" />
                     <h5 class="text-sm font-semibold text-gray-900 dark:text-white">Materiales No Aprovisionados</h5>
                   </div>
-                  <UBadge color="orange" variant="soft" size="sm">
-                    {{ materialesNoAprovisionados.length }} items
-                  </UBadge>
                 </div>
                 
-                <div v-if="materialesNoAprovisionados.length === 0" class="text-center py-8">
+                <!-- Estado: Verificando archivo -->
+                <div v-if="checkingFileExistence" class="text-center py-8">
+                  <div class="w-12 h-12 border-4 border-orange-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p class="text-gray-600 dark:text-gray-300">Verificando disponibilidad del archivo...</p>
+                </div>
+                
+                <!-- Estado: Archivo no existe (todos los materiales están aprovisionados) -->
+                <div v-else-if="!materialesSinAprovisionamientoExists" class="text-center py-8">
                   <div class="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 rounded-md flex items-center justify-center mx-auto mb-4 shadow-lg">
                     <UIcon name="i-heroicons-check-circle" class="w-8 h-8 text-green-600 dark:text-green-400" />
                   </div>
@@ -69,61 +73,39 @@
                   <p class="text-sm text-gray-600 dark:text-gray-300">Todos los materiales están aprovisionados correctamente</p>
                 </div>
                 
-                <div v-else class="overflow-x-auto">
-                  <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-gray-800">
-                      <tr>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Centro ID</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Material ID</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Descripción</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Marca</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Presentación</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Modelo</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tamaño</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Color</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Segmento</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Línea</th>
-                      </tr>
-                    </thead>
-                    <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                      <tr 
-                        v-for="material in materialesNoAprovisionados" 
-                        :key="material.material_id"
-                        class="hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-colors duration-200"
-                      >
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
-                          {{ material.centro_id }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {{ material.material_id }}
-                        </td>
-                        <td class="px-3 py-2 text-sm text-gray-900 dark:text-white max-w-xs truncate">
-                          {{ material.Descripcion_Material }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {{ material.marca }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {{ material.presentacion }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {{ material.modelo }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {{ material.tamano }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {{ material.color }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {{ material.segmento }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {{ material.linea }}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <!-- Estado: Archivo existe (hay materiales sin aprovisionamiento) -->
+                <div v-else class="text-center py-8">
+                  <div class="w-20 h-20 bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 rounded-md flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <UIcon name="i-heroicons-document-arrow-down" class="w-10 h-10 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <h6 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Materiales Sin Aprovisionamiento</h6>
+                  <p class="text-sm text-gray-600 dark:text-gray-300 mb-6 max-w-md mx-auto">
+                    Descarga el archivo CSV con el detalle de los materiales que no tienen aprovisionamiento asignado
+                  </p>
+                  
+                  <div class="bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-900/20 dark:to-orange-800/20 p-6 rounded-md border border-orange-200 dark:border-orange-700/50 shadow-sm max-w-lg mx-auto">
+                    <div class="flex items-center justify-between mb-4">
+                      <div class="flex items-center">
+                        <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-orange-600 dark:text-orange-400 mr-3" />
+                        <div class="text-left">
+                          <h4 class="text-sm font-semibold text-orange-800 dark:text-orange-200">materialesSinAprovisionamiento.csv</h4>
+                          <p class="text-xs text-orange-700 dark:text-orange-300">Listado completo de materiales sin aprovisionamiento</p>
+                        </div>
+                      </div>
+                    </div>
+                    <UButton
+                      icon="i-heroicons-arrow-down-tray"
+                      size="md"
+                      color="orange"
+                      variant="solid"
+                      :loading="isDownloadingMateriales"
+                      :disabled="!materialesSinAprovisionamientoExists"
+                      @click="downloadMaterialesSinAprovisionamiento"
+                      class="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:from-orange-500 disabled:hover:to-orange-600"
+                    >
+                      {{ isDownloadingMateriales ? 'Descargando...' : 'Descargar Archivo' }}
+                    </UButton>
+                  </div>
                 </div>
               </div>
             </template>
@@ -135,12 +117,16 @@
                     <UIcon name="i-heroicons-building-office" class="w-5 h-5 text-red-500 mr-2" />
                     <h5 class="text-sm font-semibold text-gray-900 dark:text-white">Materiales Sin Centro de Producción</h5>
                   </div>
-                  <UBadge color="red" variant="soft" size="sm">
-                    {{ materialesSinCentro.length }} items
-                  </UBadge>
                 </div>
                 
-                <div v-if="materialesSinCentro.length === 0" class="text-center py-8">
+                <!-- Estado: Verificando archivo -->
+                <div v-if="checkingFileSinCentroExistence" class="text-center py-8">
+                  <div class="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p class="text-gray-600 dark:text-gray-300">Verificando disponibilidad del archivo...</p>
+                </div>
+                
+                <!-- Estado: Archivo no existe (todos los materiales tienen centro asignado) -->
+                <div v-else-if="!materialesSinCentroProduccionExists" class="text-center py-8">
                   <div class="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 rounded-md flex items-center justify-center mx-auto mb-4 shadow-lg">
                     <UIcon name="i-heroicons-check-circle" class="w-8 h-8 text-green-600 dark:text-green-400" />
                   </div>
@@ -148,65 +134,39 @@
                   <p class="text-sm text-gray-600 dark:text-gray-300">Todos los materiales tienen centro de producción asignado</p>
                 </div>
                 
-                <div v-else class="overflow-x-auto">
-                  <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead class="bg-gray-50 dark:bg-gray-800">
-                      <tr>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Año</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Mes</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Centro de Venta</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Material ID</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Descripción</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cantidad Ventas</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Marca</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Presentación</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Modelo</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Línea</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Segmento</th>
-                      </tr>
-                    </thead>
-                    <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                      <tr 
-                        v-for="material in materialesSinCentro" 
-                        :key="material.Material_Id"
-                        class="hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors duration-200"
-                      >
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
-                          {{ material.Anio }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {{ material.Mes }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {{ material.centro_de_venta }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
-                          {{ material.Material_Id }}
-                        </td>
-                        <td class="px-3 py-2 text-sm text-gray-900 dark:text-white max-w-xs truncate">
-                          {{ material.Descripcion_Material }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
-                          {{ material.Cantidad_Ventas }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {{ material.marca }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {{ material.presentacion }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {{ material.modelo }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {{ material.linea }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {{ material.segmento }}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <!-- Estado: Archivo existe (hay materiales sin centro de producción) -->
+                <div v-else class="text-center py-8">
+                  <div class="w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/30 dark:to-red-800/30 rounded-md flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <UIcon name="i-heroicons-document-arrow-down" class="w-10 h-10 text-red-600 dark:text-red-400" />
+                  </div>
+                  <h6 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Materiales Sin Centro de Producción</h6>
+                  <p class="text-sm text-gray-600 dark:text-gray-300 mb-6 max-w-md mx-auto">
+                    Descarga el archivo CSV con el detalle de los materiales que no tienen centro de producción asignado
+                  </p>
+                  
+                  <div class="bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-900/20 dark:to-red-800/20 p-6 rounded-md border border-red-200 dark:border-red-700/50 shadow-sm max-w-lg mx-auto">
+                    <div class="flex items-center justify-between mb-4">
+                      <div class="flex items-center">
+                        <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-red-600 dark:text-red-400 mr-3" />
+                        <div class="text-left">
+                          <h4 class="text-sm font-semibold text-red-800 dark:text-red-200">materialesSinCentroProduccion.csv</h4>
+                          <p class="text-xs text-red-700 dark:text-red-300">Listado completo de materiales sin centro de producción</p>
+                        </div>
+                      </div>
+                    </div>
+                    <UButton
+                      icon="i-heroicons-arrow-down-tray"
+                      size="md"
+                      color="red"
+                      variant="solid"
+                      :loading="isDownloadingMaterialesSinCentro"
+                      :disabled="!materialesSinCentroProduccionExists"
+                      @click="downloadMaterialesSinCentroProduccion"
+                      class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:from-red-500 disabled:hover:to-red-600"
+                    >
+                      {{ isDownloadingMaterialesSinCentro ? 'Descargando...' : 'Descargar Archivo' }}
+                    </UButton>
+                  </div>
                 </div>
               </div>
             </template>
@@ -258,7 +218,13 @@ const emit = defineEmits(['validation-completed']);
 // Estado reactivo
 const isValidating = ref(false);
 const isDownloading = ref(false);
+const isDownloadingMateriales = ref(false);
+const isDownloadingMaterialesSinCentro = ref(false);
 const activeTab = ref(0);
+const materialesSinAprovisionamientoExists = ref(false);
+const materialesSinCentroProduccionExists = ref(false);
+const checkingFileExistence = ref(false);
+const checkingFileSinCentroExistence = ref(false);
 
 // Datos de las pestañas
 const tabItems = ref([
@@ -273,11 +239,6 @@ const tabItems = ref([
     icon: 'i-heroicons-building-office'
   }
 ]);
-
-// Datos de materiales
-const materialesNoAprovisionados = ref([]);
-
-const materialesSinCentro = ref([]);
 
 const validations = ref([
   {
@@ -314,18 +275,86 @@ const canValidate = computed(() => {
 
 
 // Métodos
+const checkMaterialesSinAprovisionamientoExists = async () => {
+  if (!props.boomId) {
+    materialesSinAprovisionamientoExists.value = false;
+    return;
+  }
+
+  try {
+    checkingFileExistence.value = true;
+    
+    // Construir la URL del archivo
+    const fileName = 'materialesSinAprovisionamiento.csv';
+    const fileUrl = `https://d1p0twkya81b3k.cloudfront.net/${props.boomId}/${fileName}`;
+    
+    // Hacer una petición HEAD para verificar si el archivo existe
+    const response = await fetch(fileUrl, {
+      method: 'HEAD',
+    });
+    
+    // El archivo existe si la respuesta es exitosa (200-299)
+    materialesSinAprovisionamientoExists.value = response.ok;
+    
+    if (!response.ok) {
+      console.log('El archivo materialesSinAprovisionamiento.csv no existe o no está disponible');
+    }
+    
+  } catch (error) {
+    console.error('Error verificando existencia del archivo:', error);
+    materialesSinAprovisionamientoExists.value = false;
+  } finally {
+    checkingFileExistence.value = false;
+  }
+};
+
+const checkMaterialesSinCentroProduccionExists = async () => {
+  if (!props.boomId) {
+    materialesSinCentroProduccionExists.value = false;
+    return;
+  }
+
+  try {
+    checkingFileSinCentroExistence.value = true;
+    
+    // Construir la URL del archivo
+    const fileName = 'materialesSinCentroProduccion.csv';
+    const fileUrl = `https://d1p0twkya81b3k.cloudfront.net/${props.boomId}/${fileName}`;
+    
+    // Hacer una petición HEAD para verificar si el archivo existe
+    const response = await fetch(fileUrl, {
+      method: 'HEAD',
+    });
+    
+    // El archivo existe si la respuesta es exitosa (200-299)
+    materialesSinCentroProduccionExists.value = response.ok;
+    
+    if (!response.ok) {
+      console.log('El archivo materialesSinCentroProduccion.csv no existe o no está disponible');
+    }
+    
+  } catch (error) {
+    console.error('Error verificando existencia del archivo sin centro:', error);
+    materialesSinCentroProduccionExists.value = false;
+  } finally {
+    checkingFileSinCentroExistence.value = false;
+  }
+};
+
 const loadMaterialesData = async () => {
   try {
     // En producción, aquí se haría una llamada a la API
     // Por ahora usamos datos de ejemplo
     console.log('Cargando datos de materiales para boom:', props.boomId);
     
+    // Verificar si existen los archivos de materiales (en paralelo para mejor rendimiento)
+    await Promise.all([
+      checkMaterialesSinAprovisionamientoExists(),
+      checkMaterialesSinCentroProduccionExists()
+    ]);
+    
     // Simular carga de datos
     await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Aquí se actualizarían los arrays con datos reales
-    // materialesNoAprovisionados.value = await fetchMaterialesNoAprovisionados();
-    // materialesSinCentro.value = await fetchMaterialesSinCentro();
     
   } catch (error) {
     console.error('Error cargando datos de materiales:', error);
@@ -379,6 +408,92 @@ const downloadPlanProduccion = async () => {
     });
   } finally {
     isDownloading.value = false;
+  }
+};
+
+const downloadMaterialesSinAprovisionamiento = async () => {
+  if (isDownloadingMateriales.value || !props.boomId || !materialesSinAprovisionamientoExists.value) return;
+
+  try {
+    isDownloadingMateriales.value = true;
+    
+    // Construir la URL del archivo desde CloudFront
+    const fileName = 'materialesSinAprovisionamiento.csv';
+    const fileUrl = `https://d1p0twkya81b3k.cloudfront.net/${props.boomId}/${fileName}`;
+    
+    // Crear un enlace temporal para descargar el archivo
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = fileName;
+    link.target = '_blank';
+    
+    // Agregar al DOM, hacer clic y remover
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Mostrar notificación de éxito
+    useToast().add({
+      title: "Descarga iniciada",
+      description: `El archivo ${fileName} se está descargando`,
+      color: "orange",
+      timeout: 3000
+    });
+    
+  } catch (error) {
+    console.error('Error al descargar materiales sin aprovisionamiento:', error);
+    
+    useToast().add({
+      title: "Error en descarga",
+      description: "No se pudo descargar el archivo de materiales",
+      color: "red",
+      timeout: 3000
+    });
+  } finally {
+    isDownloadingMateriales.value = false;
+  }
+};
+
+const downloadMaterialesSinCentroProduccion = async () => {
+  if (isDownloadingMaterialesSinCentro.value || !props.boomId || !materialesSinCentroProduccionExists.value) return;
+
+  try {
+    isDownloadingMaterialesSinCentro.value = true;
+    
+    // Construir la URL del archivo desde CloudFront
+    const fileName = 'materialesSinCentroProduccion.csv';
+    const fileUrl = `https://d1p0twkya81b3k.cloudfront.net/${props.boomId}/${fileName}`;
+    
+    // Crear un enlace temporal para descargar el archivo
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = fileName;
+    link.target = '_blank';
+    
+    // Agregar al DOM, hacer clic y remover
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Mostrar notificación de éxito
+    useToast().add({
+      title: "Descarga iniciada",
+      description: `El archivo ${fileName} se está descargando`,
+      color: "red",
+      timeout: 3000
+    });
+    
+  } catch (error) {
+    console.error('Error al descargar materiales sin centro de producción:', error);
+    
+    useToast().add({
+      title: "Error en descarga",
+      description: "No se pudo descargar el archivo de materiales",
+      color: "red",
+      timeout: 3000
+    });
+  } finally {
+    isDownloadingMaterialesSinCentro.value = false;
   }
 };
 
@@ -492,7 +607,7 @@ const initializeTour = () => {
         element: '.materiales-no-aprovisionados-tab',
         popover: {
           title: '⚠️ Materiales No Aprovisionados',
-          description: 'Materiales que no tienen stock suficiente o proveedores asignados. Revisa esta lista y ajusta los insumos si es necesario.',
+          description: 'Descarga el archivo CSV con los materiales que no tienen stock suficiente o proveedores asignados. Revisa esta información y ajusta los insumos si es necesario.',
           side: 'right',
           align: 'start'
         }
@@ -501,7 +616,7 @@ const initializeTour = () => {
         element: '.materiales-sin-centro-tab',
         popover: {
           title: '🏭 Materiales Sin Centro de Producción',
-          description: 'Materiales que no tienen centro de producción asignado. Verifica que todos tengan un centro válido antes de continuar.',
+          description: 'Descarga el archivo CSV con los materiales que no tienen centro de producción asignado. Verifica que todos tengan un centro válido antes de continuar.',
           side: 'right',
           align: 'start'
         }
@@ -538,7 +653,9 @@ defineExpose({
   resetValidations,
   executeValidation,
   proceedWithExplosion,
-  loadMaterialesData
+  loadMaterialesData,
+  checkMaterialesSinAprovisionamientoExists,
+  checkMaterialesSinCentroProduccionExists
 });
 </script>
 
