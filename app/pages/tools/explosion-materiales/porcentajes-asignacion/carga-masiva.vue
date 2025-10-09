@@ -244,7 +244,7 @@
               :loading="isProcessing"
               :disabled="!fileMetadata || hasValidationError"
               @click="processAndSave"
-              class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:cursor-not-allowed disabled:opacity-75"
+              class="text-white  bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:cursor-not-allowed disabled:opacity-75"
             >
               {{ isProcessing ? 'Guardando...' : 'Guardar Datos' }}
             </UButton>
