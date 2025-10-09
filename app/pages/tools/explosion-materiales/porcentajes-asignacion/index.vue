@@ -186,14 +186,6 @@
                 <td class="px-4 py-4 whitespace-nowrap text-center">
                   <div class="flex items-center justify-center space-x-1">
                     <UButton
-                      icon="i-heroicons-pencil"
-                      size="sm"
-                      color="blue"
-                      variant="ghost"
-                      @click="editPorcentaje(porcentaje)"
-                      class="hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                    />
-                    <UButton
                       icon="i-heroicons-trash"
                       size="sm"
                       color="red"
