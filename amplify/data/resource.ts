@@ -227,6 +227,7 @@ const schema = a.schema({
       limit: a.integer(),
       offset: a.integer(),
       search: a.string(),
+      data: a.string(), // Para carga masiva - JSON string de array de aprovisionamientos
     })
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
