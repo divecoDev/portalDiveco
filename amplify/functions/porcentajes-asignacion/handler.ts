@@ -73,6 +73,9 @@ export const handler = async (event: any): Promise<AprovisionamientoResponse> =>
         case 'create':
           result = await createAprovisionamiento(connection, body);
           break;
+        case 'bulkCreate':
+          result = await bulkCreateAprovisionamiento(connection, body);
+          break;
         case 'update':
           result = await updateAprovisionamiento(connection, body);
           break;
@@ -333,6 +336,112 @@ async function createAprovisionamiento(connection: mysql.Connection, body: any):
     }
     
     throw new Error(`Error creando aprovisionamiento: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+  }
+}
+
+// Crear múltiples aprovisionamientos (carga masiva)
+async function bulkCreateAprovisionamiento(connection: mysql.Connection, body: any): Promise<AprovisionamientoResponse> {
+  console.log('➕ Creando aprovisionamientos masivos...');
+  
+  try {
+    const { data } = body;
+    
+    // Parsear datos si vienen como string
+    let parsedData;
+    if (typeof data === 'string') {
+      try {
+        parsedData = JSON.parse(data);
+      } catch (parseError) {
+        throw new Error('Error al parsear los datos JSON');
+      }
+    } else {
+      parsedData = data;
+    }
+    
+    // Validar que sea un array
+    if (!Array.isArray(parsedData) || parsedData.length === 0) {
+      throw new Error('Los datos deben ser un array con al menos un registro');
+    }
+    
+    console.log(`📊 Total de registros a procesar: ${parsedData.length}`);
+    
+    // Validar y preparar los datos
+    const validRecords: Aprovisionamiento[] = [];
+    const invalidRecords: any[] = [];
+    
+    parsedData.forEach((record, index) => {
+      try {
+        const centroIdOrigenNum = parseInt(record.centroIdOrigen);
+        const materialIdNum = parseInt(record.materialId);
+        const centroIdAprovNum = parseInt(record.centroIdAprov);
+        const porcentajeNum = parseFloat(record.porcentaje);
+        
+        // Validaciones
+        if (!centroIdOrigenNum || !materialIdNum || !centroIdAprovNum || isNaN(porcentajeNum)) {
+          invalidRecords.push({ index: index + 1, error: 'Campos requeridos faltantes o inválidos', record });
+          return;
+        }
+        
+        if (porcentajeNum < 0 || porcentajeNum > 100) {
+          invalidRecords.push({ index: index + 1, error: 'El porcentaje debe estar entre 0 y 100', record });
+          return;
+        }
+        
+        validRecords.push({
+          centroIdOrigen: centroIdOrigenNum,
+          materialId: materialIdNum,
+          centroIdAprov: centroIdAprovNum,
+          porcentaje: porcentajeNum
+        });
+      } catch (error) {
+        invalidRecords.push({ index: index + 1, error: error instanceof Error ? error.message : 'Error desconocido', record });
+      }
+    });
+    
+    console.log(`✅ Registros válidos: ${validRecords.length}`);
+    console.log(`❌ Registros inválidos: ${invalidRecords.length}`);
+    
+    if (validRecords.length === 0) {
+      throw new Error('No hay registros válidos para insertar');
+    }
+    
+    // Insertar registros usando INSERT IGNORE para evitar errores de duplicados
+    const values = validRecords.map(record => 
+      `(${record.centroIdOrigen}, ${record.materialId}, ${record.centroIdAprov}, ${record.porcentaje})`
+    ).join(', ');
+    
+    const query = `
+      INSERT IGNORE INTO aprovisionamiento 
+      (centro_id_origen, material_id, centro_id_aprov, porcentaje) 
+      VALUES ${values}
+    `;
+    
+    console.log('🔍 Ejecutando query de inserción masiva...');
+    
+    const [result] = await connection.execute(query);
+    const affectedRows = (result as any).affectedRows;
+    
+    console.log(`✅ Registros insertados: ${affectedRows}`);
+    
+    // Calcular duplicados (registros que no se insertaron)
+    const duplicates = validRecords.length - affectedRows;
+    
+    return {
+      success: true,
+      data: {
+        total: parsedData.length,
+        valid: validRecords.length,
+        invalid: invalidRecords.length,
+        inserted: affectedRows,
+        duplicates: duplicates,
+        invalidRecords: invalidRecords.length > 0 ? invalidRecords.slice(0, 10) : [] // Solo los primeros 10 para no sobrecargar la respuesta
+      },
+      message: `Carga masiva completada: ${affectedRows} registros insertados, ${duplicates} duplicados ignorados, ${invalidRecords.length} registros inválidos`
+    };
+    
+  } catch (error) {
+    console.error('❌ Error en carga masiva:', error);
+    throw new Error(`Error en carga masiva: ${error instanceof Error ? error.message : 'Error desconocido'}`);
   }
 }
 

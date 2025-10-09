@@ -8,7 +8,7 @@
             class="text-4xl font-bold text-gray-900 dark:text-white flex items-center"
           >
             <div
-              class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl flex items-center justify-center mr-4 shadow-lg shadow-cyan-500/25"
+              lass="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
             >
               <UIcon
                 name="i-heroicons-percent-badge"
@@ -22,16 +22,30 @@
           </p>
         </div>
 
-        <!-- Botón para crear nuevo aprovisionamiento -->
-        <NuxtLink to="/tools/explosion-materiales/porcentajes-asignacion/new">
-          <button
-            type="button"
-            class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
-          >
-            <UIcon name="i-heroicons-plus" class="w-5 h-5" />
-            Nuevo Aprovisionamiento
-          </button>
-        </NuxtLink>
+        <!-- Botones de acciones -->
+        <div class="flex gap-3">
+          <!-- Botón para carga masiva -->
+          <NuxtLink to="/tools/explosion-materiales/porcentajes-asignacion/carga-masiva">
+            <button
+              type="button"
+              class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
+            >
+              <UIcon name="i-heroicons-arrow-up-tray" class="w-5 h-5" />
+              Carga Masiva
+            </button>
+          </NuxtLink>
+
+          <!-- Botón para crear nuevo aprovisionamiento -->
+          <NuxtLink to="/tools/explosion-materiales/porcentajes-asignacion/new">
+            <button
+              type="button"
+              class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
+            >
+              <UIcon name="i-heroicons-plus" class="w-5 h-5" />
+              Nuevo Aprovisionamiento
+            </button>
+          </NuxtLink>
+        </div>
       </div>
     </div>
 
@@ -171,14 +185,6 @@
                 </td>
                 <td class="px-4 py-4 whitespace-nowrap text-center">
                   <div class="flex items-center justify-center space-x-1">
-                    <UButton
-                      icon="i-heroicons-pencil"
-                      size="sm"
-                      color="blue"
-                      variant="ghost"
-                      @click="editPorcentaje(porcentaje)"
-                      class="hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                    />
                     <UButton
                       icon="i-heroicons-trash"
                       size="sm"

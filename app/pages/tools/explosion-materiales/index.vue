@@ -28,10 +28,7 @@
           <NuxtLink to="/tools/explosion-materiales/porcentajes-asignacion">
             <UButton
               icon="i-heroicons-percent-badge"
-              size="lg"
-              color="blue"
-              variant="outline"
-              class="hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-300"
+              class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
             >
               Aprovisionamiento
             </UButton>
