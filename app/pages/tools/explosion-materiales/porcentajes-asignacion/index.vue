@@ -24,6 +24,36 @@
 
         <!-- Botones de acciones -->
         <div class="flex gap-3">
+          <!-- Botón para eliminar todos -->
+          <button
+            type="button"
+            @click="confirmDeleteAll"
+            :disabled="isDeleting || total === 0"
+            class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            <UIcon 
+              :name="isDeleting ? 'i-heroicons-arrow-path' : 'i-heroicons-trash'" 
+              class="w-5 h-5"
+              :class="{ 'animate-spin': isDeleting }"
+            />
+            {{ isDeleting ? 'Eliminando...' : 'Borrar Todos' }}
+          </button>
+
+          <!-- Botón para descargar CSV -->
+          <button
+            type="button"
+            @click="downloadAllAsCSV"
+            :disabled="isDownloading"
+            class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          >
+            <UIcon 
+              :name="isDownloading ? 'i-heroicons-arrow-path' : 'i-heroicons-arrow-down-tray'" 
+              class="w-5 h-5"
+              :class="{ 'animate-spin': isDownloading }"
+            />
+            {{ isDownloading ? 'Descargando...' : 'Descargar CSV' }}
+          </button>
+
           <!-- Botón para carga masiva -->
           <NuxtLink to="/tools/explosion-materiales/porcentajes-asignacion/carga-masiva">
             <button
@@ -298,6 +328,8 @@ const searchQuery = ref("");
 const total = ref(0);
 const limit = ref(20);
 const offset = ref(0);
+const isDownloading = ref(false);
+const isDeleting = ref(false);
 
 // Estado para edición inline
 const editingRow = ref(null);
@@ -534,6 +566,200 @@ const saveEdit = async (porcentaje) => {
     });
   } finally {
     updating.value = false;
+  }
+};
+
+// Función para confirmar eliminación de todos los registros
+const confirmDeleteAll = () => {
+  // Primera confirmación
+  const firstConfirm = confirm(
+    `⚠️ ADVERTENCIA: ELIMINACIÓN MASIVA\n\n` +
+    `Estás a punto de eliminar TODOS los ${total.value} registros de aprovisionamiento.\n\n` +
+    `Esta acción NO se puede deshacer.\n\n` +
+    `¿Estás seguro de que deseas continuar?`
+  );
+  
+  if (!firstConfirm) {
+    return;
+  }
+  
+  // Segunda confirmación (más específica)
+  const secondConfirm = confirm(
+    `⚠️ ÚLTIMA CONFIRMACIÓN\n\n` +
+    `Por favor confirma que deseas eliminar ${total.value} registros.\n\n` +
+    `Recomendación: Antes de continuar, descarga un respaldo usando el botón "Descargar CSV".\n\n` +
+    `¿Confirmas la eliminación de TODOS los registros?`
+  );
+  
+  if (secondConfirm) {
+    deleteAllRecords();
+  }
+};
+
+// Función para eliminar todos los registros
+const deleteAllRecords = async () => {
+  if (isDeleting.value) return;
+  
+  try {
+    isDeleting.value = true;
+    
+    console.log('🗑️ Iniciando eliminación masiva...');
+    
+    // Llamar a la función de Amplify con operación deleteAll
+    const { data } = await client.queries.aprovisionamiento({
+      operation: 'deleteAll',
+    });
+
+    // Parsear la respuesta JSON que viene como string
+    let responseData;
+    try {
+      responseData = typeof data === 'string' ? JSON.parse(data) : data;
+    } catch (parseError) {
+      console.error('Error parsing response:', parseError);
+      throw new Error('Error al procesar la respuesta del servidor');
+    }
+
+    console.log('📥 Respuesta del servidor:', responseData);
+
+    if (responseData?.success) {
+      const deletedCount = responseData.data.deletedCount;
+      
+      console.log(`✅ Se eliminaron ${deletedCount} registros`);
+      
+      useToast().add({
+        title: '🗑️ Eliminación masiva exitosa',
+        description: `Se eliminaron ${deletedCount} registros correctamente`,
+        color: 'green',
+        timeout: 5000,
+      });
+
+      // Recargar los datos (debería mostrar tabla vacía)
+      await fetchPorcentajes();
+      
+    } else {
+      throw new Error(
+        responseData?.message || 'Error desconocido al eliminar los datos'
+      );
+    }
+    
+  } catch (error) {
+    console.error('❌ Error en eliminación masiva:', error);
+
+    useToast().add({
+      title: 'Error en eliminación masiva',
+      description: error.message || 'No se pudieron eliminar los datos',
+      color: 'red',
+      timeout: 5000,
+    });
+  } finally {
+    isDeleting.value = false;
+  }
+};
+
+// Función para descargar todos los datos como CSV
+const downloadAllAsCSV = async () => {
+  if (isDownloading.value) return;
+  
+  try {
+    isDownloading.value = true;
+    
+    console.log('📥 Descargando todos los aprovisionamientos...');
+    
+    // Obtener TODOS los registros sin límite
+    const { data } = await client.queries.aprovisionamiento({
+      operation: "list",
+      limit: 999999, // Sin límite para obtener todos
+      offset: 0,
+      search: undefined, // Sin filtros
+    });
+
+    // Parsear la respuesta JSON que viene como string
+    let responseData;
+    try {
+      responseData = typeof data === 'string' ? JSON.parse(data) : data;
+    } catch (parseError) {
+      console.error('Error parsing response:', parseError);
+      throw new Error('Error al procesar la respuesta del servidor');
+    }
+
+    if (responseData?.success && responseData.data.items) {
+      const allData = responseData.data.items;
+      
+      if (allData.length === 0) {
+        useToast().add({
+          title: "Sin datos",
+          description: "No hay aprovisionamientos para descargar",
+          color: "yellow",
+        });
+        return;
+      }
+      
+      console.log(`📊 Total de registros a descargar: ${allData.length}`);
+      
+      // Crear CSV con headers
+      const headers = ['centro_id_origen', 'material_id', 'centro_id_aprov', 'porcentaje'];
+      const csvRows = [headers.join(',')];
+      
+      // Agregar cada fila de datos
+      allData.forEach((item) => {
+        const row = [
+          item.centroIdOrigen,
+          item.materialId,
+          item.centroIdAprov,
+          formatPorcentaje(item.porcentaje)
+        ];
+        csvRows.push(row.join(','));
+      });
+      
+      // Unir todas las filas
+      const csvContent = csvRows.join('\n');
+      
+      // Crear Blob con BOM para UTF-8 (para que Excel lo abra correctamente)
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      
+      // Crear enlace de descarga
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      // Generar nombre de archivo con fecha
+      const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const fileName = `aprovisionamiento_${timestamp}.csv`;
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', fileName);
+      link.style.visibility = 'hidden';
+      
+      // Agregar al DOM, hacer clic y remover
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Limpiar URL
+      URL.revokeObjectURL(url);
+      
+      console.log(`✅ Archivo descargado: ${fileName}`);
+      
+      useToast().add({
+        title: "Descarga exitosa",
+        description: `Se descargaron ${allData.length} registros en ${fileName}`,
+        color: "green",
+        timeout: 4000,
+      });
+      
+    } else {
+      throw new Error('No se pudieron obtener los datos');
+    }
+    
+  } catch (error) {
+    console.error('❌ Error descargando CSV:', error);
+    
+    useToast().add({
+      title: "Error en descarga",
+      description: "No se pudo descargar el archivo CSV",
+      color: "red",
+    });
+  } finally {
+    isDownloading.value = false;
   }
 };
 
