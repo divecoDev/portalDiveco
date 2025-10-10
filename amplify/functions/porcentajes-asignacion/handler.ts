@@ -82,6 +82,9 @@ export const handler = async (event: any): Promise<AprovisionamientoResponse> =>
         case 'delete':
           result = await deleteAprovisionamiento(connection, body);
           break;
+        case 'deleteAll':
+          result = await deleteAllAprovisionamiento(connection, body);
+          break;
         case 'get':
           result = await getAprovisionamiento(connection, body);
           break;
@@ -549,6 +552,42 @@ async function deleteAprovisionamiento(connection: mysql.Connection, body: any):
   } catch (error) {
     console.error('❌ Error eliminando aprovisionamiento:', error);
     throw new Error(`Error eliminando aprovisionamiento: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+  }
+}
+
+// Eliminar TODOS los aprovisionamientos
+async function deleteAllAprovisionamiento(connection: mysql.Connection, body: any): Promise<AprovisionamientoResponse> {
+  console.log('🗑️ Eliminando TODOS los aprovisionamientos...');
+  
+  try {
+    // Primero obtener el conteo de registros que se van a eliminar
+    const countQuery = 'SELECT COUNT(*) as total FROM aprovisionamiento';
+    const [countRows] = await connection.execute(countQuery);
+    const totalRecords = (countRows as any[])[0].total;
+    
+    console.log(`⚠️ Se eliminarán ${totalRecords} registros`);
+    
+    // Eliminar todos los registros
+    const query = 'DELETE FROM aprovisionamiento';
+    
+    console.log('🔍 Query:', query);
+    
+    const [result] = await connection.execute(query);
+    const affectedRows = (result as any).affectedRows;
+    
+    console.log(`✅ Registros eliminados: ${affectedRows}`);
+    
+    return {
+      success: true,
+      data: {
+        deletedCount: affectedRows
+      },
+      message: `Se eliminaron ${affectedRows} registros de aprovisionamiento exitosamente`
+    };
+    
+  } catch (error) {
+    console.error('❌ Error eliminando todos los aprovisionamientos:', error);
+    throw new Error(`Error eliminando todos los aprovisionamientos: ${error instanceof Error ? error.message : 'Error desconocido'}`);
   }
 }
 

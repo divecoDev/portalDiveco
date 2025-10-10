@@ -74,7 +74,10 @@
                 </h4>
                 <ul class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
                   <li>
-                    • El archivo Excel debe tener las siguientes columnas:
+                    • <strong>Solo archivos Excel (.xlsx o .xls)</strong>
+                  </li>
+                  <li>
+                    • El archivo debe tener las siguientes columnas en la primera fila:
                   </li>
                   <li class="ml-4 font-mono text-xs bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded inline-block">
                     centro_id_origen, material_id, centro_id_aprov, porcentaje
@@ -98,8 +101,11 @@
               @click="downloadTemplate"
               class="hover:bg-blue-50 dark:hover:bg-blue-900/20"
             >
-              Descargar Plantilla Excel
+              Descargar Plantilla Excel (CSV)
             </UButton>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              Abre este CSV en Excel y guárdalo como .xlsx para cargarlo
+            </p>
           </div>
 
           <!-- Área de carga de archivo -->
@@ -143,7 +149,7 @@
                   </p>
                 </div>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  XLSX, XLS o CSV hasta 10MB
+                  Solo archivos Excel (XLSX, XLS) hasta 10MB
                 </p>
               </div>
             </div>
@@ -152,7 +158,7 @@
               id="file-upload-aprovisionamiento"
               type="file"
               class="sr-only"
-              accept=".xlsx,.xls,.csv"
+              accept=".xlsx,.xls"
               @change="handleFileChange"
             />
           </div>
@@ -400,6 +406,13 @@ const handleFileChange = async (e) => {
 
   try {
     console.log('📂 Procesando archivo:', file.name);
+
+    // Validar que sea un archivo Excel
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+    if (!['xlsx', 'xls'].includes(fileExtension)) {
+      validationError.value = 'El archivo debe ser un archivo Excel (.xlsx o .xls)';
+      return;
+    }
 
     // Procesar el archivo Excel
     const data = await readXlsxFile(file);
