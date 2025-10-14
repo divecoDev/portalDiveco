@@ -63,6 +63,9 @@ const planVentasVersionValid = ref(true);
 // Estado para validación de versión de existencias
 const existenciasVersionValid = ref(true);
 
+// Estado para validación de versión de cobertura
+const coberturaVersionValid = ref(true);
+
 // Computed para validaciones desde el store
 const isPlanVentasValid = computed(() => cargaInsumosStore.isPlanVentasValid);
 const isExistenciasValid = computed(() => cargaInsumosStore.isExistenciasValid);
@@ -74,6 +77,8 @@ const canGoNext = computed(() => {
       return cargaInsumosStore.canGoNext && planVentasVersionValid.value;
     case 1: // Existencias
       return cargaInsumosStore.canGoNext && existenciasVersionValid.value;
+    case 2: // Cobertura
+      return cargaInsumosStore.canGoNext && coberturaVersionValid.value;
     default:
       return cargaInsumosStore.canGoNext;
   }
@@ -126,6 +131,11 @@ const handleVersionValidationChanged = (isValid) => {
 // Método para manejar cambios en la validación de versión de existencias
 const handleExistenciasVersionValidationChanged = (isValid) => {
   existenciasVersionValid.value = isValid;
+};
+
+// Método para manejar cambios en la validación de versión de cobertura
+const handleCoberturaVersionValidationChanged = (isValid) => {
+  coberturaVersionValid.value = isValid;
 };
 
 // Método para manejar metadatos de archivo actualizados
@@ -368,7 +378,9 @@ const startTour = () => {
         <CoberturaStep
           :key="`cobertura-${cargaInsumosStore.cobertura.data.length}-${cargaInsumosStore.cobertura.loadedAt?.getTime()}`"
           v-model="coberturaData"
+          :boom-version="explosion?.version"
           :document-id="explosion?.id"
+          @version-validation-changed="handleCoberturaVersionValidationChanged"
           @file-metadata-updated="handleFileMetadataUpdated"
         />
       </template>

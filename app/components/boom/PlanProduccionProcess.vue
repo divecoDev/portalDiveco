@@ -129,31 +129,32 @@
               class="w-3 h-3 border-2 border-cyan-600 border-t-transparent rounded-full animate-spin"
             ></div>
           </div>
-          <!-- Botón para ejecutar proceso individual -->
-          <UButton
-            v-if="proceso.status === 'pendiente' || proceso.status === 'error'"
-            icon="i-heroicons-play"
-            size="xs"
-            color="cyan"
-            variant="ghost"
-            class="hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
-            :disabled="proceso.status === 'ejecutando' || isCompleted || !puedeEjecutarProceso(proceso.id) || cargandoEstadosIniciales"
-            @click="runSingleProcess(proceso.id)"
-          >
-            Ejecutar
-          </UButton>
-
-          <!-- Indicador de dependencia no cumplida -->
-          <div
-            v-if="proceso.status === 'pendiente' && !puedeEjecutarProceso(proceso.id)"
-            class="text-xs text-orange-600 dark:text-orange-400"
-          >
-            Esperando proceso anterior
+          <!-- Botón para ejecutar proceso individual (pendiente o error) -->
+          <div v-if="proceso.status === 'pendiente' || proceso.status === 'error'">
+            <UButton
+              v-if="puedeEjecutarProceso(proceso.id)"
+              icon="i-heroicons-play"
+              size="xs"
+              color="cyan"
+              variant="ghost"
+              class="hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
+              :disabled="proceso.status === 'ejecutando' || isCompleted || cargandoEstadosIniciales"
+              @click="runSingleProcess(proceso.id)"
+            >
+              Ejecutar
+            </UButton>
+            <!-- Indicador de dependencia no cumplida -->
+            <div
+              v-else
+              class="text-xs text-orange-600 dark:text-orange-400"
+            >
+              Esperando proceso anterior
+            </div>
           </div>
 
           <!-- Botón para re-ejecutar desde completado -->
           <UButton
-            v-else-if="proceso.status === 'completado'"
+            v-if="proceso.status === 'completado'"
             icon="i-heroicons-arrow-path"
             size="xs"
             color="green"
@@ -225,18 +226,21 @@
             Ejecutar Nuevamente
           </UButton>
 
-          <!-- Botón para avanzar al siguiente paso -->
+          <!-- Botón para avanzar al siguiente paso - SOLO MANUAL -->
           <UButton
             icon="i-heroicons-arrow-right"
             size="sm"
             color="cyan"
             class="hover:bg-cyan-50 dark:hover:bg-cyan-900/20 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold"
             :disabled="cargandoEstadosIniciales"
-            @click="avanzarSiguientePaso"
+            @click="avanzarSiguientePasoManual"
           >
             Siguiente Paso
           </UButton>
         </div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+          ✅ Todos los procesos completados. Haz clic en "Siguiente Paso" para continuar.
+        </p>
       </div>
     </div>
   </div>
@@ -271,6 +275,29 @@ const props = defineProps({
 
 // Emits
 const emit = defineEmits(['plan-completed', 'loading-state-changed']);
+
+/**
+ * FLUJO DE EJECUCIÓN Y RE-EJECUCIÓN:
+ * 
+ * 1. EJECUCIÓN AUTOMÁTICA (iniciarPlanProduccion):
+ *    - Ejecuta los 3 procesos en secuencia
+ *    - Al completar el ÚLTIMO proceso (calcular-plan-demanda), emite 'plan-completed' automáticamente
+ *    - Solo avanza al siguiente paso si se completa la secuencia completa
+ * 
+ * 2. EJECUCIÓN INDIVIDUAL (runSingleProcess):
+ *    - Permite ejecutar un solo proceso respetando dependencias
+ *    - NO emite 'plan-completed' automáticamente
+ *    - El usuario debe hacer clic manual en "Siguiente Paso" si todos están completados
+ * 
+ * 3. RE-EJECUCIÓN (reEjecutarDesdeCompletado):
+ *    - Al re-ejecutar un proceso, RESETEA todos los procesos posteriores a 'pendiente'
+ *    - Obliga a re-ejecutar la secuencia desde ese punto
+ *    - NO avanza automáticamente, requiere completar toda la cadena nuevamente
+ * 
+ * 4. AVANCE AL SIGUIENTE PASO:
+ *    - AUTOMÁTICO: Solo cuando se completa el último proceso en una ejecución secuencial
+ *    - MANUAL: Botón "Siguiente Paso" visible cuando todos están completados
+ */
 
 // Configuración centralizada de procesos
 const procesosConfig = {
@@ -355,10 +382,9 @@ const iniciarPlanProduccion = async () => {
       }
     }
 
-    // Emitir evento de completado solo si es una ejecución nueva
-    if (esEjecucionNueva.value) {
-      emit('plan-completed');
-    }
+    // El evento plan-completed se emitirá automáticamente desde actualizarEstadoProceso
+    // cuando el último proceso (calcular-plan-demanda) se complete exitosamente
+    console.log('✅ Ejecución global de procesos finalizada');
   } finally {
     // Siempre resetear el estado de ejecución global al finalizar
     ejecucionGlobalEnProgreso.value = false;
@@ -388,7 +414,15 @@ const runSingleProcess = async (procesoId) => {
 
   // La ejecución individual no afecta el estado global
   await ejecutarProceso(procesoId);
-  checkAndEmitCompleted();
+  
+  // NO emitir plan-completed aquí, solo verificar si todos están completados
+  // pero sin emitir el evento hasta que se ejecuten todos en secuencia
+  const allCompleted = procesosProduccion.value.every(p => p.status === 'completado');
+  if (allCompleted) {
+    // Solo marcar como iniciado, no emitir evento
+    planProduccionIniciado.value = true;
+    ejecucionGlobalEnProgreso.value = false;
+  }
 };
 
 const ejecutarProceso = async (procesoId) => {
@@ -537,19 +571,8 @@ const calcularDuracion = (inicio, fin) => {
   return `${segundos}s`;
 };
 
-const checkAndEmitCompleted = () => {
-  const allCompleted = procesosProduccion.value.every(p => p.status === 'completado');
-  if (allCompleted) {
-    // Resetear estados cuando todos los procesos estén completados
-    planProduccionIniciado.value = true; // Mantener como iniciado
-    ejecucionGlobalEnProgreso.value = false; // Ya no está en progreso global
-
-    // Solo emitir si es una ejecución nueva, no al cargar estado inicial
-    if (esEjecucionNueva.value) {
-      emit('plan-completed');
-    }
-  }
-};
+// Función removida - la lógica de emisión ahora está en actualizarEstadoProceso
+// Solo se emite plan-completed cuando el ÚLTIMO proceso (calcular-plan-demanda) se completa
 
 // Computed para verificar si todos los procesos están completados
 const todosLosProcesosCompletados = computed(() => {
@@ -723,9 +746,19 @@ const actualizarEstadoProceso = async (pipelineInfo, procesoId) => {
         timeout: 3000
       });
 
-      // Detener polling y verificar si todos los procesos están completados
+      // Detener polling
       detenerPolling(procesoId);
-      checkAndEmitCompleted();
+      
+      // Solo emitir plan-completed si es el ÚLTIMO proceso Y todos están completados
+      const allCompleted = procesosProduccion.value.every(p => p.status === 'completado');
+      const esUltimoProceso = procesoId === 'calcular-plan-demanda';
+      
+      if (allCompleted && esUltimoProceso && esEjecucionNueva.value) {
+        console.log('✅ Todos los procesos completados en secuencia - emitiendo plan-completed');
+        emit('plan-completed');
+      } else if (allCompleted) {
+        console.log('✅ Todos los procesos completados, pero esperando ejecución secuencial completa');
+      }
       break;
 
     case 'Failed':
@@ -827,28 +860,51 @@ const reEjecutarDesdeCompletado = async (procesoId) => {
     // Marcar como ejecución nueva para re-ejecuciones
     esEjecucionNueva.value = true;
 
-    // Limpiar runId anterior y resetear estado
-    await client.models.Boom.update({
-      id: props.explosionId,
-      [config.boomFields.runId]: null,
-      [config.boomFields.status]: 'Pendiente'
-    });
+    // Obtener índice del proceso actual
+    const procesoIndex = procesosProduccion.value.findIndex(p => p.id === procesoId);
 
-    // Resetear el proceso local
-    const proceso = procesosProduccion.value.find(p => p.id === procesoId);
-    if (proceso) {
-      proceso.executionId = null;
-      proceso.status = 'pendiente';
-      proceso.finTiempo = null;
-      proceso.duracion = null;
+    // Resetear TODOS los procesos posteriores a pendiente
+    for (let i = procesoIndex; i < procesosProduccion.value.length; i++) {
+      const procesoAReiniciar = procesosProduccion.value[i];
+      const configAReiniciar = procesosConfig[procesoAReiniciar.id];
+
+      // Limpiar en la base de datos
+      await client.models.Boom.update({
+        id: props.explosionId,
+        [configAReiniciar.boomFields.runId]: null,
+        [configAReiniciar.boomFields.status]: 'Pendiente'
+      });
+
+      // Limpiar estado local
+      procesoAReiniciar.executionId = null;
+      procesoAReiniciar.status = 'pendiente';
+      procesoAReiniciar.finTiempo = null;
+      procesoAReiniciar.duracion = null;
+
+      console.log(`🔄 Reseteando proceso posterior: ${procesoAReiniciar.nombre}`);
     }
 
-    // Ejecutar nuevo pipeline
+    // Ahora ejecutar el proceso actual
+    const proceso = procesosProduccion.value.find(p => p.id === procesoId);
     await ejecutarPipeline(proceso, config);
+
+    // Mostrar notificación informativa
+    useToast().add({
+      title: "Re-ejecutando proceso",
+      description: `${proceso.nombre} se re-ejecutará. Los procesos posteriores se han reseteado.`,
+      color: "cyan",
+      timeout: 4000
+    });
 
     console.log(`🔄 Re-ejecutando pipeline desde estado completado para ${config.nombre}`);
   } catch (error) {
     console.error('❌ Error re-ejecutando pipeline:', error);
+    useToast().add({
+      title: "Error al re-ejecutar",
+      description: "No se pudo re-ejecutar el proceso",
+      color: "red",
+      timeout: 3000
+    });
   }
 };
 
@@ -872,8 +928,8 @@ const resetearPlanProduccion = () => {
   console.log('🔄 Plan de producción reseteado completamente');
 };
 
-// Función para avanzar al siguiente paso
-const avanzarSiguientePaso = () => {
+// Función para avanzar al siguiente paso MANUALMENTE (clic del usuario)
+const avanzarSiguientePasoManual = () => {
   // Emitir evento para que el componente padre maneje la navegación
   emit('plan-completed');
   

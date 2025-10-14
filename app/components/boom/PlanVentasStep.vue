@@ -175,8 +175,103 @@ const versionValidation = computed(() => {
   return { isValid: true, message: "" };
 });
 
-// Watch para emitir cambios en la validación de versión
-watch(versionValidation, (newValidation) => {
+// Validación de formato SPMON (AAAAMM)
+const spmonValidation = computed(() => {
+  if (!hasData.value) {
+    return { isValid: true, message: "" };
+  }
+
+  // Encontrar el índice de la columna SPMON
+  const spmonIndex = headers.value.indexOf("SPMON");
+  
+  if (spmonIndex === -1) {
+    return { isValid: false, message: "No se encontró la columna SPMON en los datos" };
+  }
+
+  // Regex para validar formato AAAAMM (6 dígitos: 4 de año + 2 de mes)
+  const spmonRegex = /^\d{6}$/;
+  
+  // Verificar que todos los registros tengan el formato correcto
+  const invalidRecords = [];
+  let totalRecords = 0;
+  let validRecords = 0;
+  
+  planVentas.value.forEach((row, index) => {
+    const spmonValue = row[spmonIndex];
+    totalRecords++;
+    
+    // Convertir a string para validación
+    const spmonStr = String(spmonValue);
+    
+    // Validar formato básico (6 dígitos)
+    if (!spmonRegex.test(spmonStr)) {
+      invalidRecords.push({ 
+        row: index + 1, 
+        value: spmonValue,
+        reason: 'Formato incorrecto (debe ser 6 dígitos: AAAAMM)'
+      });
+      return;
+    }
+    
+    // Extraer año y mes
+    const year = parseInt(spmonStr.substring(0, 4), 10);
+    const month = parseInt(spmonStr.substring(4, 6), 10);
+    
+    // Validar que el año sea razonable (entre 2000 y 2100)
+    if (year < 2000 || year > 2100) {
+      invalidRecords.push({ 
+        row: index + 1, 
+        value: spmonValue,
+        reason: `Año inválido (${year})`
+      });
+      return;
+    }
+    
+    // Validar que el mes esté entre 01 y 12
+    if (month < 1 || month > 12) {
+      invalidRecords.push({ 
+        row: index + 1, 
+        value: spmonValue,
+        reason: `Mes inválido (${month})`
+      });
+      return;
+    }
+    
+    validRecords++;
+  });
+  
+  // Log resumen solo si hay errores
+  if (invalidRecords.length > 0) {
+    console.log(`📊 RESUMEN VALIDACIÓN SPMON (CON ERRORES):`);
+    console.log(`   Total registros: ${totalRecords}`);
+    console.log(`   Registros válidos: ${validRecords}`);
+    console.log(`   Registros con error: ${invalidRecords.length}`);
+    console.log(`   Primeros 10 errores:`, invalidRecords.slice(0, 10));
+  }
+
+  if (invalidRecords.length > 0) {
+    const message = `El campo SPMON contiene valores con formato incorrecto. Debe seguir el formato AAAAMM (ej: 202509 para Septiembre 2025). ${invalidRecords.length} de ${totalRecords} registros tienen errores.`;
+    return { isValid: false, message, invalidRecords };
+  }
+
+  return { isValid: true, message: "", invalidRecords: [] };
+});
+
+// Validación combinada
+const allValidations = computed(() => {
+  const validations = [versionValidation.value, spmonValidation.value];
+  const isValid = validations.every(v => v.isValid);
+  const messages = validations.filter(v => !v.isValid).map(v => v.message);
+  
+  return {
+    isValid,
+    messages,
+    hasErrors: messages.length > 0
+  };
+});
+
+// Watch para emitir cambios en todas las validaciones
+watch(allValidations, (newValidation) => {
   emit("version-validation-changed", newValidation.isValid);
 }, { immediate: true });
 
@@ -255,23 +350,64 @@ watch(
       </div>
     </div>
 
-    <!-- Mensaje de error de validación de versión -->
+    <!-- Mensajes de error de validación -->
     <div
-      v-if="!versionValidation.isValid"
-      class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4"
+      v-if="allValidations.hasErrors"
+      class="space-y-3"
     >
-      <div class="flex items-start">
-        <UIcon
-          name="i-heroicons-exclamation-triangle"
-          class="w-5 h-5 text-red-600 dark:text-red-400 mr-3 mt-0.5 flex-shrink-0"
-        />
-        <div>
-          <h4 class="text-sm font-semibold text-red-800 dark:text-red-200 mb-1">
-            Error de Validación de Versión
-          </h4>
-          <p class="text-sm text-red-700 dark:text-red-300">
-            {{ versionValidation.message }}
-          </p>
+      <!-- Error de validación de versión -->
+      <div
+        v-if="!versionValidation.isValid"
+        class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4"
+      >
+        <div class="flex items-start">
+          <UIcon
+            name="i-heroicons-exclamation-triangle"
+            class="w-5 h-5 text-red-600 dark:text-red-400 mr-3 mt-0.5 flex-shrink-0"
+          />
+          <div>
+            <h4 class="text-sm font-semibold text-red-800 dark:text-red-200 mb-1">
+              Error de Validación de Versión
+            </h4>
+            <p class="text-sm text-red-700 dark:text-red-300">
+              {{ versionValidation.message }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error de validación de formato SPMON -->
+      <div
+        v-if="!spmonValidation.isValid"
+        class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4"
+      >
+        <div class="flex items-start">
+          <UIcon
+            name="i-heroicons-exclamation-triangle"
+            class="w-5 h-5 text-red-600 dark:text-red-400 mr-3 mt-0.5 flex-shrink-0"
+          />
+          <div>
+            <h4 class="text-sm font-semibold text-red-800 dark:text-red-200 mb-1">
+              Error de Validación de Formato SPMON
+            </h4>
+            <p class="text-sm text-red-700 dark:text-red-300">
+              {{ spmonValidation.message }}
+            </p>
+            <!-- Mostrar primeros errores como ejemplo -->
+            <div v-if="spmonValidation.invalidRecords && spmonValidation.invalidRecords.length > 0" class="mt-2">
+              <p class="text-xs font-semibold text-red-800 dark:text-red-200 mb-1">
+                Ejemplos de registros con error:
+              </p>
+              <ul class="text-xs text-red-600 dark:text-red-400 space-y-0.5 list-disc list-inside">
+                <li v-for="(record, idx) in spmonValidation.invalidRecords.slice(0, 5)" :key="idx">
+                  Fila {{ record.row }}: "{{ record.value }}" - {{ record.reason }}
+                </li>
+                <li v-if="spmonValidation.invalidRecords.length > 5" class="font-semibold">
+                  ... y {{ spmonValidation.invalidRecords.length - 5 }} errores más
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -280,7 +416,7 @@ watch(
 
     <div class="space-y-6">
       <div
-        v-if="hasData && !isLoading && versionValidation.isValid"
+        v-if="hasData && allValidations.isValid"
         class="bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
       >
         <div class="bg-gradient-to-r from-cyan-500 to-cyan-600 px-4 py-3">
