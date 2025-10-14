@@ -208,7 +208,7 @@ const props = defineProps({
 });
 
 // Emits
-const emit = defineEmits(['explosion-completed', 'loading-state-changed']);
+const emit = defineEmits(['explosion-completed', 'explosion-restarted', 'loading-state-changed']);
 
 // Cliente de Amplify
 const client = generateClient();
@@ -293,6 +293,9 @@ const reexecuteExplosion = async () => {
   ) {
     try {
       reexecutingExplosion.value = true;
+
+      // Emitir evento para ocultar la sección de documentos de la ejecución anterior
+      emit('explosion-restarted');
 
       // Limpiar completamente el estado de polling
       limpiarEstadoPolling();

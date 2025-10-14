@@ -197,6 +197,7 @@
             :pversion="explosion?.version"
             :is-completed="completedSteps['explocionar']"
             @explosion-completed="handleExplosionCompleted"
+            @explosion-restarted="handleExplosionRestarted"
             @loading-state-changed="handleExplosionLoadingStateChanged"
           />
           </div>
@@ -690,6 +691,14 @@ const handleExplosionCompleted = async () => {
   });
 
   console.log('✅ Proceso de explosión completado');
+};
+
+// Método para manejar cuando el proceso de explosión se reinicia
+const handleExplosionRestarted = () => {
+  // Marcar como NO completado para ocultar la sección de documentos de la ejecución anterior
+  completedSteps.value['explocionar'] = false;
+  
+  console.log('🔄 Proceso de explosión reiniciado, ocultando resultados anteriores');
 };
 
 // Método para manejar el cambio de estado de carga del proceso de explosión
