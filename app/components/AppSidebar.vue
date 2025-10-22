@@ -532,9 +532,9 @@ const navigationSections = computed(() => {
     });
   }
 
-  // Agregar "Explosión de Materiales" solo si pertenece al grupo EXPLOSION
+  // Agregar "Explosión de Materiales" y "SUIC" solo si pertenece al grupo EXPLOSION
   if (hasGroup("EXPLOSION")) {
-    // Buscar si ya existe la sección Herramientas para añadir ahí el item
+    // Buscar si ya existe la sección Herramientas para añadir ahí los items
     const toolsSection = sections.find((s) => s.title === "Herramientas");
     const explosionItem = {
       name: "Explosión de Materiales",
@@ -543,13 +543,21 @@ const navigationSections = computed(() => {
       badge: "Nuevo",
       badgeColor: "blue",
     };
+    const suicItem = {
+      name: "SUIC",
+      href: "/tools/suic",
+      icon: "i-heroicons-chart-bar",
+      badge: "Nuevo",
+      badgeColor: "green",
+    };
 
     if (toolsSection) {
       toolsSection.items.push(explosionItem);
+      toolsSection.items.push(suicItem);
     } else {
       sections.push({
         title: "Herramientas",
-        items: [explosionItem],
+        items: [explosionItem, suicItem],
       });
     }
   }

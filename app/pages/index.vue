@@ -172,6 +172,18 @@ const mainTools = computed(() => {
       lastUpdate: "Hoy",
       status: "active",
     });
+
+    tools.push({
+      id: 3,
+      name: "SUIC",
+      category: "Procesos",
+      description: "Gestión de cargas SUIC para el sistema",
+      icon: "i-heroicons-chart-bar",
+      iconColor: "text-cyan-600",
+      route: "/tools/suic",
+      lastUpdate: "Hoy",
+      status: "active",
+    });
   }
 
   return tools;
@@ -186,6 +198,7 @@ const getModuleIcon = (toolName) => {
   const iconMap = {
     "Gestión de Contraseñas SAP": "i-heroicons-key",
     "Explosión de Materiales": "i-heroicons-squares-2x2",
+    "SUIC": "i-heroicons-chart-bar",
     "Gestión de Inventario": "i-heroicons-cube",
     "Reportes Financieros": "i-heroicons-chart-pie",
     "Control de Calidad": "i-heroicons-shield-check",

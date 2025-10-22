@@ -118,6 +118,30 @@ const schema = a.schema({
     })
     .authorization((allow) => [allow.publicApiKey()]),
 
+
+
+  Cobertura: a
+    .model({
+      boomId: a.string(),
+      cobertura: a.json(),
+    })
+    .authorization((allow) => [allow.publicApiKey()]),
+
+   /*
+    Modelo para  la carga de plantillas SUIC
+    */
+
+    SUIC: a
+    .model({
+      descripcion: a.string(),
+      filesPath: a.json(),
+      createdBy: a.string(),
+      type: a.string(), //
+    })
+    .authorization((allow) => [allow.publicApiKey()]),
+
+
+
   /**
    * Microsoft Graph Module
    */
