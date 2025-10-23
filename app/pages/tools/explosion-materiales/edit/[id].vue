@@ -138,9 +138,17 @@
               <div id="version-field" class="relative">
                 <div
                   class="bg-gradient-to-br from-cyan-50 to-cyan-100/50 dark:from-cyan-900/20 dark:to-cyan-800/20 p-4 rounded-md border border-cyan-200 dark:border-cyan-700/50 shadow-sm"
+                  :class="{
+                    'border-red-300 dark:border-red-600': errors.version,
+                    'border-cyan-200 dark:border-cyan-700/50': !errors.version
+                  }"
                 >
                   <label
-                    class="text-sm font-semibold text-cyan-700 dark:text-cyan-300 mb-2 flex items-center"
+                    class="text-sm font-semibold mb-2 flex items-center"
+                    :class="{
+                      'text-red-700 dark:text-red-300': errors.version,
+                      'text-cyan-700 dark:text-cyan-300': !errors.version
+                    }"
                   >
                     <UIcon name="i-heroicons-hashtag" class="w-4 h-4 mr-1.5" />
                     Número de Versión *
@@ -148,11 +156,17 @@
                   <UInput
                     v-model="formData.version"
                     type="number"
-                    placeholder="275"
+                    placeholder="Versión"
                     size="lg"
                     :error="errors.version"
+                    :loading="checkingVersion"
                     class="w-full text-center text-lg font-bold"
                   />
+                  <!-- Mensaje de error personalizado -->
+                  <div v-if="errors.version" class="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center">
+                    <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 mr-1" />
+                    {{ errors.version }}
+                  </div>
                   <p
                     class="mt-1.5 text-xs text-cyan-600 dark:text-cyan-400 font-medium"
                   >
@@ -185,25 +199,6 @@
               </div>
             </div>
 
-            <!-- Estado -->
-            <div id="status-field" class="relative">
-              <div class="p-4">
-                <label
-                  class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center"
-                >
-                  <UIcon name="i-heroicons-flag" class="w-4 h-4 mr-1.5" />
-                  Estado
-                </label>
-                <USelect
-                  v-model="formData.status"
-                  :options="statusOptions"
-                  placeholder="Seleccionar estado"
-                  size="lg"
-                  class="w-full"
-                />
-              </div>
-            </div>
-
             <!-- Botones de acción -->
             <div
               id="action-buttons"
@@ -224,19 +219,19 @@
 
               <button
                 type="submit"
-                :disabled="!isFormValid || updating"
+                :disabled="!isFormValid || updating || checkingVersion"
                 class="rounded-md inline-flex items-center disabled:cursor-not-allowed disabled:opacity-75 px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 disabled:hover:from-cyan-500 disabled:hover:to-cyan-600 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:hover:scale-100 disabled:hover:shadow-lg border-0 cursor-pointer"
               >
                 <UIcon
-                  v-if="!updating"
+                  v-if="!updating && !checkingVersion"
                   name="i-heroicons-check"
                   class="w-5 h-5"
                 />
                 <div
-                  v-if="updating"
+                  v-if="updating || checkingVersion"
                   class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"
                 ></div>
-                {{ updating ? "Guardando..." : "Guardar Cambios" }}
+                {{ updating ? "Guardando..." : checkingVersion ? "Verificando..." : "Guardar Cambios" }}
               </button>
             </div>
           </form>
@@ -284,13 +279,13 @@ setBreadcrumbs([
 // Estado reactivo
 const loading = ref(true);
 const updating = ref(false);
+const checkingVersion = ref(false);
 const explosion = ref(null);
 
 // Datos del formulario
 const formData = ref({
   descripcion: "",
   version: null,
-  status: "EN_PROCESO",
 });
 
 // Errores de validación
@@ -299,34 +294,48 @@ const errors = ref({
   version: "",
 });
 
-// Opciones de estado mejoradas
-const statusOptions = [
-  {
-    label: "🟢 Activo",
-    value: "ACTIVO",
-    icon: "i-heroicons-check-circle",
-  },
-  {
-    label: "🔴 Inactivo",
-    value: "INACTIVO",
-    icon: "i-heroicons-x-circle",
-  },
-  {
-    label: "🟡 En Proceso",
-    value: "EN_PROCESO",
-    icon: "i-heroicons-clock",
-  },
-  {
-    label: "🔵 Completado",
-    value: "COMPLETADO",
-    icon: "i-heroicons-check-badge",
-  },
-];
-
 // Computed para validar formulario
 const isFormValid = computed(() => {
-  return formData.value.descripcion.trim() && formData.value.version;
+  const hasRequiredFields = formData.value.descripcion.trim() && formData.value.version;
+  const hasNoErrors = !errors.value.descripcion && !errors.value.version;
+  const isValid = hasRequiredFields && hasNoErrors;
+  
+  if (errors.value.version) {
+    console.log('🚫 Formulario inválido por error de versión:', errors.value.version);
+  }
+  
+  return isValid;
 });
+
+// Validar que la versión no exista (excluyendo la versión actual)
+const checkVersionExists = async (version) => {
+  try {
+    console.log('🔍 Verificando versión:', version);
+    
+    // Obtener todos los registros y filtrar por versión
+    const { data } = await client.models.Boom.list();
+    
+    console.log('📊 Respuesta completa:', data);
+    
+    // La respuesta puede venir como array directo o como objeto con items
+    const items = Array.isArray(data) ? data : (data?.items || []);
+    console.log('📋 Total de registros:', items.length);
+    
+    // Filtrar por versión, excluyendo el registro actual que estamos editando
+    const foundByVersion = items.filter(item => 
+      item.version === version && item.id !== explosionId
+    );
+    console.log('🎯 Registros con versión', version, '(excluyendo actual):', foundByVersion.length);
+    
+    const exists = foundByVersion.length > 0;
+    console.log('✅ Versión existe:', exists);
+    
+    return exists;
+  } catch (error) {
+    console.error('Error verificando versión:', error);
+    return false;
+  }
+};
 
 // Métodos
 const fetchExplosion = async () => {
@@ -340,7 +349,6 @@ const fetchExplosion = async () => {
       formData.value = {
         descripcion: data.descripcion || "",
         version: parseInt(data.version) || null,
-        status: data.status || "EN_PROCESO",
       };
     }
   } catch (error) {
@@ -351,7 +359,7 @@ const fetchExplosion = async () => {
   }
 };
 
-const validateForm = () => {
+const validateForm = async () => {
   errors.value = {
     descripcion: "",
     version: "",
@@ -370,13 +378,23 @@ const validateForm = () => {
     errors.value.version =
       "El número de versión es requerido y debe ser mayor a 0";
     isValid = false;
+  } else {
+    // Verificar que la versión no exista en otros registros
+    checkingVersion.value = true;
+    const versionExists = await checkVersionExists(String(formData.value.version));
+    checkingVersion.value = false;
+    
+    if (versionExists) {
+      errors.value.version = "Esta versión ya existe en otro registro. Por favor, ingresa un número diferente";
+      isValid = false;
+    }
   }
 
   return isValid;
 };
 
 const updateExplosion = async () => {
-  if (!validateForm()) {
+  if (!(await validateForm())) {
     return;
   }
 
@@ -387,7 +405,6 @@ const updateExplosion = async () => {
       id: explosionId,
       descripcion: formData.value.descripcion.trim(),
       version: String(formData.value.version),
-      status: formData.value.status,
     };
 
     await client.models.Boom.update(updatedData);
@@ -403,10 +420,18 @@ const updateExplosion = async () => {
     await navigateTo(`/tools/explosion-materiales/view/${explosionId}`);
   } catch (error) {
     console.error("Error al actualizar explosión:", error);
+    
+    let errorMessage = "No se pudo actualizar la explosión de materiales. Intenta nuevamente.";
+    
+    // Verificar si es un error de versión duplicada
+    if (error?.message?.includes('version') || error?.message?.includes('duplicate')) {
+      errorMessage = "Esta versión ya existe en el sistema. Por favor, usa un número diferente.";
+      errors.value.version = "Versión duplicada";
+    }
+    
     useToast().add({
       title: "Error al actualizar explosión",
-      description:
-        "No se pudo actualizar la explosión de materiales. Intenta nuevamente.",
+      description: errorMessage,
       color: "red",
     });
   } finally {
@@ -440,6 +465,39 @@ watch(
   () => {
     if (errors.value.version) {
       errors.value.version = "";
+    }
+  },
+);
+
+// Validación en tiempo real de versión duplicada (con debounce)
+let versionCheckTimeout;
+watch(
+  () => formData.value.version,
+  async (newVersion) => {
+    console.log('🔄 Validando versión:', newVersion);
+    
+    // Limpiar timeout anterior
+    clearTimeout(versionCheckTimeout);
+    
+    // Limpiar error anterior cuando cambia la versión
+    if (errors.value.version) {
+      errors.value.version = "";
+    }
+    
+    // Solo validar si hay un valor válido
+    if (newVersion && newVersion > 0) {
+      versionCheckTimeout = setTimeout(async () => {
+        checkingVersion.value = true;
+        const exists = await checkVersionExists(String(newVersion));
+        checkingVersion.value = false;
+        
+        if (exists) {
+          errors.value.version = "Esta versión ya existe en otro registro";
+          console.log('❌ Error establecido:', errors.value.version);
+        } else {
+          console.log('✅ Versión única');
+        }
+      }, 500); // Debounce de 500ms
     }
   },
 );
@@ -488,15 +546,6 @@ const initializeTour = () => {
           title: '📝 Descripción',
           description: 'Aquí puedes agregar una descripción descriptiva de la explosión. Por ejemplo, puedes usar el formato de plan como "08-04 2025".',
           side: 'left',
-          align: 'start'
-        }
-      },
-      {
-        element: '#status-field',
-        popover: {
-          title: '🏷️ Estado',
-          description: 'Selecciona el estado actual de la explosión: Activo, Inactivo, En Proceso o Completado. Esto ayuda a gestionar el flujo de trabajo.',
-          side: 'top',
           align: 'start'
         }
       },
