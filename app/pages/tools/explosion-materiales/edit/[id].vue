@@ -312,18 +312,24 @@ const checkVersionExists = async (version) => {
   try {
     console.log('🔍 Verificando versión:', version);
     
-    // Obtener todos los registros y filtrar por versión
-    const { data } = await client.models.Boom.list();
+    // Intentar usar el filtro con GSI (más eficiente)
+    const { data } = await client.models.Boom.list({
+      filter: {
+        version: {
+          eq: version
+        }
+      }
+    });
     
-    console.log('📊 Respuesta completa:', data);
+    console.log('📊 Respuesta con filtro:', data);
     
     // La respuesta puede venir como array directo o como objeto con items
     const items = Array.isArray(data) ? data : (data?.items || []);
-    console.log('📋 Total de registros:', items.length);
+    console.log('📋 Registros encontrados con filtro:', items.length);
     
     // Filtrar por versión, excluyendo el registro actual que estamos editando
     const foundByVersion = items.filter(item => 
-      item.version === version && item.id !== explosionId
+      item.id !== explosionId
     );
     console.log('🎯 Registros con versión', version, '(excluyendo actual):', foundByVersion.length);
     
