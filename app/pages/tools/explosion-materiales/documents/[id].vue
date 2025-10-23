@@ -104,9 +104,9 @@
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Plan de Ventas -->
-            <div class="bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-900/20 dark:to-red-800/20 p-6 rounded-lg border border-red-200 dark:border-red-700/50 shadow-sm hover:shadow-md transition-all duration-300">
+            <div class="bg-gradient-to-br from-cyan-50 to-cyan-100/50 dark:from-cyan-900/20 dark:to-cyan-800/20 p-6 rounded-lg border border-cyan-200 dark:border-cyan-700/50 shadow-sm hover:shadow-md transition-all duration-300">
               <div class="flex items-center mb-4">
-                <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg mr-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg mr-4">
                   <UIcon name="i-heroicons-chart-bar" class="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -136,7 +136,7 @@
               <div class="mt-4">
                 <button
                   @click="downloadFile('PlanVentas.csv')"
-                  class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-2 px-4 rounded-md transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex items-center justify-center space-x-2"
+                  class="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold py-2 px-4 rounded-md transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex items-center justify-center space-x-2"
                 >
                   <UIcon name="i-heroicons-arrow-down-tray" class="w-4 h-4" />
                   <span>Descargar Plan de Ventas</span>
@@ -145,9 +145,9 @@
             </div>
 
             <!-- Plan de Producción -->
-            <div class="bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-900/20 dark:to-orange-800/20 p-6 rounded-lg border border-orange-200 dark:border-orange-700/50 shadow-sm hover:shadow-md transition-all duration-300">
+            <div class="bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-900/20 dark:to-emerald-800/20 p-6 rounded-lg border border-emerald-200 dark:border-emerald-700/50 shadow-sm hover:shadow-md transition-all duration-300">
               <div class="flex items-center mb-4">
-                <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg mr-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg mr-4">
                   <UIcon name="i-heroicons-cog-6-tooth" class="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -177,7 +177,7 @@
               <div class="mt-4">
                 <button
                   @click="downloadFile('PlanProduccion.csv')"
-                  class="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-2 px-4 rounded-md transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex items-center justify-center space-x-2"
+                  class="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold py-2 px-4 rounded-md transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex items-center justify-center space-x-2"
                 >
                   <UIcon name="i-heroicons-arrow-down-tray" class="w-4 h-4" />
                   <span>Descargar Plan de Producción</span>
