@@ -39,7 +39,50 @@
               {{ loadedCounts[pais.code].toLocaleString() }}
             </p>
           </div>
+
+          <!-- Estado de guardado -->
+          <div v-if="saveStates[pais.code]" class="mb-2">
+            <!-- Guardando con barra de progreso -->
+            <div v-if="saveStates[pais.code].status === 'saving'" class="space-y-1">
+              <div class="flex items-center justify-center gap-1 text-xs text-blue-600">
+                <UIcon name="i-heroicons-arrow-path" class="w-3 h-3 animate-spin" />
+                Guardando...
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-1.5">
+                <div 
+                  class="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                  :style="{ width: `${saveStates[pais.code].progress * 100}%` }"
+                ></div>
+              </div>
+              <p class="text-xs text-gray-500 text-center">
+                {{ Math.round(saveStates[pais.code].progress * 100) }}%
+              </p>
+            </div>
+
+            <!-- Guardado exitoso -->
+            <div v-else-if="saveStates[pais.code].status === 'saved'" 
+                 class="flex items-center justify-center gap-1 text-xs text-green-600">
+              <UIcon name="i-heroicons-check-circle" class="w-3 h-3" />
+              Guardado
+            </div>
+
+            <!-- Error -->
+            <div v-else-if="saveStates[pais.code].status === 'error'" 
+                 class="flex items-center justify-center gap-1 text-xs text-red-600">
+              <UIcon name="i-heroicons-x-circle" class="w-3 h-3" />
+              Error
+            </div>
+
+            <!-- Sin procesar -->
+            <div v-else class="flex items-center justify-center gap-1 text-xs text-gray-500">
+              <UIcon name="i-heroicons-clock" class="w-3 h-3" />
+              Sin procesar
+            </div>
+          </div>
+
+          <!-- Botón limpiar (solo si no está guardando) -->
           <button
+            v-if="!saveStates[pais.code] || saveStates[pais.code].status !== 'saving'"
             @click="$emit('clear-country', pais.code)"
             class="w-full flex items-center justify-center gap-1 text-xs text-white bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 px-2 py-1.5 rounded transition-colors"
           >
@@ -74,6 +117,10 @@
 <script setup>
 const props = defineProps({
   loadedCounts: {
+    type: Object,
+    default: () => ({})
+  },
+  saveStates: {
     type: Object,
     default: () => ({})
   }

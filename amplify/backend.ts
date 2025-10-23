@@ -25,6 +25,7 @@ import { GetPlanProduccion } from "./functions/boom/GetPlanProduccion/resource";
 import { GetMaterialesSinAprovicionamiento } from "./functions/boom/GetMaterialesSinAprovicionamiento/resource";
 import { GetMaterialesSinCentroProduccion } from "./functions/boom/getMaterialesSinCentroProduccion/resource";
 import { boomFilesStore } from "./functions/boom/boomFilesStore.ts/resource";
+import { suicSaveBatch } from "./functions/suic/resource";
 
 /**
  * Configuración del backend de Amplify
@@ -50,6 +51,7 @@ export const backend = defineBackend({
   GetMaterialesSinAprovicionamiento,
   GetMaterialesSinCentroProduccion,
   boomFilesStore,
+  suicSaveBatch,
 });
 
 const resetPasswordLambda = backend.resetPassword.resources.lambda;
@@ -183,6 +185,17 @@ boomFilesStoreLambda.addFunctionUrl(
     authType: FunctionUrlAuthType.NONE,
   }
 );
+
+const suicSaveBatchLambda = backend.suicSaveBatch.resources.lambda;
+const suicSaveBatchPolicy = new iam.PolicyStatement({
+  actions: [
+    "ec2:CreateNetworkInterface",
+    "ec2:DescribeNetworkInterfaces",
+    "ec2:DeleteNetworkInterface",
+  ],
+  resources: ["*"],
+});
+suicSaveBatchLambda.addToRolePolicy(suicSaveBatchPolicy);
 
 /*
  * CREACION DE API REST

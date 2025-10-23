@@ -20,6 +20,28 @@
           <UIcon name="i-heroicons-cloud-arrow-up" class="w-5 h-5" />
           Cargar Archivo Excel
         </button>
+
+        <!-- Botón para guardar en MySQL -->
+        <button
+          v-if="hasDataToSave"
+          @click="handleSaveToMySQL"
+          :disabled="isSaving"
+          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+        >
+          <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5" />
+          {{ isSaving ? 'Guardando...' : 'Guardar en Base de Datos' }}
+        </button>
+
+        <!-- Botón para previsualizar datos -->
+        <button
+          v-if="hasDataToSave"
+          @click="handlePreviewData"
+          :disabled="isLoadingPreview"
+          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+        >
+          <UIcon name="i-heroicons-eye" class="w-5 h-5" />
+          {{ isLoadingPreview ? 'Cargando...' : 'Previsualizar Datos' }}
+        </button>
       </div>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-3">
         Descarga la plantilla oficial o sube tu archivo Excel regional
@@ -49,6 +71,7 @@
     <SuicCountryIndicators 
       v-else
       :loaded-counts="loadedCounts"
+      :save-states="saveStates"
       @clear-country="handleClearCountry"
       @clear-all="handleClearAll"
     />
@@ -68,11 +91,19 @@
       :confirm-text="confirmText"
       @confirm="handleConfirm"
     />
+
+    <!-- Modal de previsualización -->
+    <SuicPreviewModal
+      ref="previewModalRef"
+      :preview-data="previewData"
+      @update:open="handlePreviewClose"
+    />
   </div>
 </template>
 
 <script setup>
 import { useSuicData } from '~/composables/useSuicData';
+import { useSuicMySQL } from '~/composables/useSuicMySQL';
 
 const props = defineProps({
   suicId: {
@@ -81,8 +112,21 @@ const props = defineProps({
   }
 });
 
-// Usar composable para manejar datos
-const { loadedCounts, loadData, clearCountry, clearAll, isLoading, error } = useSuicData(props.suicId);
+// Usar composables
+const { loadedCounts, loadData, clearCountry, clearAll, isLoading, error, loadDataFromStorageAsync } = useSuicData(props.suicId);
+const { saveSuicToMySQL } = useSuicMySQL();
+
+// Estados para guardado
+const saveStates = ref({});
+const isSaving = ref(false);
+const previewData = ref({});
+const isLoadingPreview = ref(false);
+const previewModalRef = ref(null);
+
+// Computed para verificar si hay datos para guardar
+const hasDataToSave = computed(() => {
+  return Object.keys(loadedCounts.value).length > 0;
+});
 
 const showUploadModal = ref(false);
 const showConfirmModal = ref(false);
@@ -128,6 +172,124 @@ const handleConfirm = async () => {
   }
   showConfirmModal.value = false;
   pendingAction.value = null;
+};
+
+// Guardar datos en MySQL
+const handleSaveToMySQL = async () => {
+  isSaving.value = true;
+
+  try {
+    // Cargar datos de IndexedDB
+    const allData = await loadDataFromStorageAsync();
+
+    // Procesar cada país
+    for (const [paisCode, data] of Object.entries(allData)) {
+      // Inicializar estado
+      saveStates.value[paisCode] = {
+        status: 'saving',
+        progress: 0
+      };
+
+      try {
+        // Guardar con callback de progreso
+        await saveSuicToMySQL(
+          props.suicId,
+          paisCode,
+          data,
+          (batchIndex, totalBatches) => {
+            saveStates.value[paisCode].progress = batchIndex / totalBatches;
+          }
+        );
+
+        // Marcar como guardado
+        saveStates.value[paisCode] = {
+          status: 'saved',
+          progress: 1
+        };
+
+        useToast().add({
+          title: `${paisCode} guardado`,
+          description: `${data.length} registros guardados exitosamente`,
+          color: 'green'
+        });
+
+      } catch (error) {
+        console.error(`Error guardando ${paisCode}:`, error);
+        saveStates.value[paisCode] = {
+          status: 'error',
+          progress: 0
+        };
+
+        useToast().add({
+          title: `Error en ${paisCode}`,
+          description: error.message,
+          color: 'red'
+        });
+      }
+    }
+
+    useToast().add({
+      title: 'Proceso completado',
+      description: 'Todos los datos han sido procesados',
+      color: 'blue'
+    });
+
+  } catch (error) {
+    console.error('Error general:', error);
+    useToast().add({
+      title: 'Error',
+      description: 'Error guardando datos en MySQL',
+      color: 'red'
+    });
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+// Función para previsualizar datos
+const handlePreviewData = async () => {
+  isLoadingPreview.value = true;
+  
+  try {
+    // Cargar datos desde IndexedDB
+    const allData = await loadDataFromStorageAsync();
+    console.log('📊 Datos cargados desde IndexedDB:', allData);
+    
+    // Preparar datos para previsualización (solo primeros 10 por país)
+    const previewDataByCountry = {};
+    
+    for (const [paisCode, data] of Object.entries(allData)) {
+      console.log(`📋 Procesando país ${paisCode}:`, data.length, 'registros');
+      previewDataByCountry[paisCode] = data.slice(0, 10); // Solo primeros 10 registros
+    }
+    
+    console.log('👁️ Datos de previsualización preparados:', previewDataByCountry);
+    previewData.value = previewDataByCountry;
+    
+    useToast().add({
+      title: 'Previsualización cargada',
+      description: `Datos de ${Object.keys(previewDataByCountry).length} países listos para revisar`,
+      color: 'blue'
+    });
+    
+  } catch (error) {
+    console.error('Error cargando previsualización:', error);
+    useToast().add({
+      title: 'Error en previsualización',
+      description: 'No se pudieron cargar los datos para previsualizar',
+      color: 'red'
+    });
+  } finally {
+    isLoadingPreview.value = false;
+  }
+};
+
+// Función para cerrar modal de previsualización
+const handlePreviewClose = () => {
+  previewData.value = {};
+  if (previewModalRef.value) {
+    previewModalRef.value.closeModal();
+  }
 };
 
 // Descargar plantilla oficial

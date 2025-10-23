@@ -29,6 +29,23 @@ export const useSuicData = (suicId: string) => {
     }
   };
 
+  const loadDataFromStorageAsync = async (): Promise<Record<string, any[]>> => {
+    try {
+      if (isIndexedDBAvailable()) {
+        console.log('📥 Loading full data from IndexedDB...');
+        const data = await loadFromIndexedDB(suicId);
+        console.log('📊 Data loaded from IndexedDB:', Object.keys(data).map(k => `${k}: ${data[k]?.length || 0} registros`));
+        return data;
+      } else {
+        console.log('📥 Loading data from localStorage (fallback)...');
+        return loadDataFromStorage();
+      }
+    } catch (error: any) {
+      console.error('Error loading from IndexedDB:', error);
+      return loadDataFromStorage();
+    }
+  };
+
   const saveDataToStorage = (data: Record<string, any[]>): void => {
     try {
       const currentData = loadDataFromStorage();
@@ -195,6 +212,7 @@ export const useSuicData = (suicId: string) => {
     isLoading,
     error,
     loadDataFromStorage,
+    loadDataFromStorageAsync,
     saveData,
     loadData,
     clearCountry,
