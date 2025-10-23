@@ -532,16 +532,15 @@ const navigationSections = computed(() => {
     });
   }
 
-  // Agregar "Explosión de Materiales" solo si pertenece al grupo EXPLOSION
-  if (hasGroup("EXPLOSION")) {
-    // Buscar si ya existe la sección Herramientas para añadir ahí el item
+  // Agregar "Explosión de Materiales" para EXPLOSION, REVISAR-EXPLOSION o ADMIN
+  if (hasGroup("EXPLOSION") || hasGroup("REVISAR-EXPLOSION") || hasGroup("ADMIN")) {
     const toolsSection = sections.find((s) => s.title === "Herramientas");
     const explosionItem = {
-      name: "Explosión de Materiales",
+      name: "Explosión",
       href: "/tools/explosion-materiales",
       icon: "i-heroicons-squares-2x2",
-      badge: "Nuevo",
-      badgeColor: "blue",
+      badge: (hasGroup("REVISAR-EXPLOSION") && !hasGroup("EXPLOSION") && !hasGroup("ADMIN")) ? "Solo Lectura" : "Nuevo",
+      badgeColor: (hasGroup("REVISAR-EXPLOSION") && !hasGroup("EXPLOSION") && !hasGroup("ADMIN")) ? "purple" : "blue",
     };
 
     if (toolsSection) {
@@ -550,6 +549,27 @@ const navigationSections = computed(() => {
       sections.push({
         title: "Herramientas",
         items: [explosionItem],
+      });
+    }
+  }
+
+  // Agregar "SUIC" para ADMINISTRAR-SUIC o ADMIN
+  if (hasGroup("ADMINISTRAR-SUIC") || hasGroup("ADMIN")) {
+    const toolsSection = sections.find((s) => s.title === "Herramientas");
+    const suicItem = {
+      name: "SUIC",
+      href: "/tools/suic",
+      icon: "i-heroicons-chart-bar",
+      badge: "Nuevo",
+      badgeColor: "green",
+    };
+
+    if (toolsSection) {
+      toolsSection.items.push(suicItem);
+    } else {
+      sections.push({
+        title: "Herramientas",
+        items: [suicItem],
       });
     }
   }

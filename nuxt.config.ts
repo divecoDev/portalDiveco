@@ -6,6 +6,8 @@ export default defineNuxtConfig({
     "@nuxt/ui",
     "@pinia/nuxt",
     "@nuxt/test-utils/module",
+    "nuxt-delay-hydration",
+    "nuxt-booster",
   ],
 
   css: ["@/assets/css/main.css"],
@@ -24,5 +26,7 @@ export default defineNuxtConfig({
     storesDirs: ['./stores/**'],
   },
 
-
+  delayHydration: {
+    mode: 'init',
+  },
 });

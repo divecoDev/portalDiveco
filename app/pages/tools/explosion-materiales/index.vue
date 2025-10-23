@@ -24,8 +24,8 @@
 
         <!-- Botones de acción -->
         <div class="flex items-center space-x-3">
-          <!-- Botón para porcentajes de asignación -->
-          <NuxtLink to="/tools/explosion-materiales/porcentajes-asignacion">
+          <!-- Botón para porcentajes de asignación - Solo para ADMIN y EXPLOSION -->
+          <NuxtLink v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')" to="/tools/explosion-materiales/porcentajes-asignacion">
             <UButton
               icon="i-heroicons-percent-badge"
               class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
@@ -34,8 +34,8 @@
             </UButton>
           </NuxtLink>
 
-          <!-- Botón para crear nueva explosión -->
-          <NuxtLink to="/tools/explosion-materiales/new">
+          <!-- Botón para crear nueva explosión - Para ADMIN y EXPLOSION -->
+          <NuxtLink v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')" to="/tools/explosion-materiales/new">
             <button
               type="button"
               class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
@@ -108,6 +108,21 @@
                     <UIcon name="i-heroicons-hashtag" class="w-6 h-6 mr-2" />
                     {{ explosion.version }}
                   </h3>
+                  
+                  <!-- Badge de estado de documentos -->
+                  <UBadge 
+                    :class="explosion.enableShowDocuments ? 'bg-cyan-500 text-white' : 'bg-gray-500 text-white'"
+                    variant="soft"
+                    size="sm"
+                  >
+                    <template #leading>
+                      <UIcon 
+                        :name="explosion.enableShowDocuments ? 'i-heroicons-document-check' : 'i-heroicons-document-minus'" 
+                        class="w-3 h-3" 
+                      />
+                    </template>
+                    {{ explosion.enableShowDocuments ? 'Docs Habilitados' : 'Docs No Habilitados' }}
+                  </UBadge>
                 </div>
 
                 <!-- Descripción con Fecha -->
@@ -126,7 +141,9 @@
 
               <!-- Acciones -->
               <div class="flex items-center space-x-1 ml-4">
+                <!-- Botón Ver - Para ADMIN y EXPLOSION -->
                 <UButton
+                  v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')"
                   icon="i-heroicons-eye"
                   size="sm"
                   color="cyan"
@@ -134,7 +151,22 @@
                   @click="viewExplosion(explosion)"
                   class="hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
                 />
+                
+                <!-- Botón Documentos - Solo para REVISAR-EXPLOSION -->
                 <UButton
+                  v-if="hasGroup('REVISAR-EXPLOSION')"
+                  icon="i-heroicons-document-text"
+                  size="sm"
+                  color="green"
+                  variant="ghost"
+                  @click="viewDocuments(explosion)"
+                  class="hover:bg-green-50 dark:hover:bg-green-900/20"
+                  :disabled="!explosion.enableShowDocuments"
+                />
+                
+                <!-- Botón Editar - Para ADMIN y EXPLOSION -->
+                <UButton
+                  v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')"
                   icon="i-heroicons-pencil"
                   size="sm"
                   color="blue"
@@ -142,7 +174,10 @@
                   @click="editExplosion(explosion)"
                   class="hover:bg-blue-50 dark:hover:bg-blue-900/20"
                 />
+                
+                <!-- Botón Eliminar - Para ADMIN y EXPLOSION -->
                 <UButton
+                  v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')"
                   icon="i-heroicons-trash"
                   size="sm"
                   color="red"
@@ -180,7 +215,7 @@
               : "Crea tu primera explosión de materiales para comenzar a gestionar tu inventario"
           }}
         </p>
-        <NuxtLink to="/tools/explosion-materiales/new">
+        <NuxtLink v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')" to="/tools/explosion-materiales/new">
           <button
             type="button"
             class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
@@ -197,12 +232,14 @@
 <script setup>
 import { generateClient } from "aws-amplify/data";
 definePageMeta({
-  middleware: ["require-role"],
-  requiredRole: "EXPLOSION",
+  middleware: ["auth-revisar-explosion"],
 });
 
 // Cliente de Amplify
 const client = generateClient();
+
+// Composables
+const { hasGroup } = useUserGroups();
 
 // Meta tags para SEO
 useSeoMeta({
@@ -261,6 +298,13 @@ const fetchExplosions = async () => {
     loading.value = true;
     const { data } = await client.models.Boom.list();
     explosions.value = data || [];
+    
+    // Debug: verificar si el campo enableShowDocuments está presente
+    console.log('📊 Datos cargados:', explosions.value);
+    if (explosions.value.length > 0) {
+      console.log('📄 Primer elemento enableShowDocuments:', explosions.value[0].enableShowDocuments);
+      console.log('📄 Campos disponibles:', Object.keys(explosions.value[0]));
+    }
   } catch (error) {
     console.error("Error al cargar explosiones:", error);
     explosions.value = [];
@@ -271,6 +315,10 @@ const fetchExplosions = async () => {
 
 const viewExplosion = (explosion) => {
   navigateTo(`/tools/explosion-materiales/view/${explosion.id}`);
+};
+
+const viewDocuments = (explosion) => {
+  navigateTo(`/tools/explosion-materiales/documents/${explosion.id}`);
 };
 
 const editExplosion = (explosion) => {

@@ -58,7 +58,7 @@
     <div class="space-y-2 mb-4 processes-list">
       <div
         v-for="proceso in procesosProduccion"
-        :key="proceso.id"
+        :key="`${proceso.id}-${forceUpdateKey}`"
         :class="[
           'flex items-center justify-between p-3 rounded-lg border transition-all duration-300',
           getProcesoStatusClass(proceso.status)
@@ -138,7 +138,7 @@
               color="cyan"
               variant="ghost"
               class="hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
-              :disabled="proceso.status === 'ejecutando' || isCompleted || cargandoEstadosIniciales"
+              :disabled="proceso.status === 'ejecutando' || cargandoEstadosIniciales"
               @click="runSingleProcess(proceso.id)"
             >
               Ejecutar
@@ -250,6 +250,7 @@
 import { generateClient } from "aws-amplify/data";
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
+import { nextTick } from "vue";
 
 const client = generateClient();
 
@@ -340,6 +341,7 @@ const pollingIntervals = ref({}); // Múltiples intervalos de polling
 const procesosProduccion = ref([]);
 const esEjecucionNueva = ref(false); // Para distinguir entre ejecución nueva y carga inicial
 const cargandoEstadosIniciales = ref(true); // Estado de carga inicial
+const forceUpdateKey = ref(0); // Variable para forzar re-renderización del v-for
 
 // Inicializar procesos basándose en la configuración
 const inicializarProcesos = () => {
@@ -411,6 +413,9 @@ const runSingleProcess = async (procesoId) => {
 
   // Marcar como ejecución nueva para ejecuciones individuales
   esEjecucionNueva.value = true;
+  
+  // Resetear estado de carga inicial para permitir interacciones
+  cargandoEstadosIniciales.value = false;
 
   // La ejecución individual no afecta el estado global
   await ejecutarProceso(procesoId);
@@ -736,6 +741,10 @@ const actualizarEstadoProceso = async (pipelineInfo, procesoId) => {
       proceso.finTiempo = new Date();
       proceso.duracion = calcularDuracion(proceso.inicioTiempo, proceso.finTiempo);
 
+      // Forzar actualización del DOM
+      await nextTick();
+      forceUpdateKey.value++; // Forzar re-render
+
       // Actualizar Boom con estado completado
       await actualizarBoomStatus('Completado', config);
 
@@ -769,6 +778,10 @@ const actualizarEstadoProceso = async (pipelineInfo, procesoId) => {
       proceso.finTiempo = new Date();
 
       console.log('📝 Actualizando proceso a estado error');
+
+      // Forzar actualización del DOM
+      await nextTick();
+      forceUpdateKey.value++; // Forzar re-render
 
       // Actualizar Boom con estado de error
       await actualizarBoomStatus('Error', config);
@@ -859,6 +872,9 @@ const reEjecutarDesdeCompletado = async (procesoId) => {
 
     // Marcar como ejecución nueva para re-ejecuciones
     esEjecucionNueva.value = true;
+    
+    // Resetear estado de carga inicial para permitir interacciones
+    cargandoEstadosIniciales.value = false;
 
     // Obtener índice del proceso actual
     const procesoIndex = procesosProduccion.value.findIndex(p => p.id === procesoId);
@@ -883,6 +899,10 @@ const reEjecutarDesdeCompletado = async (procesoId) => {
 
       console.log(`🔄 Reseteando proceso posterior: ${procesoAReiniciar.nombre}`);
     }
+
+    // Forzar actualización del DOM después de resetear procesos
+    await nextTick();
+    forceUpdateKey.value++; // Forzar re-render
 
     // Ahora ejecutar el proceso actual
     const proceso = procesosProduccion.value.find(p => p.id === procesoId);

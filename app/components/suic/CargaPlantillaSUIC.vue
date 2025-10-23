@@ -1,0 +1,329 @@
+<template>
+  <div class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+    <!-- Botones de acción -->
+    <div class="text-center mb-6">
+      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        <!-- Botón para descargar plantilla -->
+        <button
+          @click="downloadTemplate"
+          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+        >
+          <UIcon name="i-heroicons-document-arrow-down" class="w-5 h-5" />
+          Descargar Plantilla
+        </button>
+        
+        <!-- Botón para abrir modal de carga -->
+        <button
+          @click="showUploadModal = true"
+          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+        >
+          <UIcon name="i-heroicons-cloud-arrow-up" class="w-5 h-5" />
+          Cargar Archivo Excel
+        </button>
+
+        <!-- Botón para guardar en MySQL -->
+        <button
+          v-if="hasDataToSave"
+          @click="handleSaveToMySQL"
+          :disabled="isSaving"
+          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+        >
+          <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5" />
+          {{ isSaving ? 'Guardando...' : 'Guardar en Base de Datos' }}
+        </button>
+
+        <!-- Botón para previsualizar datos -->
+        <button
+          v-if="hasDataToSave"
+          @click="handlePreviewData"
+          :disabled="isLoadingPreview"
+          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+        >
+          <UIcon name="i-heroicons-eye" class="w-5 h-5" />
+          {{ isLoadingPreview ? 'Cargando...' : 'Previsualizar Datos' }}
+        </button>
+      </div>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-3">
+        Descarga la plantilla oficial o sube tu archivo Excel regional
+      </p>
+    </div>
+
+    <!-- Loading state -->
+    <div v-if="isLoading" class="flex justify-center items-center py-8">
+      <div class="text-center">
+        <div class="w-12 h-12 border-4 border-cyan-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p class="text-gray-600 dark:text-gray-300">Cargando datos...</p>
+      </div>
+    </div>
+
+    <!-- Error state -->
+    <div v-else-if="error" class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg mb-6">
+      <div class="flex items-start space-x-3">
+        <UIcon name="i-heroicons-exclamation-circle" class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+        <div>
+          <p class="text-sm font-semibold text-red-800 dark:text-red-200">Error de Almacenamiento</p>
+          <p class="text-xs text-red-700 dark:text-red-300 mt-1">{{ error }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Indicadores de países -->
+    <SuicCountryIndicators 
+      v-else
+      :loaded-counts="loadedCounts"
+      :save-states="saveStates"
+      @clear-country="handleClearCountry"
+      @clear-all="handleClearAll"
+    />
+
+    <!-- Modal de carga -->
+    <SuicUploadModal
+      v-model:open="showUploadModal"
+      :suic-id="suicId"
+      @data-loaded="handleDataLoaded"
+    />
+
+    <!-- Modal de confirmación para limpiar -->
+    <SuicConfirmReplaceModal
+      v-model:open="showConfirmModal"
+      :title="confirmTitle"
+      :message="confirmMessage"
+      :confirm-text="confirmText"
+      @confirm="handleConfirm"
+    />
+
+    <!-- Modal de previsualización -->
+    <SuicPreviewModal
+      ref="previewModalRef"
+      :preview-data="previewData"
+      @update:open="handlePreviewClose"
+    />
+  </div>
+</template>
+
+<script setup>
+import { useSuicData } from '~/composables/useSuicData';
+import { useSuicMySQL } from '~/composables/useSuicMySQL';
+
+const props = defineProps({
+  suicId: {
+    type: String,
+    required: true
+  }
+});
+
+// Usar composables
+const { loadedCounts, loadData, clearCountry, clearAll, isLoading, error, loadDataFromStorageAsync } = useSuicData(props.suicId);
+const { saveSuicToMySQL } = useSuicMySQL();
+
+// Estados para guardado
+const saveStates = ref({});
+const isSaving = ref(false);
+const previewData = ref({});
+const isLoadingPreview = ref(false);
+const previewModalRef = ref(null);
+
+// Computed para verificar si hay datos para guardar
+const hasDataToSave = computed(() => {
+  return Object.keys(loadedCounts.value).length > 0;
+});
+
+const showUploadModal = ref(false);
+const showConfirmModal = ref(false);
+const confirmTitle = ref('');
+const confirmMessage = ref('');
+const confirmText = ref('');
+const pendingAction = ref(null);
+
+// Cargar datos al montar
+onMounted(async () => {
+  await loadData();
+});
+
+// Manejar datos cargados desde modal
+const handleDataLoaded = async () => {
+  await loadData(); // Recargar conteos
+  showUploadModal.value = false;
+};
+
+// Limpiar país con confirmación
+const handleClearCountry = (paisCode) => {
+  confirmTitle.value = 'Eliminar Datos';
+  confirmMessage.value = `¿Estás seguro de eliminar los datos de ${paisCode}?`;
+  confirmText.value = 'Eliminar';
+  pendingAction.value = () => clearCountry(paisCode);
+  showConfirmModal.value = true;
+};
+
+// Limpiar todo con confirmación
+const handleClearAll = () => {
+  confirmTitle.value = 'Eliminar Todos los Datos';
+  confirmMessage.value = '¿Estás seguro de eliminar todos los datos cargados?';
+  confirmText.value = 'Eliminar Todo';
+  pendingAction.value = () => clearAll();
+  showConfirmModal.value = true;
+};
+
+// Confirmar acción
+const handleConfirm = async () => {
+  if (pendingAction.value) {
+    await pendingAction.value();
+    await loadData();
+  }
+  showConfirmModal.value = false;
+  pendingAction.value = null;
+};
+
+// Guardar datos en MySQL
+const handleSaveToMySQL = async () => {
+  isSaving.value = true;
+
+  try {
+    // Cargar datos de IndexedDB
+    const allData = await loadDataFromStorageAsync();
+
+    // Procesar cada país
+    for (const [paisCode, data] of Object.entries(allData)) {
+      // Inicializar estado
+      saveStates.value[paisCode] = {
+        status: 'saving',
+        progress: 0
+      };
+
+      try {
+        // Guardar con callback de progreso
+        await saveSuicToMySQL(
+          props.suicId,
+          paisCode,
+          data,
+          (batchIndex, totalBatches) => {
+            saveStates.value[paisCode].progress = batchIndex / totalBatches;
+          }
+        );
+
+        // Marcar como guardado
+        saveStates.value[paisCode] = {
+          status: 'saved',
+          progress: 1
+        };
+
+        useToast().add({
+          title: `${paisCode} guardado`,
+          description: `${data.length} registros guardados exitosamente`,
+          color: 'green'
+        });
+
+      } catch (error) {
+        console.error(`Error guardando ${paisCode}:`, error);
+        saveStates.value[paisCode] = {
+          status: 'error',
+          progress: 0
+        };
+
+        useToast().add({
+          title: `Error en ${paisCode}`,
+          description: error.message,
+          color: 'red'
+        });
+      }
+    }
+
+    useToast().add({
+      title: 'Proceso completado',
+      description: 'Todos los datos han sido procesados',
+      color: 'blue'
+    });
+
+  } catch (error) {
+    console.error('Error general:', error);
+    useToast().add({
+      title: 'Error',
+      description: 'Error guardando datos en MySQL',
+      color: 'red'
+    });
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+// Función para previsualizar datos
+const handlePreviewData = async () => {
+  isLoadingPreview.value = true;
+  
+  try {
+    // Cargar datos desde IndexedDB
+    const allData = await loadDataFromStorageAsync();
+    console.log('📊 Datos cargados desde IndexedDB:', allData);
+    
+    // Preparar datos para previsualización (solo primeros 10 por país)
+    const previewDataByCountry = {};
+    
+    for (const [paisCode, data] of Object.entries(allData)) {
+      console.log(`📋 Procesando país ${paisCode}:`, data.length, 'registros');
+      previewDataByCountry[paisCode] = data.slice(0, 10); // Solo primeros 10 registros
+    }
+    
+    console.log('👁️ Datos de previsualización preparados:', previewDataByCountry);
+    previewData.value = previewDataByCountry;
+    
+    useToast().add({
+      title: 'Previsualización cargada',
+      description: `Datos de ${Object.keys(previewDataByCountry).length} países listos para revisar`,
+      color: 'blue'
+    });
+    
+  } catch (error) {
+    console.error('Error cargando previsualización:', error);
+    useToast().add({
+      title: 'Error en previsualización',
+      description: 'No se pudieron cargar los datos para previsualizar',
+      color: 'red'
+    });
+  } finally {
+    isLoadingPreview.value = false;
+  }
+};
+
+// Función para cerrar modal de previsualización
+const handlePreviewClose = () => {
+  previewData.value = {};
+  if (previewModalRef.value) {
+    previewModalRef.value.closeModal();
+  }
+};
+
+// Descargar plantilla oficial
+const downloadTemplate = () => {
+  try {
+    const templateUrl = 'https://d1p0twkya81b3k.cloudfront.net/templates/SUIC.xlsx';
+    
+    // Crear elemento temporal para forzar descarga
+    const link = document.createElement('a');
+    link.href = templateUrl;
+    link.download = 'SUIC_Template.xlsx';
+    link.target = '_blank';
+    
+    // Agregar al DOM temporalmente
+    document.body.appendChild(link);
+    link.click();
+    
+    // Limpiar
+    document.body.removeChild(link);
+    
+    // Mostrar notificación de éxito
+    useToast().add({
+      title: 'Descarga iniciada',
+      description: 'La plantilla SUIC se está descargando',
+      color: 'green'
+    });
+    
+  } catch (error) {
+    console.error('Error al descargar plantilla:', error);
+    useToast().add({
+      title: 'Error en descarga',
+      description: 'No se pudo descargar la plantilla. Inténtalo de nuevo.',
+      color: 'red'
+    });
+  }
+};
+</script>

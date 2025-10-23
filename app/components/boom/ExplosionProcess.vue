@@ -177,6 +177,19 @@
             Re-ejecutar Explosión
           </UButton>
         </div>
+
+        <!-- Control de visibilidad de documentos -->
+        <div class="mt-6 flex justify-center items-center space-x-3 document-visibility-toggle">
+          <UCheckbox 
+            v-model="enableShowDocuments" 
+            @change="toggleShowDocuments"
+            :disabled="updatingDocuments"
+          />
+          <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+            Habilitar visualización de documentos
+          </label>
+          <div v-if="updatingDocuments" class="w-4 h-4 border-2 border-cyan-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -217,6 +230,8 @@ const client = generateClient();
 const explosionInProgress = ref(false);
 const explosionPollingInterval = ref(null);
 const reexecutingExplosion = ref(false);
+const enableShowDocuments = ref(false);
+const updatingDocuments = ref(false);
 
 // Watcher para emitir cambios en el estado de carga
 watch(explosionInProgress, (newValue) => {
@@ -766,6 +781,10 @@ const checkInitialExplosionState = async () => {
 
     console.log('🔍 Estado inicial del pipeline de explosión:', { runIdExplosion, statusExplosion });
 
+    // Cargar el estado inicial del campo enableShowDocuments
+    enableShowDocuments.value = data.enableShowDocuments ?? false;
+    console.log('📄 Estado inicial de enableShowDocuments:', enableShowDocuments.value);
+
     if (runIdExplosion && statusExplosion) {
       // Mapear estados de la base de datos a estados del pipeline
       let pipelineStatus = null;
@@ -792,6 +811,41 @@ const checkInitialExplosionState = async () => {
     }
   } catch (error) {
     console.error('❌ Error verificando estado inicial del pipeline de explosión:', error);
+  }
+};
+
+// Función para alternar la visibilidad de documentos
+const toggleShowDocuments = async () => {
+  try {
+    updatingDocuments.value = true;
+    
+    await client.models.Boom.update({
+      id: props.explosionId,
+      enableShowDocuments: enableShowDocuments.value
+    });
+    
+    useToast().add({
+      title: "Configuración actualizada",
+      description: `Documentos ${enableShowDocuments.value ? 'habilitados' : 'deshabilitados'} para visualización`,
+      color: "green",
+      timeout: 3000
+    });
+    
+    console.log('📄 Estado de documentos actualizado:', enableShowDocuments.value);
+  } catch (error) {
+    console.error('❌ Error actualizando enableShowDocuments:', error);
+    
+    // Revertir el estado del checkbox en caso de error
+    enableShowDocuments.value = !enableShowDocuments.value;
+    
+    useToast().add({
+      title: "Error",
+      description: "No se pudo actualizar la configuración de documentos",
+      color: "red",
+      timeout: 4000
+    });
+  } finally {
+    updatingDocuments.value = false;
   }
 };
 
@@ -873,6 +927,15 @@ const initializeTour = () => {
         popover: {
           title: '🔄 Re-ejecutar Explosión',
           description: 'Si necesitas regenerar los reportes con datos actualizados, puedes re-ejecutar el proceso de explosión en cualquier momento.',
+          side: 'top',
+          align: 'center'
+        }
+      },
+      {
+        element: '.document-visibility-toggle',
+        popover: {
+          title: '📄 Control de Visibilidad',
+          description: 'Habilita o deshabilita el acceso a los documentos generados para otros perfiles de usuario.',
           side: 'top',
           align: 'center'
         }

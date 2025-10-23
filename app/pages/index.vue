@@ -159,16 +159,33 @@ const mainTools = computed(() => {
 
   }
 
-  // Mostrar herramienta de Explosión solo si el usuario pertenece al grupo EXPLOSION
-  if (hasGroup("EXPLOSION")) {
+  // Mostrar herramienta de Explosión si es EXPLOSION, REVISAR-EXPLOSION o ADMIN
+  if (hasGroup("EXPLOSION") || hasGroup("REVISAR-EXPLOSION") || hasGroup("ADMIN")) {
     tools.push({
       id: 2,
       name: "Explosión de Materiales",
       category: "Producción",
-      description: "Gestión de explosión de materiales",
+      description: (hasGroup("REVISAR-EXPLOSION") && !hasGroup("EXPLOSION") && !hasGroup("ADMIN"))
+        ? "Visualización de documentos de explosión de materiales" 
+        : "Gestión de explosión de materiales",
       icon: "i-heroicons-squares-2x2",
       iconColor: "text-cyan-600",
       route: "/tools/explosion-materiales",
+      lastUpdate: "Hoy",
+      status: "active",
+    });
+  }
+
+  // Mostrar herramienta SUIC si es ADMINISTRAR-SUIC o ADMIN
+  if (hasGroup("ADMINISTRAR-SUIC") || hasGroup("ADMIN")) {
+    tools.push({
+      id: 3,
+      name: "SUIC",
+      category: "Procesos",
+      description: "Gestión de cargas SUIC para el sistema",
+      icon: "i-heroicons-chart-bar",
+      iconColor: "text-cyan-600",
+      route: "/tools/suic",
       lastUpdate: "Hoy",
       status: "active",
     });
@@ -186,6 +203,7 @@ const getModuleIcon = (toolName) => {
   const iconMap = {
     "Gestión de Contraseñas SAP": "i-heroicons-key",
     "Explosión de Materiales": "i-heroicons-squares-2x2",
+    "SUIC": "i-heroicons-chart-bar",
     "Gestión de Inventario": "i-heroicons-cube",
     "Reportes Financieros": "i-heroicons-chart-pie",
     "Control de Calidad": "i-heroicons-shield-check",

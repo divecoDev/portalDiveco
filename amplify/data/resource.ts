@@ -16,6 +16,7 @@ import { BoomGetStatusPipeline } from "../functions/boom/GetStatusPipeline/resou
 import { GetMaterialesSinAprovicionamiento } from "../functions/boom/GetMaterialesSinAprovicionamiento/resource";
 import { GetMaterialesSinCentroProduccion } from "../functions/boom/getMaterialesSinCentroProduccion/resource";
 import { aprovisionamiento } from "../functions/porcentajes-asignacion/resource";
+import { suicSaveBatch } from "../functions/suic/resource";
 
 const schema = a.schema({
   Todo: a
@@ -115,8 +116,33 @@ const schema = a.schema({
       insumoPlanVentasPath: a.string(),
       insumoExistenciasPath: a.string(),
       insumoCoberturaPath: a.string(),
+      enableShowDocuments: a.boolean(),
     })
     .authorization((allow) => [allow.publicApiKey()]),
+
+
+
+  Cobertura: a
+    .model({
+      boomId: a.string(),
+      cobertura: a.json(),
+    })
+    .authorization((allow) => [allow.publicApiKey()]),
+
+   /*
+    Modelo para  la carga de plantillas SUIC
+    */
+
+    SUIC: a
+    .model({
+      descripcion: a.string(),
+      filesPath: a.json(),
+      createdBy: a.string(),
+      type: a.string(), //
+    })
+    .authorization((allow) => [allow.publicApiKey()]),
+
+
 
   /**
    * Microsoft Graph Module
@@ -232,6 +258,23 @@ const schema = a.schema({
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(aprovisionamiento)),
+
+  /**
+   *  SUIC - Guardar datos en MySQL por lotes
+   */
+  saveSuicBatch: a
+    .mutation()
+    .arguments({
+      suicId: a.string().required(),
+      paisCode: a.string().required(),
+      data: a.json().required(),
+      batchIndex: a.integer().required(),
+      totalBatches: a.integer().required(),
+      deleteExisting: a.boolean().required(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(suicSaveBatch)),
 });
 
 export type Schema = ClientSchema<typeof schema>;

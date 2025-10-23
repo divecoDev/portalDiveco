@@ -139,7 +139,7 @@
 import { generateClient } from "aws-amplify/data";
 definePageMeta({
   middleware: ["require-role"],
-  requiredRole: "EXPLOSION",
+  requiredRole: ["EXPLOSION", "ADMIN"], // ADMIN y EXPLOSION pueden crear
 });
 
 // Cliente de Amplify
