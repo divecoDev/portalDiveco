@@ -24,8 +24,8 @@
 
         <!-- Botones de acción -->
         <div class="flex items-center space-x-3">
-          <!-- Botón para porcentajes de asignación -->
-          <NuxtLink to="/tools/explosion-materiales/porcentajes-asignacion">
+          <!-- Botón para porcentajes de asignación - Solo para ADMIN y EXPLOSION -->
+          <NuxtLink v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')" to="/tools/explosion-materiales/porcentajes-asignacion">
             <UButton
               icon="i-heroicons-percent-badge"
               class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
@@ -34,8 +34,8 @@
             </UButton>
           </NuxtLink>
 
-          <!-- Botón para crear nueva explosión - Solo para EXPLOSION -->
-          <NuxtLink v-if="hasGroup('EXPLOSION')" to="/tools/explosion-materiales/new">
+          <!-- Botón para crear nueva explosión - Para ADMIN y EXPLOSION -->
+          <NuxtLink v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')" to="/tools/explosion-materiales/new">
             <button
               type="button"
               class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
@@ -141,9 +141,9 @@
 
               <!-- Acciones -->
               <div class="flex items-center space-x-1 ml-4">
-                <!-- Botón Ver - Solo para EXPLOSION -->
+                <!-- Botón Ver - Para ADMIN y EXPLOSION -->
                 <UButton
-                  v-if="hasGroup('EXPLOSION')"
+                  v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')"
                   icon="i-heroicons-eye"
                   size="sm"
                   color="cyan"
@@ -164,9 +164,9 @@
                   :disabled="!explosion.enableShowDocuments"
                 />
                 
-                <!-- Botón Editar - Solo para EXPLOSION -->
+                <!-- Botón Editar - Para ADMIN y EXPLOSION -->
                 <UButton
-                  v-if="hasGroup('EXPLOSION')"
+                  v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')"
                   icon="i-heroicons-pencil"
                   size="sm"
                   color="blue"
@@ -175,9 +175,9 @@
                   class="hover:bg-blue-50 dark:hover:bg-blue-900/20"
                 />
                 
-                <!-- Botón Eliminar - Solo para EXPLOSION -->
+                <!-- Botón Eliminar - Para ADMIN y EXPLOSION -->
                 <UButton
-                  v-if="hasGroup('EXPLOSION')"
+                  v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')"
                   icon="i-heroicons-trash"
                   size="sm"
                   color="red"
@@ -215,7 +215,7 @@
               : "Crea tu primera explosión de materiales para comenzar a gestionar tu inventario"
           }}
         </p>
-        <NuxtLink v-if="hasGroup('EXPLOSION')" to="/tools/explosion-materiales/new">
+        <NuxtLink v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')" to="/tools/explosion-materiales/new">
           <button
             type="button"
             class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"

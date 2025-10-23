@@ -532,20 +532,20 @@ const navigationSections = computed(() => {
     });
   }
 
-  // Agregar "Explosión de Materiales" para EXPLOSION o REVISAR-EXPLOSION
-  if (hasGroup("EXPLOSION") || hasGroup("REVISAR-EXPLOSION")) {
+  // Agregar "Explosión de Materiales" para EXPLOSION, REVISAR-EXPLOSION o ADMIN
+  if (hasGroup("EXPLOSION") || hasGroup("REVISAR-EXPLOSION") || hasGroup("ADMIN")) {
     const toolsSection = sections.find((s) => s.title === "Herramientas");
     const explosionItem = {
       name: "Explosión de Materiales",
       href: "/tools/explosion-materiales",
       icon: "i-heroicons-squares-2x2",
-      badge: hasGroup("REVISAR-EXPLOSION") && !hasGroup("EXPLOSION") ? "Solo Lectura" : "Nuevo",
-      badgeColor: hasGroup("REVISAR-EXPLOSION") && !hasGroup("EXPLOSION") ? "purple" : "blue",
+      badge: (hasGroup("REVISAR-EXPLOSION") && !hasGroup("EXPLOSION") && !hasGroup("ADMIN")) ? "Solo Lectura" : "Nuevo",
+      badgeColor: (hasGroup("REVISAR-EXPLOSION") && !hasGroup("EXPLOSION") && !hasGroup("ADMIN")) ? "purple" : "blue",
     };
     
-    // Solo agregar SUIC para EXPLOSION
+    // Solo agregar SUIC para EXPLOSION o ADMIN
     const items = [explosionItem];
-    if (hasGroup("EXPLOSION")) {
+    if (hasGroup("EXPLOSION") || hasGroup("ADMIN")) {
       items.push({
         name: "SUIC",
         href: "/tools/suic",

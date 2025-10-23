@@ -4,13 +4,13 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   // Cargar grupos manualmente antes de hacer validaciones
   await fetchUserGroups();
   
-  // Permitir acceso si es EXPLOSION o REVISAR-EXPLOSION
-  if (!hasGroup('EXPLOSION') && !hasGroup('REVISAR-EXPLOSION')) {
+  // Permitir acceso si es EXPLOSION, REVISAR-EXPLOSION o ADMIN
+  if (!hasGroup('EXPLOSION') && !hasGroup('REVISAR-EXPLOSION') && !hasGroup('ADMIN')) {
     return navigateTo('/');
   }
   
   // Si es REVISAR-EXPLOSION, bloquear rutas de edición y creación
-  if (hasGroup('REVISAR-EXPLOSION') && !hasGroup('EXPLOSION')) {
+  if (hasGroup('REVISAR-EXPLOSION') && !hasGroup('EXPLOSION') && !hasGroup('ADMIN')) {
     const restrictedPaths = [
       '/tools/explosion-materiales/new',
       '/tools/explosion-materiales/edit',
@@ -23,7 +23,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   }
   
   // Si es EXPLOSION, bloquear acceso a documentos (solo para REVISAR-EXPLOSION)
-  if (hasGroup('EXPLOSION') && !hasGroup('REVISAR-EXPLOSION')) {
+  if (hasGroup('EXPLOSION') && !hasGroup('REVISAR-EXPLOSION') && !hasGroup('ADMIN')) {
     if (to.path.includes('/tools/explosion-materiales/documents/')) {
       return navigateTo('/tools/explosion-materiales');
     }

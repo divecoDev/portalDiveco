@@ -159,13 +159,13 @@ const mainTools = computed(() => {
 
   }
 
-  // Mostrar herramienta de Explosión si es EXPLOSION o REVISAR-EXPLOSION
-  if (hasGroup("EXPLOSION") || hasGroup("REVISAR-EXPLOSION")) {
+  // Mostrar herramienta de Explosión si es EXPLOSION, REVISAR-EXPLOSION o ADMIN
+  if (hasGroup("EXPLOSION") || hasGroup("REVISAR-EXPLOSION") || hasGroup("ADMIN")) {
     tools.push({
       id: 2,
       name: "Explosión de Materiales",
       category: "Producción",
-      description: hasGroup("REVISAR-EXPLOSION") && !hasGroup("EXPLOSION") 
+      description: (hasGroup("REVISAR-EXPLOSION") && !hasGroup("EXPLOSION") && !hasGroup("ADMIN"))
         ? "Visualización de documentos de explosión de materiales" 
         : "Gestión de explosión de materiales",
       icon: "i-heroicons-squares-2x2",
@@ -175,8 +175,8 @@ const mainTools = computed(() => {
       status: "active",
     });
 
-    // Solo mostrar SUIC para EXPLOSION
-    if (hasGroup("EXPLOSION")) {
+    // Solo mostrar SUIC para EXPLOSION o ADMIN
+    if (hasGroup("EXPLOSION") || hasGroup("ADMIN")) {
       tools.push({
         id: 3,
         name: "SUIC",
