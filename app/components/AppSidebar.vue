@@ -542,25 +542,34 @@ const navigationSections = computed(() => {
       badge: (hasGroup("REVISAR-EXPLOSION") && !hasGroup("EXPLOSION") && !hasGroup("ADMIN")) ? "Solo Lectura" : "Nuevo",
       badgeColor: (hasGroup("REVISAR-EXPLOSION") && !hasGroup("EXPLOSION") && !hasGroup("ADMIN")) ? "purple" : "blue",
     };
-    
-    // Solo agregar SUIC para EXPLOSION o ADMIN
-    const items = [explosionItem];
-    if (hasGroup("EXPLOSION") || hasGroup("ADMIN")) {
-      items.push({
-        name: "SUIC",
-        href: "/tools/suic",
-        icon: "i-heroicons-chart-bar",
-        badge: "Nuevo",
-        badgeColor: "green",
-      });
-    }
 
     if (toolsSection) {
-      toolsSection.items.push(...items);
+      toolsSection.items.push(explosionItem);
     } else {
       sections.push({
         title: "Herramientas",
-        items: items,
+        items: [explosionItem],
+      });
+    }
+  }
+
+  // Agregar "SUIC" para ADMINISTRAR-SUIC o ADMIN
+  if (hasGroup("ADMINISTRAR-SUIC") || hasGroup("ADMIN")) {
+    const toolsSection = sections.find((s) => s.title === "Herramientas");
+    const suicItem = {
+      name: "SUIC",
+      href: "/tools/suic",
+      icon: "i-heroicons-chart-bar",
+      badge: "Nuevo",
+      badgeColor: "green",
+    };
+
+    if (toolsSection) {
+      toolsSection.items.push(suicItem);
+    } else {
+      sections.push({
+        title: "Herramientas",
+        items: [suicItem],
       });
     }
   }

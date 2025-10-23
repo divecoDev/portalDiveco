@@ -193,7 +193,8 @@ import { fetchUserAttributes } from "aws-amplify/auth";
 // Definir el layout y middleware
 definePageMeta({
   layout: "default",
-  middleware: ["auth"],
+  middleware: ["require-role"],
+  requiredRole: ["ADMINISTRAR-SUIC", "ADMIN"],
 });
 
 // Cliente de Amplify

@@ -158,7 +158,7 @@ import CargaPlantillaSUIC from "~/components/suic/CargaPlantillaSUIC.vue";
 
 definePageMeta({
   middleware: ["require-role"],
-  requiredRole: "EXPLOSION",
+  requiredRole: ["ADMINISTRAR-SUIC", "ADMIN"],
 });
 
 // Cliente de Amplify

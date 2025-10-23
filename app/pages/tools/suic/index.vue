@@ -247,7 +247,8 @@ import { generateClient } from "aws-amplify/data";
 // Definir el layout y middleware
 definePageMeta({
   layout: "default",
-  middleware: ["auth"],
+  middleware: ["require-role"],
+  requiredRole: ["ADMINISTRAR-SUIC", "ADMIN"],
 });
 
 // Cliente de Amplify

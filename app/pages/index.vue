@@ -174,21 +174,21 @@ const mainTools = computed(() => {
       lastUpdate: "Hoy",
       status: "active",
     });
+  }
 
-    // Solo mostrar SUIC para EXPLOSION o ADMIN
-    if (hasGroup("EXPLOSION") || hasGroup("ADMIN")) {
-      tools.push({
-        id: 3,
-        name: "SUIC",
-        category: "Procesos",
-        description: "Gestión de cargas SUIC para el sistema",
-        icon: "i-heroicons-chart-bar",
-        iconColor: "text-cyan-600",
-        route: "/tools/suic",
-        lastUpdate: "Hoy",
-        status: "active",
-      });
-    }
+  // Mostrar herramienta SUIC si es ADMINISTRAR-SUIC o ADMIN
+  if (hasGroup("ADMINISTRAR-SUIC") || hasGroup("ADMIN")) {
+    tools.push({
+      id: 3,
+      name: "SUIC",
+      category: "Procesos",
+      description: "Gestión de cargas SUIC para el sistema",
+      icon: "i-heroicons-chart-bar",
+      iconColor: "text-cyan-600",
+      route: "/tools/suic",
+      lastUpdate: "Hoy",
+      status: "active",
+    });
   }
 
   return tools;

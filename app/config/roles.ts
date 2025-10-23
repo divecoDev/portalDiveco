@@ -61,6 +61,14 @@ export const ROLES: Record<string, RoleConfig> = {
     color: "purple",
     icon: "i-heroicons-document-magnifying-glass",
   },
+  ADMINISTRAR_SUIC: {
+    name: "ADMINISTRAR-SUIC",
+    displayName: "Administrador SUIC",
+    description: "Acceso completo a la herramienta SUIC para gestión de cargas",
+    permissions: ["administrar_suic"],
+    color: "emerald",
+    icon: "i-heroicons-chart-bar",
+  },
 };
 
 // Definición de permisos disponibles
@@ -121,6 +129,17 @@ export const PERMISSIONS: Record<string, PermissionConfig> = {
     routes: [
       "/tools/explosion-materiales",
       "/tools/explosion-materiales/documents/:id"
+    ],
+  },
+  administrar_suic: {
+    name: "administrar_suic",
+    displayName: "Administrar SUIC",
+    description: "Permite acceder a la herramienta SUIC para gestión de cargas",
+    routes: [
+      "/tools/suic",
+      "/tools/suic/new",
+      "/tools/suic/view/:id",
+      "/tools/suic/edit/:id"
     ],
   },
 };
