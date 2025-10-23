@@ -253,7 +253,7 @@ import "driver.js/dist/driver.css";
 
 definePageMeta({
   middleware: ["require-role"],
-  requiredRole: "EXPLOSION",
+  requiredRole: "EXPLOSION", // Solo EXPLOSION puede editar
 });
 
 // Cliente de Amplify

@@ -38,7 +38,7 @@
 
         <!-- Botones de acción -->
         <div class="flex items-center space-x-3">
-          <NuxtLink :to="`/tools/explosion-materiales/view/${explosionId}`">
+          <NuxtLink to="/tools/explosion-materiales">
             <UButton
               icon="i-heroicons-arrow-left"
               size="lg"
@@ -46,7 +46,7 @@
               variant="outline"
               class="bg-gradient-to-r from-gray-500 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
             >
-              Volver a Detalles
+              Volver al Listado
             </UButton>
           </NuxtLink>
         </div>
@@ -83,13 +83,13 @@
         <p class="text-gray-600 dark:text-gray-300 mb-8 max-w-md mx-auto">
           Los documentos de esta explosión no están habilitados para visualización pública.
         </p>
-        <NuxtLink :to="`/tools/explosion-materiales/view/${explosionId}`">
+        <NuxtLink to="/tools/explosion-materiales">
           <button
             type="button"
             class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
           >
             <UIcon name="i-heroicons-arrow-left" class="w-5 h-5" />
-            Volver a Detalles
+            Volver al Listado
           </button>
         </NuxtLink>
       </div>
@@ -196,7 +196,7 @@ import { generateClient } from "aws-amplify/data";
 
 definePageMeta({
   middleware: ["require-role"],
-  requiredRole: "EXPLOSION",
+  requiredRole: "REVISAR-EXPLOSION", // Solo REVISAR-EXPLOSION puede ver documentos
 });
 
 // Cliente de Amplify

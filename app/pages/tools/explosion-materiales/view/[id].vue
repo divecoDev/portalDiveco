@@ -231,7 +231,7 @@ import "driver.js/dist/driver.css";
 
 definePageMeta({
   middleware: ["require-role"],
-  requiredRole: "EXPLOSION",
+  requiredRole: "EXPLOSION", // Solo EXPLOSION puede ver detalles completos
 });
 import { useCargaInsumosData } from "~/composables/useCargaInsumosData";
 import CargaInsumosDataView from "~/components/CargaInsumosDataView.vue";

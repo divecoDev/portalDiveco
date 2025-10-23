@@ -53,6 +53,14 @@ export const ROLES: Record<string, RoleConfig> = {
     color: "cyan",
     icon: "i-heroicons-sparkles",
   },
+  REVISAR_EXPLOSION: {
+    name: "REVISAR-EXPLOSION",
+    displayName: "Revisor de Explosión",
+    description: "Acceso de solo lectura a documentos de explosión habilitados",
+    permissions: ["view_explosion_documents"],
+    color: "purple",
+    icon: "i-heroicons-document-magnifying-glass",
+  },
 };
 
 // Definición de permisos disponibles
@@ -104,6 +112,15 @@ export const PERMISSIONS: Record<string, PermissionConfig> = {
       "/tools/explosion-materiales/new",
       "/tools/explosion-materiales/edit/:id",
       "/tools/explosion-materiales/view/:id",
+    ],
+  },
+  view_explosion_documents: {
+    name: "view_explosion_documents",
+    displayName: "Ver Documentos de Explosión",
+    description: "Permite acceder solo a documentos habilitados de explosión",
+    routes: [
+      "/tools/explosion-materiales",
+      "/tools/explosion-materiales/documents/:id"
     ],
   },
 };

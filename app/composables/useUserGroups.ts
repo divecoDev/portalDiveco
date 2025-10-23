@@ -10,7 +10,7 @@ export interface UserGroup {
   CreationDate?: string;
 }
 
-export const useUserGroups = () => {
+export const useUserGroups = (autoFetch = true) => {
   const userGroups = ref<UserGroup[]>([]);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
@@ -30,7 +30,7 @@ export const useUserGroups = () => {
       const client = generateClient();
       const user = await getCurrentUser();
 
-      const { data } = await client.queries.Group({
+      const { data } = await (client.queries as any).Group({
         username: user.username,
       });
 
@@ -44,7 +44,7 @@ export const useUserGroups = () => {
           !group.GroupName.includes("Diveco") &&
           !group.GroupName.includes("Nova"),
       );
-    } catch (err) {
+    } catch (err: any) {
       // Manejo específico para usuarios sin grupos (autenticados con contraseña)
       if (err?.name === "UserUnAuthenticatedException" ||
           err?.message?.includes("User needs to be authenticated")) {
@@ -122,10 +122,12 @@ export const useUserGroups = () => {
     return validGroupNames.every((groupName: string) => hasGroup(groupName));
   };
 
-  // Cargar grupos automáticamente al montar el composable
-  onMounted(() => {
-    fetchUserGroups();
-  });
+  // Cargar grupos automáticamente al montar el composable solo si autoFetch es true
+  if (autoFetch) {
+    onMounted(() => {
+      fetchUserGroups();
+    });
+  }
 
   return {
     // Estado

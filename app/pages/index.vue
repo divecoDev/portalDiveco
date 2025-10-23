@@ -159,13 +159,15 @@ const mainTools = computed(() => {
 
   }
 
-  // Mostrar herramienta de Explosión solo si el usuario pertenece al grupo EXPLOSION
-  if (hasGroup("EXPLOSION")) {
+  // Mostrar herramienta de Explosión si es EXPLOSION o REVISAR-EXPLOSION
+  if (hasGroup("EXPLOSION") || hasGroup("REVISAR-EXPLOSION")) {
     tools.push({
       id: 2,
       name: "Explosión de Materiales",
       category: "Producción",
-      description: "Gestión de explosión de materiales",
+      description: hasGroup("REVISAR-EXPLOSION") && !hasGroup("EXPLOSION") 
+        ? "Visualización de documentos de explosión de materiales" 
+        : "Gestión de explosión de materiales",
       icon: "i-heroicons-squares-2x2",
       iconColor: "text-cyan-600",
       route: "/tools/explosion-materiales",
@@ -173,17 +175,20 @@ const mainTools = computed(() => {
       status: "active",
     });
 
-    tools.push({
-      id: 3,
-      name: "SUIC",
-      category: "Procesos",
-      description: "Gestión de cargas SUIC para el sistema",
-      icon: "i-heroicons-chart-bar",
-      iconColor: "text-cyan-600",
-      route: "/tools/suic",
-      lastUpdate: "Hoy",
-      status: "active",
-    });
+    // Solo mostrar SUIC para EXPLOSION
+    if (hasGroup("EXPLOSION")) {
+      tools.push({
+        id: 3,
+        name: "SUIC",
+        category: "Procesos",
+        description: "Gestión de cargas SUIC para el sistema",
+        icon: "i-heroicons-chart-bar",
+        iconColor: "text-cyan-600",
+        route: "/tools/suic",
+        lastUpdate: "Hoy",
+        status: "active",
+      });
+    }
   }
 
   return tools;
