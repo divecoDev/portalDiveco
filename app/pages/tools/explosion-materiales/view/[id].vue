@@ -3,7 +3,7 @@
     <!-- Header de la página integrado -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6">
       <div class="flex items-center justify-between">
-        <div>
+        <div class="flex justify-start">
           <h1
             class="text-4xl font-bold text-gray-900 dark:text-white flex items-center"
           >
@@ -17,6 +17,23 @@
           <p class="mt-3 text-lg text-gray-600 dark:text-gray-300 ml-16">
             {{ explosion?.descripcion || "" }}
           </p>
+          
+          <!-- Badge de estado de documentos -->
+          <div class="mt-2 ml-16">
+            <UBadge 
+              :class="explosion?.enableShowDocuments ? 'bg-cyan-500 text-white' : 'bg-gray-500 text-white'"
+              variant="subtle"
+              size="md"
+            >
+              <template #leading>
+                <UIcon 
+                  :name="explosion?.enableShowDocuments ? 'i-heroicons-document-check' : 'i-heroicons-document-minus'" 
+                  class="w-4 h-4" 
+                />
+              </template>
+              {{ explosion?.enableShowDocuments ? 'Documentos Habilitados' : 'Documentos No Habilitados' }}
+            </UBadge>
+          </div>
         </div>
 
         <!-- Botones de acción -->

@@ -108,6 +108,21 @@
                     <UIcon name="i-heroicons-hashtag" class="w-6 h-6 mr-2" />
                     {{ explosion.version }}
                   </h3>
+                  
+                  <!-- Badge de estado de documentos -->
+                  <UBadge 
+                    :class="explosion.enableShowDocuments ? 'bg-cyan-500 text-white' : 'bg-gray-500 text-white'"
+                    variant="soft"
+                    size="sm"
+                  >
+                    <template #leading>
+                      <UIcon 
+                        :name="explosion.enableShowDocuments ? 'i-heroicons-document-check' : 'i-heroicons-document-minus'" 
+                        class="w-3 h-3" 
+                      />
+                    </template>
+                    {{ explosion.enableShowDocuments ? 'Docs Habilitados' : 'Docs No Habilitados' }}
+                  </UBadge>
                 </div>
 
                 <!-- Descripción con Fecha -->
@@ -133,6 +148,15 @@
                   variant="ghost"
                   @click="viewExplosion(explosion)"
                   class="hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
+                />
+                <UButton
+                  icon="i-heroicons-document-text"
+                  size="sm"
+                  color="green"
+                  variant="ghost"
+                  @click="viewDocuments(explosion)"
+                  class="hover:bg-green-50 dark:hover:bg-green-900/20"
+                  :disabled="!explosion.enableShowDocuments"
                 />
                 <UButton
                   icon="i-heroicons-pencil"
@@ -261,6 +285,13 @@ const fetchExplosions = async () => {
     loading.value = true;
     const { data } = await client.models.Boom.list();
     explosions.value = data || [];
+    
+    // Debug: verificar si el campo enableShowDocuments está presente
+    console.log('📊 Datos cargados:', explosions.value);
+    if (explosions.value.length > 0) {
+      console.log('📄 Primer elemento enableShowDocuments:', explosions.value[0].enableShowDocuments);
+      console.log('📄 Campos disponibles:', Object.keys(explosions.value[0]));
+    }
   } catch (error) {
     console.error("Error al cargar explosiones:", error);
     explosions.value = [];
@@ -271,6 +302,10 @@ const fetchExplosions = async () => {
 
 const viewExplosion = (explosion) => {
   navigateTo(`/tools/explosion-materiales/view/${explosion.id}`);
+};
+
+const viewDocuments = (explosion) => {
+  navigateTo(`/tools/explosion-materiales/documents/${explosion.id}`);
 };
 
 const editExplosion = (explosion) => {
