@@ -145,6 +145,18 @@
                   >
                     Actualizar
                   </UButton>
+                  
+                  <UButton
+                    v-if="hasEverExecuted"
+                    icon="i-heroicons-bolt"
+                    size="sm"
+                    color="emerald"
+                    variant="solid"
+                    class="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white"
+                    @click="goDirectToExplosion"
+                  >
+                    Ir a Explosión
+                  </UButton>
                 </div>
               </div>
 
@@ -294,6 +306,7 @@ const checkingSavedData = ref(false);
 const showCargaProcess = ref(false);
 const loadingPlanProduccion = ref(true); // Estado de carga del plan de producción
 const boomHasSavedData = ref(false); // Estado específico para datos guardados de este boom
+const hasEverExecuted = ref(false); // Indica si alguna vez se ejecutó la explosión
 
 // Computed para verificar si hay datos guardados
 const hasSavedData = computed(() => {
@@ -443,6 +456,9 @@ const checkProcessStates = async () => {
   try {
     console.log('🔍 Verificando estados de procesos para explosión:', explosion.value.id);
     
+    // Verificar si alguna vez se ejecutó
+    await checkIfEverExecuted();
+    
     // Verificar estado del plan de producción
     await checkPlanProduccionState();
     
@@ -498,6 +514,24 @@ const checkValidacionAprovisionamientoState = async () => {
     }
   } catch (error) {
     console.error('❌ Error verificando estado de validación:', error);
+  }
+};
+
+const checkIfEverExecuted = async () => {
+  try {
+    const { data } = await client.models.Boom.get({ id: explosion.value.id });
+    if (!data) return;
+
+    // Verificar si ExecuteBoomStatus es "Completado" o "En Proceso" (ejecuciones previas)
+    const status = data.ExecuteBoomStatus;
+    hasEverExecuted.value = status === 'Completado' || status === 'En Proceso';
+    
+    console.log('🔍 Verificando si alguna vez se ejecutó la explosión:', {
+      ExecuteBoomStatus: status,
+      hasEverExecuted: hasEverExecuted.value
+    });
+  } catch (error) {
+    console.error('❌ Error verificando ejecución previa:', error);
   }
 };
 
@@ -575,6 +609,17 @@ const availableSteps = computed(() => {
   return stepperItems.value.map((item, index) => {
     let disabled = false;
     let status = 'pending'; // pending, completed, current, disabled
+
+    // Si alguna vez se ejecutó, permitir acceso directo al paso de explosión
+    if (hasEverExecuted.value && index === 3) {
+      disabled = false;
+      status = completedSteps.value['explocionar'] ? 'completed' : 'current';
+      return {
+        ...item,
+        disabled,
+        status
+      };
+    }
 
     // Si todos los procesos están completos, permitir navegación libre
     if (allProcessesCompleted.value) {
@@ -722,6 +767,29 @@ const handleExplosionRestarted = () => {
 const handleExplosionLoadingStateChanged = (isLoading) => {
   // Este método se puede usar para mostrar indicadores globales si es necesario
   console.log('🔄 Estado de carga del proceso de explosión:', isLoading);
+};
+
+// Método para navegar directamente al paso de explosión
+const goDirectToExplosion = async () => {
+  // El índice del último paso (Explosionar) es 3 (0-based)
+  const explosionStepIndex = 3;
+  
+  try {
+    // Cambiar directamente al paso de explosión
+    currentMainStep.value = explosionStepIndex;
+    
+    // Esperar a que el DOM se actualice
+    await nextTick();
+    
+    // Scroll suave hacia el stepper
+    setTimeout(() => {
+      window.scrollTo({ top: 200, behavior: "smooth" });
+    }, 100);
+    
+    console.log('⚡ Navegando directamente al paso de Explosión');
+  } catch (error) {
+    console.warn("Error al navegar al paso de explosión:", error);
+  }
 };
 
 
