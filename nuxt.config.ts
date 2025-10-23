@@ -7,6 +7,7 @@ export default defineNuxtConfig({
     "@pinia/nuxt",
     "@nuxt/test-utils/module",
     "nuxt-delay-hydration",
+    "nuxt-booster",
   ],
 
   css: ["@/assets/css/main.css"],
