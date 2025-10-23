@@ -536,7 +536,7 @@ const navigationSections = computed(() => {
   if (hasGroup("EXPLOSION") || hasGroup("REVISAR-EXPLOSION") || hasGroup("ADMIN")) {
     const toolsSection = sections.find((s) => s.title === "Herramientas");
     const explosionItem = {
-      name: "Explosión de Materiales",
+      name: "Explosión",
       href: "/tools/explosion-materiales",
       icon: "i-heroicons-squares-2x2",
       badge: (hasGroup("REVISAR-EXPLOSION") && !hasGroup("EXPLOSION") && !hasGroup("ADMIN")) ? "Solo Lectura" : "Nuevo",
