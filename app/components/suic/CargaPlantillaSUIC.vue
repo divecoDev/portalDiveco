@@ -72,8 +72,12 @@
       v-else
       :loaded-counts="loadedCounts"
       :save-states="saveStates"
+      :months-metadata="monthsMetadata"
+      :is-validating="isValidating"
+      :validation-progress="validationProgress"
       @clear-country="handleClearCountry"
       @clear-all="handleClearAll"
+      @retry-country="handleRetryCountry"
     />
 
     <!-- Modal de carga -->
@@ -104,6 +108,7 @@
 <script setup>
 import { useSuicData } from '~/composables/useSuicData';
 import { useSuicMySQL } from '~/composables/useSuicMySQL';
+import { useSuicValidations } from '~/composables/useSuicValidations';
 
 const props = defineProps({
   suicId: {
@@ -115,6 +120,7 @@ const props = defineProps({
 // Usar composables
 const { loadedCounts, loadData, clearCountry, clearAll, isLoading, error, loadDataFromStorageAsync } = useSuicData(props.suicId);
 const { saveSuicToMySQL } = useSuicMySQL();
+const { validateMultipleCountries, monthsMetadata, isValidating, validationProgress } = useSuicValidations();
 
 // Estados para guardado
 const saveStates = ref({});
@@ -138,11 +144,48 @@ const pendingAction = ref(null);
 // Cargar datos al montar
 onMounted(async () => {
   await loadData();
+  
+  // Validar datos existentes si los hay
+  try {
+    console.log('🔍 Iniciando validación de datos existentes...');
+    const allData = await loadDataFromStorageAsync();
+    
+    if (Object.keys(allData).length > 0) {
+      await validateMultipleCountries(allData);
+      console.log('✅ Validación de datos existentes completada');
+    }
+  } catch (error) {
+    console.error('❌ Error validando datos existentes:', error);
+    useToast().add({
+      title: 'Advertencia',
+      description: 'No se pudieron validar los datos existentes',
+      color: 'yellow'
+    });
+  }
 });
 
 // Manejar datos cargados desde modal
 const handleDataLoaded = async () => {
   await loadData(); // Recargar conteos
+  
+  // Validar datos cargados
+  try {
+    console.log('🔍 Iniciando validación de datos cargados...');
+    const allData = await loadDataFromStorageAsync();
+    
+    if (Object.keys(allData).length > 0) {
+      await validateMultipleCountries(allData);
+      console.log('✅ Validación de datos completada');
+    }
+  } catch (error) {
+    console.error('❌ Error validando datos:', error);
+    useToast().add({
+      title: 'Advertencia',
+      description: 'No se pudieron validar los datos cargados',
+      color: 'yellow'
+    });
+  }
+  
   showUploadModal.value = false;
 };
 
@@ -174,6 +217,87 @@ const handleConfirm = async () => {
   pendingAction.value = null;
 };
 
+// Reintentar guardado de país específico
+const handleRetryCountry = async (paisCode) => {
+  try {
+    // Cargar datos del país específico desde IndexedDB
+    const allData = await loadDataFromStorageAsync();
+    const countryData = allData[paisCode];
+    
+    if (!countryData) {
+      useToast().add({
+        title: 'Error',
+        description: `No se encontraron datos para ${paisCode}`,
+        color: 'red'
+      });
+      return;
+    }
+
+    // Inicializar estado de guardado
+    saveStates.value[paisCode] = {
+      status: 'saving',
+      progress: 0
+    };
+
+    // Guardar con callback de progreso
+    const results = await saveSuicToMySQL(
+      props.suicId,
+      paisCode,
+      countryData,
+      (batchIndex, totalBatches) => {
+        saveStates.value[paisCode].progress = batchIndex / totalBatches;
+      }
+    );
+
+    // Verificar si hay errores en los resultados
+    const hasErrors = results.some(result => 
+      result.errors && result.errors.length > 0
+    );
+
+    if (hasErrors) {
+      // Marcar como error si hay errores en cualquier lote
+      saveStates.value[paisCode] = {
+        status: 'error',
+        progress: 1,
+        errorCount: results.reduce((total, result) => 
+          total + (result.errors?.length || 0), 0
+        )
+      };
+
+      useToast().add({
+        title: `Error en ${paisCode}`,
+        description: `Se procesaron ${results.reduce((sum, r) => sum + r.processedRecords, 0)} registros pero con errores`,
+        color: 'red'
+      });
+    } else {
+      // Marcar como guardado exitoso
+      saveStates.value[paisCode] = {
+        status: 'saved',
+        progress: 1
+      };
+
+      useToast().add({
+        title: `${paisCode} guardado`,
+        description: `${countryData.length} registros guardados exitosamente`,
+        color: 'green'
+      });
+    }
+
+  } catch (error) {
+    console.error(`Error reintentando guardado de ${paisCode}:`, error);
+    saveStates.value[paisCode] = {
+      status: 'error',
+      progress: 0
+    };
+
+    useToast().add({
+      title: `Error en ${paisCode}`,
+      description: error.message,
+      color: 'red'
+    });
+  }
+};
+
 // Guardar datos en MySQL
 const handleSaveToMySQL = async () => {
   isSaving.value = true;
@@ -192,7 +316,7 @@ const handleSaveToMySQL = async () => {
 
       try {
         // Guardar con callback de progreso
-        await saveSuicToMySQL(
+        const results = await saveSuicToMySQL(
           props.suicId,
           paisCode,
           data,
@@ -201,17 +325,39 @@ const handleSaveToMySQL = async () => {
           }
         );
 
-        // Marcar como guardado
-        saveStates.value[paisCode] = {
-          status: 'saved',
-          progress: 1
-        };
+        // Verificar si hay errores en los resultados
+        const hasErrors = results.some(result => 
+          result.errors && result.errors.length > 0
+        );
 
-        useToast().add({
-          title: `${paisCode} guardado`,
-          description: `${data.length} registros guardados exitosamente`,
-          color: 'green'
-        });
+        if (hasErrors) {
+          // Marcar como error si hay errores en cualquier lote
+          saveStates.value[paisCode] = {
+            status: 'error',
+            progress: 1,
+            errorCount: results.reduce((total, result) => 
+              total + (result.errors?.length || 0), 0
+            )
+          };
+
+          useToast().add({
+            title: `Error en ${paisCode}`,
+            description: `Se procesaron ${results.reduce((sum, r) => sum + r.processedRecords, 0)} registros pero con errores`,
+            color: 'red'
+          });
+        } else {
+          // Marcar como guardado exitoso
+          saveStates.value[paisCode] = {
+            status: 'saved',
+            progress: 1
+          };
+
+          useToast().add({
+            title: `${paisCode} guardado`,
+            description: `${data.length} registros guardados exitosamente`,
+            color: 'green'
+          });
+        }
 
       } catch (error) {
         console.error(`Error guardando ${paisCode}:`, error);
