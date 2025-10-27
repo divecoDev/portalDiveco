@@ -4,7 +4,6 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import { auth } from "./auth/resource";
 import { data } from "./data/resource";
 import { storage } from "./storage/resource";
-import { suicStorage } from "./storage/resource";
 /**
  * Imports functions
  */
@@ -36,7 +35,6 @@ export const backend = defineBackend({
   auth,
   data,
   storage,
-  suicStorage,
   groups,
   resetPassword,
   users,

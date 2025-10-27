@@ -6,7 +6,7 @@
         <!-- Botón para descargar plantilla -->
         <button
           @click="downloadTemplate"
-          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
         >
           <UIcon name="i-heroicons-document-arrow-down" class="w-5 h-5" />
           Descargar Plantilla
@@ -25,7 +25,7 @@
         <button
           @click="loadMySQLSummary"
           :disabled="isLoadingSummary"
-          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-blue-800 to-cyan-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
           <UIcon :name="isLoadingSummary ? 'i-heroicons-arrow-path' : 'i-heroicons-arrow-path'" class="w-5 h-5" :class="{ 'animate-spin': isLoadingSummary }" />
           {{ isLoadingSummary ? 'Refrescando...' : 'Refrescar Estado' }}
@@ -75,7 +75,7 @@
           v-if="hasDataToSave"
           @click="handleSaveToMySQL"
           :disabled="isSaving"
-          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-blue-800 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-800 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
           <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5" />
           {{ isSaving ? 'Guardando...' : 'Guardar en Base de Datos' }}

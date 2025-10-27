@@ -9,13 +9,6 @@ export const storage = defineStorage({
     "archivos-originales/*": [
       allow.authenticated.to(["read", "write", "delete"]),
     ],
-  }),
-});
-
-
-export const suicStorage = defineStorage({
-  name: "suicStorage",
-  access: (allow) => ({
     "suic/*": [
       allow.authenticated.to(["read", "write", "delete"]),
     ],

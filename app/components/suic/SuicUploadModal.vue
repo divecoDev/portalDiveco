@@ -28,7 +28,7 @@
           />
           <UIcon name="i-heroicons-document-arrow-up" class="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <button
-            @click="$refs.fileInput.click()"
+            @click="fileInput?.click()"
             class="text-cyan-600 hover:text-cyan-700 font-medium"
           >
             Seleccionar archivo Excel
@@ -60,6 +60,17 @@
             <div>
               <p class="text-sm font-medium text-gray-900 dark:text-white">Procesando archivo...</p>
               <p class="text-xs text-gray-500 dark:text-gray-400">{{ totalRows }} filas</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subiendo a S3 -->
+        <div v-if="isUploadingToS3" class="p-4 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg">
+          <div class="flex items-center space-x-3">
+            <div class="w-6 h-6 border-3 border-cyan-600 border-t-transparent rounded-full animate-spin"></div>
+            <div>
+              <p class="text-sm font-medium text-gray-900 dark:text-white">Guardando archivo original...</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Subiendo a almacenamiento en la nube</p>
             </div>
           </div>
         </div>
@@ -190,6 +201,8 @@
 <script setup>
 import readXlsxFile from 'read-excel-file';
 import { useSuicData } from '~/composables/useSuicData';
+import { useSuicFileUpload } from '~/composables/useSuicFileUpload';
+import { useSuicFileState } from '~/composables/useSuicFileState';
 import { detectAvailableMonths, validateMonthCompleteness } from '~/services/suicValidators';
 
 const props = defineProps({
@@ -200,6 +213,8 @@ const props = defineProps({
 const emit = defineEmits(['update:open', 'data-loaded']);
 
 const { saveData, loadDataFromStorage, isLoading: isDataLoading, error: dataError } = useSuicData(props.suicId);
+const { uploadSuicFile, updateSuicFilesPath } = useSuicFileUpload();
+const { setFile, getFile, clearFile: clearUploadedFile, hasFile } = useSuicFileState();
 
 // Estado
 const fileInput = ref(null);
@@ -214,6 +229,7 @@ const conflictingPaises = ref([]);
 const pendingData = ref({});
 const monthsValidationWarning = ref('');
 const incompleteMonthsDetected = ref([]);
+const isUploadingToS3 = ref(false);
 
 // Debug data
 const debugData = ref([]);
@@ -223,6 +239,8 @@ const processingSummary = ref({
   errors: 0,
   skipped: 0
 });
+
+// File upload tracking movido a composable useSuicFileState
 
 const isOpen = computed({
   get: () => props.open,
@@ -236,10 +254,10 @@ const requiredColumns = [
   'linea', 'asignacion_color', 'color', 'asignacion_marca', 'marca',
   'asignacion_presentacion', 'presentacion', 'asignacion_modelo', 'modelo_2',
   'asignacion_tamano', 'tamano',
-  ...Array.from({length: 12}, (_, i) => i + 1).flatMap(n => [
-    `unidades_plan_${n}`, `precio_proyectado_${n}`, `venta_bruta_plan_${n}`,
-    `porcentaje__desc_merc_${n}`, `descuento_merc_${n}`,
-    `porcentaje__desc_ben_${n}`, `descuento_ben_${n}`, `venta_plan_${n}`
+  ...Array.from({length: 12}, (_, i) => i + 1).flatMap(monthNum => [
+    `unidades_plan_${monthNum}`, `precio_proyectado_${monthNum}`, `venta_bruta_plan_${monthNum}`,
+    `porcentaje__desc_merc_${monthNum}`, `descuento_merc_${monthNum}`,
+    `porcentaje__desc_ben_${monthNum}`, `descuento_ben_${monthNum}`, `venta_plan_${monthNum}`
   ])
 ];
 
@@ -251,6 +269,9 @@ const handleFileChange = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
+  // Usar composable para guardar el archivo
+  setFile(file);
+  console.log('✅ Archivo guardado en composable');
   fileName.value = file.name;
   validationError.value = '';
   success.value = false;
@@ -348,21 +369,34 @@ const validateAndCleanRow = (row, headers, rowIndex) => {
   const isEmpty = row.every(cell => cell === null || cell === undefined || cell === '');
   if (isEmpty) return null; // Indicar que debe omitirse
   
-  // 2. Verificar si hay celdas vacías (error fatal)
+  // 2. Columnas fijas obligatorias (las primeras 21 columnas)
+  const requiredFixedColumns = [
+    'pais', 'centro', 'asignacion_vendedor', 'vendedor', 'codigo_cliente',
+    'cliente_correcto', 'asignacion_canal', 'canal', 'material', 'modelo',
+    'linea', 'asignacion_color', 'color', 'asignacion_marca', 'marca',
+    'asignacion_presentacion', 'presentacion', 'asignacion_modelo', 'modelo_2',
+    'asignacion_tamano', 'tamano'
+  ];
+  
+  // 3. Verificar solo celdas vacías en columnas fijas (obligatorias)
   const emptyCells = [];
   row.forEach((cell, idx) => {
-    if (cell === null || cell === undefined || cell === '') {
+    const headerName = headers[idx]?.toString().toLowerCase();
+    const isRequiredColumn = requiredFixedColumns.includes(headerName);
+    
+    // Solo validar columnas fijas como obligatorias
+    if (isRequiredColumn && (cell === null || cell === undefined || cell === '')) {
       emptyCells.push({ column: headers[idx], index: idx });
     }
   });
   
   if (emptyCells.length > 0) {
     throw new Error(
-      `Fila ${rowIndex + 2}: Se detectaron ${emptyCells.length} celda(s) vacía(s) en columna(s): ${emptyCells.map(c => c.column).join(', ')}. Complete todos los campos.`
+      `Fila ${rowIndex + 2}: Se detectaron ${emptyCells.length} celda(s) vacía(s) en columna(s) obligatorias: ${emptyCells.map(c => c.column).join(', ')}. Complete estos campos.`
     );
   }
   
-  // 3. Limpiar y formatear valores
+  // 4. Limpiar y formatear valores
   const assignmentColumns = [
     'asignación_vendedor', 'asignación_canal', 'asignación_color',
     'asignacion_marca', 'asignación_presentación', 'asignación_modelo'
@@ -371,6 +405,16 @@ const validateAndCleanRow = (row, headers, rowIndex) => {
   const cleanedRow = row.map((cell, idx) => {
     const header = headers[idx];
     let value = cell;
+    
+    // Si la celda está vacía y es una columna de mes, dejar como null o 0
+    if ((value === null || value === undefined || value === '')) {
+      const headerLower = header?.toString().toLowerCase();
+      // Detectar si es columna de mes
+      const isMonthColumn = /_(1|2|3|4|5|6|7|8|9|10|11|12)$/.test(headerLower);
+      if (isMonthColumn) {
+        return null; // Dejar null para columnas de meses vacías
+      }
+    }
     
     // Aplicar trim si es string
     if (typeof value === 'string') {
@@ -526,6 +570,46 @@ const confirmUpload = async () => {
 
 const saveAndNotify = async (data) => {
   console.log('💾 saveAndNotify - Data to save:', data);
+  
+  // Subir archivo original a S3 antes de guardar en IndexedDB
+  const uploadFile = getFile();
+  if (uploadFile) {
+    try {
+      isUploadingToS3.value = true;
+      
+      const countries = Object.keys(data);
+      console.log('☁️ Subiendo archivo a S3 para países:', countries);
+      
+      const fileMetadata = await uploadSuicFile(
+        props.suicId,
+        uploadFile,
+        countries
+      );
+      
+      console.log('✅ Archivo subido a S3:', fileMetadata.s3Path);
+      
+      // Actualizar filesPath en SUIC
+      await updateSuicFilesPath(
+        props.suicId,
+        fileMetadata,
+        countries
+      );
+      
+      console.log('✅ filesPath actualizado en SUIC');
+      
+    } catch (error) {
+      console.error('❌ Error subiendo archivo a S3:', error);
+      useToast().add({
+        title: 'Error al guardar archivo',
+        description: 'No se pudo subir el archivo a S3. Los datos se guardarán localmente.',
+        color: 'yellow'
+      });
+    } finally {
+      isUploadingToS3.value = false;
+    }
+  }
+  
+  // Guardar datos en IndexedDB (código existente)
   await saveData(data);
   const totalRecords = Object.values(data).reduce((sum, arr) => sum + arr.length, 0);
   console.log('📊 Total records calculated:', totalRecords);
@@ -541,6 +625,7 @@ const cancelUpload = () => {
 };
 
 const clearFile = () => {
+  clearUploadedFile(); // Limpiar referencia al archivo usando composable
   fileName.value = '';
   fileInput.value.value = '';
   validationError.value = '';
