@@ -18,6 +18,7 @@ import { GetMaterialesSinCentroProduccion } from "../functions/boom/getMateriale
 import { aprovisionamiento } from "../functions/porcentajes-asignacion/resource";
 import { suicSaveBatch } from "../functions/suic/resource";
 import { suicGetSummary } from "../functions/suic/getSummary/resource";
+import { runExplosionSuic } from "../functions/suic/runExplosion/resource";
 
 const schema = a.schema({
   Todo: a
@@ -291,6 +292,21 @@ const schema = a.schema({
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(suicGetSummary)),
+
+  /**
+   *  SUIC - Ejecutar pipeline de explosión en Azure Data Factory
+   */
+  runExplosionSuic: a
+    .mutation()
+    .arguments({
+      pipelineName: a.string(),
+      idSuic: a.string().required(),
+      tipo: a.string().required(),
+      primerMes: a.integer().required(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(runExplosionSuic)),
 });
 
 export type Schema = ClientSchema<typeof schema>;

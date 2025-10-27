@@ -1,9 +1,11 @@
 {
-  "name": "suic-save-batch",
+  "name": "suic-functions",
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "mysql2": "^3.6.5"
+    "mysql2": "^3.6.5",
+    "@azure/arm-datafactory": "^11.0.0",
+    "@azure/identity": "^4.0.0"
   }
 }
 

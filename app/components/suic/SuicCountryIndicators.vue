@@ -15,6 +15,57 @@
       </button>
     </div>
 
+    <!-- Alerta de inconsistencia de meses -->
+    <div 
+      v-if="!monthsConsistencyValidation.isConsistent" 
+      class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-500 dark:border-red-400 rounded-lg"
+    >
+      <div class="flex items-start space-x-3">
+        <UIcon name="i-heroicons-exclamation-triangle" class="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+        <div class="flex-1">
+          <h4 class="text-sm font-bold text-red-800 dark:text-red-200 mb-2">
+            Inconsistencia en Meses de Datos
+          </h4>
+          <p class="text-sm text-red-700 dark:text-red-300 mb-3">
+            {{ monthsConsistencyValidation.message }}. Los países deben tener exactamente los mismos meses para mantener consistencia en los datos.
+          </p>
+          
+          <!-- Detalle de meses esperados -->
+          <div class="bg-white dark:bg-gray-800 rounded p-3 mb-3">
+            <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Meses esperados (referencia: {{ monthsConsistencyValidation.referencePais }}):
+            </p>
+            <div class="flex flex-wrap gap-1">
+              <span
+                v-for="monthNum in monthsConsistencyValidation.referenceMonths"
+                :key="monthNum"
+                class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-700"
+              >
+                {{ ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][monthNum - 1] }}
+              </span>
+            </div>
+          </div>
+          
+          <!-- Lista de países inconsistentes -->
+          <div class="bg-white dark:bg-gray-800 rounded p-3">
+            <p class="text-xs font-semibold text-red-700 dark:text-red-300 mb-2">
+              Países con meses incorrectos:
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <span
+                v-for="paisCode in monthsConsistencyValidation.inconsistentCountries"
+                :key="paisCode"
+                class="inline-flex items-center px-2 py-1 rounded text-xs bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-700 font-medium"
+              >
+                <UIcon name="i-heroicons-x-circle" class="w-3 h-3 mr-1" />
+                {{ paisCode }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Lista de países en formato data items -->
     <div class="space-y-3">
       <div
@@ -27,11 +78,19 @@
         ]"
       >
         <!-- Sección Izquierda: Identidad del país -->
-        <div class="flex items-center min-w-0 flex-shrink-0">
+        <div class="flex items-center space-x-3 min-w-0 flex-shrink-0">
           <div class="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center font-bold text-2xl">
               <span class="flex items-center justify-center w-full h-full">
               {{ pais.flag }}
             </span>
+          </div>
+          
+          <!-- Indicador de inconsistencia de meses -->
+          <div v-if="isCountryInconsistent(pais.code)" class="flex-shrink-0">
+            <div class="flex items-center space-x-1 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded border border-red-300 dark:border-red-700">
+              <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-red-600 dark:text-red-400" />
+              <span class="text-xs font-semibold text-red-700 dark:text-red-300">Meses incorrectos</span>
+            </div>
           </div>
         </div>
 
@@ -319,6 +378,78 @@ const getMonthTooltip = (monthMeta) => {
   }
 };
 
+// Validación de consistencia de meses
+const monthsConsistencyValidation = computed(() => {
+  // Recolectar todos los países con datos (local + MySQL)
+  const countriesWithData = [];
+  
+  // Agregar países locales
+  Object.keys(props.loadedCounts).forEach(paisCode => {
+    const metadata = getCountryMetadata(paisCode);
+    if (metadata && metadata.availableMonths.length > 0) {
+      countriesWithData.push({
+        paisCode,
+        months: metadata.availableMonths.sort((a, b) => a - b),
+        source: 'local'
+      });
+    }
+  });
+  
+  // Agregar países MySQL
+  Object.keys(props.mysqlCounts).forEach(paisCode => {
+    const mysqlData = props.mysqlCounts[paisCode];
+    if (mysqlData && mysqlData.availableMonths && mysqlData.availableMonths.length > 0) {
+      countriesWithData.push({
+        paisCode,
+        months: mysqlData.availableMonths.sort((a, b) => a - b),
+        source: 'mysql'
+      });
+    }
+  });
+  
+  // Si no hay países con datos, no hay inconsistencia
+  if (countriesWithData.length === 0) {
+    return {
+      isConsistent: true,
+      referencePais: null,
+      referenceMonths: [],
+      inconsistentCountries: [],
+      message: null
+    };
+  }
+  
+  // Encontrar el país con más meses (referencia)
+  const referenceCountry = countriesWithData.reduce((max, country) => 
+    country.months.length > max.months.length ? country : max
+  );
+  
+  const referenceMonths = referenceCountry.months;
+  
+  // Validar que todos tengan los mismos meses
+  const inconsistentCountries = countriesWithData.filter(country => {
+    if (country.months.length !== referenceMonths.length) return true;
+    return !country.months.every((month, idx) => month === referenceMonths[idx]);
+  });
+  
+  const isConsistent = inconsistentCountries.length === 0;
+  
+  return {
+    isConsistent,
+    referencePais: referenceCountry.paisCode,
+    referenceMonths,
+    inconsistentCountries: inconsistentCountries.map(c => c.paisCode),
+    totalCountries: countriesWithData.length,
+    message: isConsistent 
+      ? null 
+      : `${inconsistentCountries.length} país(es) tienen meses diferentes`
+  };
+});
+
+// Función para detectar país inconsistente
+const isCountryInconsistent = (paisCode) => {
+  return monthsConsistencyValidation.value.inconsistentCountries.includes(paisCode);
+};
+
 // Función para obtener meses de MySQL
 const getMySQLAvailableMonths = (paisCode) => {
   const mysqlData = props.mysqlCounts[paisCode];
@@ -337,15 +468,22 @@ const getMySQLAvailableMonths = (paisCode) => {
 
 // Función para obtener las clases CSS según el estado del país
 const getCardClasses = (paisCode) => {
-  // Priorizar estado de MySQL sobre local
+  // PRIORIDAD 1: Validar consistencia de meses
+  if (isCountryInconsistent(paisCode)) {
+    return 'border-red-500 bg-red-50 dark:bg-red-900/20 dark:border-red-400';
+  }
+  
+  // PRIORIDAD 2: Estado de MySQL
   if (props.mysqlCounts[paisCode]) {
     return 'border-green-500 bg-green-50 dark:bg-green-900/20 dark:border-green-400';
   }
 
+  // PRIORIDAD 3: Sin datos
   if (!props.loadedCounts[paisCode]) {
     return 'border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-600';
   }
 
+  // PRIORIDAD 4: Estados de guardado local
   const saveState = props.saveStates[paisCode];
   if (!saveState) {
     return 'border-blue-300 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-600';

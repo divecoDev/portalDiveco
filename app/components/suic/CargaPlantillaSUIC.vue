@@ -69,7 +69,7 @@
       @retry-country="handleRetryCountry"
     />
 
-    <section class="flex justify-center mt-6">
+    <section class="flex justify-center gap-4 mt-6">
       <!-- Botón para guardar en MySQL -->
         <button
           v-if="hasDataToSave"
@@ -79,7 +79,17 @@
         >
           <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5" />
           {{ isSaving ? 'Guardando...' : 'Guardar en Base de Datos' }}
-        </button>  
+        </button>
+
+        <!-- Botón para siguiente paso -->
+        <button
+          v-if="canProceedToNextStep"
+          @click="handleNextStep"
+          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+        >
+          <UIcon name="i-heroicons-arrow-right" class="w-5 h-5" />
+          Siguiente: Generar SUIC
+        </button>
     </section>
 
     <!-- Modal de carga -->
@@ -114,6 +124,9 @@ const props = defineProps({
   }
 });
 
+// Definir emits
+const emit = defineEmits(['next-step']);
+
 // Usar composables
 const { loadedCounts, loadData, clearCountry, clearAll, clearCountriesInMySQL, isLoading, error, loadDataFromStorageAsync } = useSuicData(props.suicId);
 const { saveSuicToMySQL, getSuicSummary } = useSuicMySQL();
@@ -133,6 +146,18 @@ const isLoadingSummary = ref(false);
 // Computed para verificar si hay datos para guardar
 const hasDataToSave = computed(() => {
   return Object.keys(loadedCounts.value).length > 0;
+});
+
+// Computed para verificar si puede proceder al siguiente paso
+const canProceedToNextStep = computed(() => {
+  // Debe haber al menos un país con datos guardados en MySQL
+  const hasCountriesInMySQL = Object.keys(mysqlCounts.value).length > 0;
+  
+  if (!hasCountriesInMySQL) return false;
+  
+  // TODO: Validar que los meses sean consistentes usando monthsMetadata
+  // Por ahora retornamos true si hay países en MySQL
+  return true;
 });
 
 const showUploadModal = ref(false);
@@ -519,5 +544,17 @@ const downloadTemplate = () => {
       color: 'red'
     });
   }
+};
+
+// Manejar siguiente paso
+const handleNextStep = () => {
+  // Emitir evento para que el componente padre avance en el stepper
+  emit('next-step');
+  
+  useToast().add({
+    title: 'Procediendo a Generación',
+    description: 'Avanzando al siguiente paso del proceso SUIC',
+    color: 'blue'
+  });
 };
 </script>

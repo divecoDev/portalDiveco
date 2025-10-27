@@ -139,13 +139,11 @@
         class="w-full"
       >
         <template #carga-plantilla>
-          <CargaPlantillaSUIC :suic-id="suicId" />
+          <CargaPlantillaSUIC :suic-id="suicId" @next-step="handleNextStep" />
         </template>
         
         <template #ejecutar-proceso>
-          <div class="p-6 bg-white dark:bg-gray-800 rounded-xl">
-            <p class="text-gray-500 dark:text-gray-400">Este paso se implementará próximamente</p>
-          </div>
+          <ExplosionarSUIC :suic-id="suicId" />
         </template>
       </UStepper>
     </div>
@@ -155,6 +153,7 @@
 <script setup>
 import { generateClient } from "aws-amplify/data";
 import CargaPlantillaSUIC from "~/components/suic/CargaPlantillaSUIC.vue";
+import ExplosionarSUIC from "~/components/suic/ExplosionarSUIC.vue";
 
 definePageMeta({
   middleware: ["require-role"],
@@ -196,7 +195,7 @@ const stepperItems = ref([
   },
   {
     slot: "ejecutar-proceso",
-    title: "Ejecutar Proceso",
+    title: "Generar SUIC",
     icon: "i-heroicons-cog",
   },
 ]);
@@ -232,6 +231,15 @@ const formatDate = (dateString) => {
     hour: "2-digit",
     minute: "2-digit",
   });
+};
+
+// Manejar siguiente paso
+const handleNextStep = () => {
+  if (mainStepper.value) {
+    // Avanzar al siguiente paso
+    currentStep.value = 1;
+    console.log('✅ Avanzando al paso de Generar SUIC');
+  }
 };
 
 // Lifecycle
