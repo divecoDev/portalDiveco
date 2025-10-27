@@ -85,6 +85,57 @@ const validateHeaders = (fileHeaders) => {
   return { isValid: true, error: "" };
 };
 
+// Función optimizada para limpiar datos y validar en un solo pase
+const validateAndCleanData = (data, headers) => {
+  const result = {
+    cleanedData: [],
+    cellErrors: [],
+    emptyColumns: [],
+    hasNonEmptyData: new Array(headers.length).fill(false),
+    totalErrors: 0
+  };
+  
+  const MAX_ERROR_SAMPLES = 20; // Solo guardamos ejemplos de errores
+  
+  for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
+    const row = data[rowIndex];
+    const cleanedRow = [];
+    
+    for (let colIndex = 0; colIndex < row.length; colIndex++) {
+      let cell = row[colIndex];
+      
+      // Limpiar espacios solo si es string
+      if (typeof cell === 'string') {
+        cell = cell.trim();
+      }
+      
+      cleanedRow.push(cell);
+      
+      // Validar y marcar columnas con datos
+      if (cell !== null && cell !== undefined && cell !== '') {
+        result.hasNonEmptyData[colIndex] = true;
+      } else {
+        result.totalErrors++;
+        // Solo guardar ejemplos de errores
+        if (result.cellErrors.length < MAX_ERROR_SAMPLES) {
+          result.cellErrors.push({
+            row: rowIndex + 2, // +2 porque: 1 por header, 1 por índice base-0
+            column: headers[colIndex],
+            columnIndex: colIndex
+          });
+        }
+      }
+    }
+    
+    result.cleanedData.push(cleanedRow);
+  }
+  
+  // Identificar columnas completamente vacías
+  result.emptyColumns = headers.filter((_, index) => !result.hasNonEmptyData[index]);
+  
+  return result;
+};
+
 // Manejo del cambio de archivo
 const handleFileChangeExistencias = async (e) => {
   const fileExistencias = e.target.files[0];
@@ -117,13 +168,37 @@ const handleFileChangeExistencias = async (e) => {
     // Remover la primera fila (headers) ya validada
     data.shift();
 
-    // Filtrar filas vacías
-    const filteredData = data.filter((row) => {
-      return row.some((cell) => cell !== null);
+    // Validar y limpiar datos en un solo pase optimizado
+    const validationResult = validateAndCleanData(data, headers.value);
+
+    // Validar que no haya columnas completamente vacías
+    if (validationResult.emptyColumns.length > 0) {
+      validationError.value = `Las siguientes columnas están completamente vacías: ${validationResult.emptyColumns.join(', ')}. Todas las columnas son obligatorias.`;
+      return;
+    }
+
+    // Validar que no haya celdas vacías
+    if (validationResult.totalErrors > 0) {
+      const errorSample = validationResult.cellErrors.slice(0, 5);
+      const errorDetails = errorSample
+        .map(e => `Fila ${e.row}, Columna ${e.column}`)
+        .join('; ');
+      
+      const errorMessage = validationResult.totalErrors > validationResult.cellErrors.length
+        ? `Se encontraron más de ${validationResult.cellErrors.length} celdas vacías. Todas las columnas son obligatorias. Ejemplos: ${errorDetails}...`
+        : `Se encontraron ${validationResult.totalErrors} celdas vacías. Todas las columnas son obligatorias. Ejemplos: ${errorDetails}`;
+      
+      validationError.value = errorMessage;
+      return;
+    }
+
+    // Filtrar filas completamente vacías usando datos limpios
+    const filteredData = validationResult.cleanedData.filter((row) => {
+      return row.some((cell) => cell !== null && cell !== '');
     });
 
     if (filteredData.length === 0) {
-      validationError.value = "El archivo no contiene datos después de los encabezados.";
+      validationError.value = "El archivo no contiene datos válidos después de la limpieza.";
       return;
     }
 

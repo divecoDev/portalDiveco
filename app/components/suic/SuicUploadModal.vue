@@ -122,25 +122,25 @@
           </div>
         </div>
 
-        <!-- Resumen de procesamiento -->
-        <div v-if="processingSummary.total > 0" class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2">Resumen de Procesamiento:</h4>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+        <!-- Advertencia de validación de meses -->
+        <div v-if="monthsValidationWarning" class="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+          <div class="flex items-start space-x-3">
+            <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p class="text-blue-600 dark:text-blue-400 font-medium">Total filas:</p>
-              <p class="text-lg font-bold">{{ processingSummary.total }}</p>
-            </div>
-            <div>
-              <p class="text-green-600 dark:text-green-400 font-medium">Procesadas:</p>
-              <p class="text-lg font-bold">{{ processingSummary.success }}</p>
-            </div>
-            <div>
-              <p class="text-red-600 dark:text-red-400 font-medium">Errores:</p>
-              <p class="text-lg font-bold">{{ processingSummary.errors }}</p>
-            </div>
-            <div>
-              <p class="text-yellow-600 dark:text-yellow-400 font-medium">Omitidas:</p>
-              <p class="text-lg font-bold">{{ processingSummary.skipped }}</p>
+              <p class="text-sm font-semibold text-yellow-800 dark:text-yellow-200">Advertencia de Validación</p>
+              <p class="text-xs text-yellow-700 dark:text-yellow-300 mt-1">{{ monthsValidationWarning }}</p>
+              <div v-if="incompleteMonthsDetected.length > 0" class="mt-2">
+                <p class="text-xs text-yellow-600 dark:text-yellow-400 font-medium">Meses afectados:</p>
+                <div class="flex flex-wrap gap-1 mt-1">
+                  <span 
+                    v-for="monthNum in incompleteMonthsDetected" 
+                    :key="monthNum"
+                    class="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200"
+                  >
+                    {{ ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][monthNum - 1] }}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -190,6 +190,7 @@
 <script setup>
 import readXlsxFile from 'read-excel-file';
 import { useSuicData } from '~/composables/useSuicData';
+import { detectAvailableMonths, validateMonthCompleteness } from '~/services/suicValidators';
 
 const props = defineProps({
   open: Boolean,
@@ -211,6 +212,8 @@ const successMessage = ref('');
 const showConflictWarning = ref(false);
 const conflictingPaises = ref([]);
 const pendingData = ref({});
+const monthsValidationWarning = ref('');
+const incompleteMonthsDetected = ref([]);
 
 // Debug data
 const debugData = ref([]);
@@ -275,6 +278,9 @@ const processFile = async (file) => {
 
     // Procesar datos
     const dataByPais = processRows(rows, headers);
+
+    // Validar meses durante procesamiento
+    await validateMonthsDuringProcessing(dataByPais);
 
     // Verificar conflictos
     const currentData = await loadDataFromStorage();
@@ -396,6 +402,55 @@ const processRows = (rows, headers) => {
   return dataByPais;
 };
 
+// Validar meses durante procesamiento
+const validateMonthsDuringProcessing = async (dataByPais) => {
+  console.log('🔍 Validando meses durante procesamiento...');
+  
+  const incompleteMonths = new Set();
+  let totalIncompleteRecords = 0;
+  
+  // Procesar cada país
+  for (const [paisCode, records] of Object.entries(dataByPais)) {
+    console.log(`📊 Validando ${records.length} registros para ${paisCode}`);
+    
+    // Muestrear solo los primeros 100 registros para validación rápida
+    const sampleSize = Math.min(100, records.length);
+    const sampleRecords = records.slice(0, sampleSize);
+    
+    for (const record of sampleRecords) {
+      // Detectar meses disponibles
+      const availableMonths = detectAvailableMonths(record);
+      
+      // Validar completitud de cada mes
+      for (const monthNumber of availableMonths) {
+        const validation = validateMonthCompleteness(record, monthNumber);
+        
+        if (!validation.isComplete) {
+          incompleteMonths.add(monthNumber);
+          totalIncompleteRecords++;
+        }
+      }
+    }
+  }
+  
+  // Mostrar advertencia si hay meses incompletos
+  if (incompleteMonths.size > 0) {
+    const monthNames = Array.from(incompleteMonths).map(num => {
+      const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      return monthNames[num - 1];
+    });
+    
+    monthsValidationWarning.value = `Se detectaron meses con datos incompletos: ${monthNames.join(', ')}. Algunos registros pueden tener columnas faltantes.`;
+    incompleteMonthsDetected.value = Array.from(incompleteMonths);
+    
+    console.log('⚠️ Advertencia de validación:', monthsValidationWarning.value);
+  } else {
+    monthsValidationWarning.value = '';
+    incompleteMonthsDetected.value = [];
+    console.log('✅ Todos los meses detectados tienen datos completos');
+  }
+};
+
 const confirmUpload = async () => {
   await saveAndNotify(pendingData.value);
   showConflictWarning.value = false;
@@ -424,6 +479,8 @@ const clearFile = () => {
   validationError.value = '';
   success.value = false;
   debugData.value = [];
+  monthsValidationWarning.value = '';
+  incompleteMonthsDetected.value = [];
   processingSummary.value = {
     total: 0,
     success: 0,

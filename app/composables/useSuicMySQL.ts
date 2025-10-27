@@ -1,7 +1,6 @@
 import { generateClient } from "aws-amplify/data";
-import type { Schema } from "~/amplify/data/resource";
 
-const client = generateClient<Schema>();
+const client = generateClient();
 
 export interface SuicBatchResponse {
   success: boolean;
@@ -44,7 +43,7 @@ export const useSuicMySQL = () => {
     for (let i = 0; i < batches.length; i++) {
       const deleteExisting = i === 0; // Solo borrar en el primer batch
       
-      console.log(`📤 Enviando lote ${i + 1}/${totalBatches} para ${paisCode} (${batches[i].length} registros)`);
+      console.log(`📤 Enviando lote ${i + 1}/${totalBatches} para ${paisCode} (${batches[i]?.length || 0} registros)`);
       console.log(`🔧 Configuración del lote:`, {
         batchIndex: i,
         totalBatches,
@@ -55,7 +54,7 @@ export const useSuicMySQL = () => {
 
       try {
         console.log(`🚀 Iniciando mutación para lote ${i + 1}...`);
-        const result = await client.mutations.saveSuicBatch({
+        const result = await (client as any).mutations.saveSuicBatch({
           suicId,
           paisCode,
           data: JSON.stringify(batches[i]),
@@ -67,7 +66,16 @@ export const useSuicMySQL = () => {
         console.log(`✅ Lote ${i + 1}/${totalBatches} completado para ${paisCode}:`, result);
 
         // Parsear respuesta si viene como string
-        const parsedResult = typeof result === 'string' ? JSON.parse(result) : result;
+        let parsedResult;
+        if (typeof result === 'string') {
+          parsedResult = JSON.parse(result);
+        } else if (result.data && typeof result.data === 'string') {
+          // AWS Amplify devuelve {data: "string JSON"}
+          parsedResult = JSON.parse(result.data);
+        } else {
+          parsedResult = result;
+        }
+        
         console.log(`📊 Resultado parseado del lote ${i + 1}:`, {
           success: parsedResult.success,
           processedRecords: parsedResult.processedRecords,

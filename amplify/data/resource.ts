@@ -118,6 +118,9 @@ const schema = a.schema({
       insumoCoberturaPath: a.string(),
       enableShowDocuments: a.boolean(),
     })
+    .secondaryIndexes((index) => [
+      index("version") // Crear GSI para búsquedas por version
+    ])
     .authorization((allow) => [allow.publicApiKey()]),
 
 

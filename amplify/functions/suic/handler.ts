@@ -163,7 +163,7 @@ async function processSuicBatch(connection: mysql.Connection, body: SuicBatchReq
         unidades_plan_11, precio_proyectado_11, venta_bruta_plan_11, porcentaje__desc_merc_11, descuento_merc_11, porcentaje__desc_ben_11, descuento_ben_11, venta_plan_11,
         unidades_plan_12, precio_proyectado_12, venta_bruta_plan_12, porcentaje__desc_merc_12, descuento_merc_12, porcentaje__desc_ben_12, descuento_ben_12, venta_plan_12
       ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?, ?, ?,
@@ -324,8 +324,7 @@ async function processSuicBatch(connection: mysql.Connection, body: SuicBatchReq
           parseFloat(record.descuento_merc_12) || 0,
           parseFloat(record.porcentaje__desc_ben_12) || 0,
           parseFloat(record.descuento_ben_12) || 0,
-          parseFloat(record.venta_plan_12) || 0,
-          null // Campo adicional para coincidir con las 119 columnas
+          parseFloat(record.venta_plan_12) || 0
         ];
 
         await connection.execute(insertQuery, values);
