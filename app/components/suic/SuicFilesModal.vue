@@ -140,7 +140,18 @@ const isOpen = computed({
 
 // Computed para lista de archivos
 const filesList = computed(() => {
-  const filesPath = props.filesPath || {};
+  let filesPath = props.filesPath || {};
+  
+  // Si filesPath es un string (JSON), parsearlo
+  if (typeof filesPath === 'string') {
+    try {
+      filesPath = JSON.parse(filesPath);
+    } catch (e) {
+      console.error('Error parseando filesPath JSON:', e);
+      return [];
+    }
+  }
+  
   const list = [];
   
   Object.entries(filesPath).forEach(([key, value]) => {
@@ -181,30 +192,50 @@ const downloadFile = async (s3Path, uploadedAt) => {
   try {
     downloading.value[downloadKey] = true;
     
-    // Obtener URL de descarga
-    const url = await getDownloadUrl(s3Path);
+    console.log('⬇️ Iniciando descarga de archivo:', s3Path);
     
-    // Crear enlace temporal para descarga
+    // Descargar el archivo como Blob
+    const blob = await downloadSuicFile(s3Path);
+    console.log('✅ Archivo descargado como Blob:', blob);
+    
+    // Extraer nombre del archivo del path
+    const fileName = s3Path.split('/').pop() || 'archivo.xlsx';
+    console.log('📝 Nombre del archivo:', fileName);
+    
+    // Crear URL del blob
+    const blobUrl = window.URL.createObjectURL(blob);
+    
+    // Crear enlace temporal para forzar descarga
     const link = document.createElement('a');
-    link.href = url;
-    link.download = s3Path.split('/').pop() || 'archivo.xlsx';
-    link.target = '_blank';
+    link.href = blobUrl;
+    link.download = fileName; // Forzar nombre de descarga
+    link.setAttribute('download', fileName); // Asegurar atributo download
     
+    // Agregar al DOM temporalmente
     document.body.appendChild(link);
+    
+    // Hacer click para iniciar descarga
     link.click();
-    document.body.removeChild(link);
+    
+    // Limpiar después de un breve delay
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl); // Liberar memoria
+    }, 100);
+    
+    console.log('✅ Descarga iniciada exitosamente');
     
     useToast().add({
-      title: 'Descarga iniciada',
-      description: 'El archivo se está descargando',
+      title: 'Descarga completada',
+      description: `Archivo ${fileName} descargado`,
       color: 'green'
     });
     
   } catch (error) {
-    console.error('Error descargando archivo:', error);
+    console.error('❌ Error descargando archivo:', error);
     useToast().add({
       title: 'Error en descarga',
-      description: 'No se pudo descargar el archivo',
+      description: error.message || 'No se pudo descargar el archivo',
       color: 'red'
     });
   } finally {

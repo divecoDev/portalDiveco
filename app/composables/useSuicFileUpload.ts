@@ -63,25 +63,30 @@ export const useSuicFileUpload = () => {
     countries: string[]
   ): Promise<void> => {
     try {
-      console.log('📝 Actualizando filesPath en SUIC:', {
+      console.log('📝 Iniciando actualización de filesPath en SUIC...');
+      console.log('📝 Parámetros:', {
         suicId,
         fileMetadata,
         countries
       });
       
-      // Obtener SUIC actual (usando any para evitar problemas de tipado)
-      const models = (client as any).models;
-      if (!models?.SUIC) {
-        throw new Error('Modelo SUIC no está disponible en el cliente');
-      }
+      // Verificar que el cliente esté disponible
+      console.log('🔍 Verificando cliente:', client);
+      console.log('🔍 Cliente tiene models?', !!client.models);
+      console.log('🔍 Cliente tiene mutations?', !!client.mutations);
       
-      const { data: suic } = await models.SUIC.get({ id: suicId });
+      // Obtener SUIC actual
+      console.log('🔍 Obteniendo registro SUIC actual...');
+      const { data: suic } = await (client as any).models.SUIC.get({ id: suicId });
+      
+      console.log('📋 SUIC actual:', suic);
       
       if (!suic) {
         throw new Error(`No se encontró el registro SUIC con id ${suicId}`);
       }
       
       // Construir nuevo filesPath
+      console.log('🔧 Construyendo nuevo filesPath...');
       const currentFilesPath = (suic.filesPath && typeof suic.filesPath === 'object' && !Array.isArray(suic.filesPath)) 
         ? (suic.filesPath as Record<string, any>) 
         : {};
@@ -109,28 +114,41 @@ export const useSuicFileUpload = () => {
         }
       }
       
-      // Actualizar registro
       console.log('🔄 Ejecutando update con:', {
         id: suicId,
-        filesPath: JSON.stringify(newFilesPath, null, 2)
+        filesPath: newFilesPath,
+        filesPathType: typeof newFilesPath,
+        filesPathString: JSON.stringify(newFilesPath)
       });
       
-      if (models.SUIC.update) {
-        const updateResult = await models.SUIC.update({
-          id: suicId,
-          filesPath: newFilesPath
-        });
-        
-        console.log('✅ Update result:', updateResult);
-      } else {
-        throw new Error('Método update no está disponible en el modelo SUIC');
-      }
+      // Amplify Gen 2 requiere que los campos a.json() se envíen como strings JSON
+      const filesPathAsString = JSON.stringify(newFilesPath);
       
+      console.log('📦 filesPathAsString:', filesPathAsString);
+      console.log('📦 filePathAsString type:', typeof filesPathAsString);
+      
+      // Actualizar registro
+      const updateResult = await (client as any).models.SUIC.update({
+        id: suicId,
+        filesPath: filesPathAsString // Enviar como string JSON
+      });
+      
+      console.log('✅ Update completado. Resultado:', updateResult);
       console.log('✅ filesPath actualizado exitosamente:', newFilesPath);
+      
+      // Verificar que se haya guardado correctamente
+      console.log('🔍 Verificando que el update se guardó correctamente...');
+      const { data: updatedSuic } = await (client as any).models.SUIC.get({ id: suicId });
+      console.log('✅ SUIC después del update:', updatedSuic);
+      console.log('✅ filesPath verificado:', updatedSuic?.filesPath);
       
     } catch (error) {
       console.error('❌ Error actualizando filesPath:', error);
-      console.error('Error stack:', error instanceof Error ? error.stack : 'N/A');
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Error desconocido',
+        stack: error instanceof Error ? error.stack : 'N/A',
+        error: error
+      });
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       throw new Error(`No se pudo actualizar filesPath en SUIC: ${errorMessage}`);
     }

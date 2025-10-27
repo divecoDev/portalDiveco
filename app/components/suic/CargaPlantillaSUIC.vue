@@ -73,10 +73,10 @@
       <!-- Botón para ver archivos cargados -->
       <button
         @click="showFilesModal = true"
-        class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+        class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
       >
         <UIcon name="i-heroicons-folder-open" class="w-5 h-5" />
-        Ver Archivos Cargados
+         Archivos
       </button>
 
       <!-- Botón para guardar en MySQL -->
@@ -87,7 +87,7 @@
           class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-800 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
           <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5" />
-          {{ isSaving ? 'Guardando...' : 'Guardar en Base de Datos' }}
+          {{ isSaving ? 'Guardando...' : 'Guardar' }}
         </button>
 
         <!-- Botón para siguiente paso -->
@@ -240,8 +240,23 @@ const loadSuicFilesPath = async () => {
     const { data: suic } = await models.SUIC.get({ id: props.suicId });
     
     if (suic && suic.filesPath) {
-      console.log('✅ filesPath cargado:', suic.filesPath);
-      suicFilesPath.value = suic.filesPath;
+      console.log('✅ filesPath cargado (raw):', suic.filesPath);
+      console.log('✅ filesPath tipo:', typeof suic.filesPath);
+      
+      // Si filesPath es un string JSON, parsearlo
+      if (typeof suic.filesPath === 'string') {
+        try {
+          const parsed = JSON.parse(suic.filesPath);
+          console.log('✅ filesPath parseado:', parsed);
+          suicFilesPath.value = parsed;
+        } catch (e) {
+          console.error('❌ Error parseando filesPath:', e);
+          suicFilesPath.value = {};
+        }
+      } else {
+        // Ya es un objeto
+        suicFilesPath.value = suic.filesPath;
+      }
     } else {
       console.log('📭 No hay filesPath en el modelo SUIC');
       suicFilesPath.value = {};
