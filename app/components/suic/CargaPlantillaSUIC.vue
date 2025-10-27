@@ -69,7 +69,16 @@
       @retry-country="handleRetryCountry"
     />
 
-    <section class="flex justify-center gap-4 mt-6">
+    <section class="flex flex-wrap justify-center gap-4 mt-6">
+      <!-- Botón para ver archivos cargados -->
+      <button
+        @click="showFilesModal = true"
+        class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+      >
+        <UIcon name="i-heroicons-folder-open" class="w-5 h-5" />
+        Ver Archivos Cargados
+      </button>
+
       <!-- Botón para guardar en MySQL -->
         <button
           v-if="hasDataToSave"
@@ -108,6 +117,13 @@
       @confirm="handleConfirm"
     />
 
+    <!-- Modal de archivos -->
+    <SuicFilesModal
+      v-model:open="showFilesModal"
+      :suic-id="suicId"
+      :files-path="suicFilesPath"
+    />
+
    
   </div>
 </template>
@@ -116,6 +132,7 @@
 import { useSuicData } from '~/composables/useSuicData';
 import { useSuicMySQL } from '~/composables/useSuicMySQL';
 import { useSuicValidations } from '~/composables/useSuicValidations';
+import { generateClient } from 'aws-amplify/data';
 
 const props = defineProps({
   suicId: {
@@ -131,6 +148,8 @@ const emit = defineEmits(['next-step']);
 const { loadedCounts, loadData, clearCountry, clearAll, clearCountriesInMySQL, isLoading, error, loadDataFromStorageAsync } = useSuicData(props.suicId);
 const { saveSuicToMySQL, getSuicSummary } = useSuicMySQL();
 const { validateMultipleCountries, monthsMetadata, isValidating, validationProgress } = useSuicValidations();
+
+const client = generateClient();
 
 // Estados para guardado
 const saveStates = ref({});
@@ -162,10 +181,12 @@ const canProceedToNextStep = computed(() => {
 
 const showUploadModal = ref(false);
 const showConfirmModal = ref(false);
+const showFilesModal = ref(false);
 const confirmTitle = ref('');
 const confirmMessage = ref('');
 const confirmText = ref('');
 const pendingAction = ref(null);
+const suicFilesPath = ref({});
 
 // Función para cargar resumen de MySQL
 const loadMySQLSummary = async () => {
@@ -205,12 +226,41 @@ const loadMySQLSummary = async () => {
   }
 };
 
+// Función para cargar filesPath del modelo SUIC
+const loadSuicFilesPath = async () => {
+  try {
+    console.log('📂 Cargando filesPath del modelo SUIC...');
+    
+    const models = client.models;
+    if (!models?.SUIC) {
+      console.warn('⚠️ Modelo SUIC no disponible');
+      return;
+    }
+    
+    const { data: suic } = await models.SUIC.get({ id: props.suicId });
+    
+    if (suic && suic.filesPath) {
+      console.log('✅ filesPath cargado:', suic.filesPath);
+      suicFilesPath.value = suic.filesPath;
+    } else {
+      console.log('📭 No hay filesPath en el modelo SUIC');
+      suicFilesPath.value = {};
+    }
+  } catch (error) {
+    console.error('❌ Error cargando filesPath:', error);
+    suicFilesPath.value = {};
+  }
+};
+
 // Cargar datos al montar
 onMounted(async () => {
   await loadData();
   
   // Cargar resumen desde MySQL
   await loadMySQLSummary();
+  
+  // Cargar filesPath del modelo SUIC
+  await loadSuicFilesPath();
   
   // Validar datos existentes si los hay
   try {
@@ -234,6 +284,9 @@ onMounted(async () => {
 // Manejar datos cargados desde modal
 const handleDataLoaded = async () => {
   await loadData(); // Recargar conteos
+  
+  // Recargar filesPath después de cargar nuevos datos
+  await loadSuicFilesPath();
   
   // Validar datos cargados
   try {

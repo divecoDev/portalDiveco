@@ -1,5 +1,5 @@
 // app/composables/useSuicFileUpload.ts
-import { uploadData } from 'aws-amplify/storage';
+import { uploadData, downloadData, getUrl } from 'aws-amplify/storage';
 import { generateClient } from 'aws-amplify/data';
 
 export const useSuicFileUpload = () => {
@@ -110,11 +110,18 @@ export const useSuicFileUpload = () => {
       }
       
       // Actualizar registro
+      console.log('🔄 Ejecutando update con:', {
+        id: suicId,
+        filesPath: JSON.stringify(newFilesPath, null, 2)
+      });
+      
       if (models.SUIC.update) {
-        await models.SUIC.update({
+        const updateResult = await models.SUIC.update({
           id: suicId,
           filesPath: newFilesPath
         });
+        
+        console.log('✅ Update result:', updateResult);
       } else {
         throw new Error('Método update no está disponible en el modelo SUIC');
       }
@@ -123,13 +130,63 @@ export const useSuicFileUpload = () => {
       
     } catch (error) {
       console.error('❌ Error actualizando filesPath:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'N/A');
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       throw new Error(`No se pudo actualizar filesPath en SUIC: ${errorMessage}`);
     }
   };
   
+  /**
+   * Descargar archivo SUIC de S3
+   * @param s3Path - Ruta del archivo en S3
+   * @returns Blob del archivo
+   */
+  const downloadSuicFile = async (s3Path: string): Promise<Blob> => {
+    try {
+      console.log('⬇️ Descargando archivo de S3:', s3Path);
+      
+      const result = await downloadData({
+        path: s3Path
+      }).result;
+      
+      console.log('✅ Archivo descargado exitosamente');
+      return result.body as unknown as Blob;
+    } catch (error) {
+      console.error('❌ Error descargando archivo de S3:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      throw new Error(`No se pudo descargar el archivo de S3: ${errorMessage}`);
+    }
+  };
+  
+  /**
+   * Obtener URL de descarga temporal para archivo SUIC
+   * @param s3Path - Ruta del archivo en S3
+   * @returns URL de descarga
+   */
+  const getDownloadUrl = async (s3Path: string): Promise<string> => {
+    try {
+      console.log('🔗 Generando URL de descarga para:', s3Path);
+      
+      const url = await getUrl({
+        path: s3Path,
+        options: {
+          expiresIn: 3600 // 1 hora
+        }
+      });
+      
+      console.log('✅ URL de descarga generada:', url.url.toString());
+      return url.url.toString();
+    } catch (error) {
+      console.error('❌ Error generando URL de descarga:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      throw new Error(`No se pudo generar URL de descarga: ${errorMessage}`);
+    }
+  };
+  
   return {
     uploadSuicFile,
-    updateSuicFilesPath
+    updateSuicFilesPath,
+    downloadSuicFile,
+    getDownloadUrl
   };
 };
