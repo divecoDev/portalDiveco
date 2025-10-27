@@ -31,63 +31,65 @@
         </div>
       </div>
     </div>
-
-    <!-- Información del SUIC -->
-    <div v-else-if="suicData" class="mb-6 p-4 bg-gradient-to-br from-cyan-50 to-green-50 dark:from-cyan-900/20 dark:to-green-900/20 rounded-lg border-2 border-cyan-200 dark:border-cyan-700 shadow-sm">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Estado del proceso -->
+    <div v-if="explosionStatus || pipelineStatus" class="mb-6">
+      <!-- Queued -->
+      <div v-if="pipelineStatus === 'Queued'" class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border-2 border-yellow-500 dark:border-yellow-400">
         <div class="flex items-center space-x-3">
-          <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-            <UIcon name="i-heroicons-tag" class="w-6 h-6 text-white" />
-          </div>
+          <div class="w-6 h-6 border-3 border-yellow-600 border-t-transparent rounded-full animate-spin"></div>
           <div>
-            <p class="text-sm text-gray-600 dark:text-gray-400">Tipo</p>
-            <p class="text-lg font-semibold text-gray-900 dark:text-white">
-              {{ suicData.type }}
-            </p>
-          </div>
-        </div>
-        
-        <div class="flex items-center space-x-3">
-          <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <UIcon name="i-heroicons-calendar" class="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <p class="text-sm text-gray-600 dark:text-gray-400">Primer Mes</p>
-            <p class="text-lg font-semibold text-gray-900 dark:text-white">
-              {{ primerMes ? monthNames[primerMes - 1] : 'Calculando...' }}
-            </p>
-          </div>
-        </div>
-
-        <div class="flex items-center space-x-3">
-          <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-            <UIcon name="i-heroicons-hashtag" class="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <p class="text-sm text-gray-600 dark:text-gray-400">ID SUIC</p>
-            <p class="text-lg font-mono font-semibold text-gray-900 dark:text-white">
-              {{ suicId }}
-            </p>
+            <p class="text-sm font-semibold text-yellow-800 dark:text-yellow-200">Pipeline en cola</p>
+            <p class="text-xs text-yellow-600 dark:text-yellow-400">Preparándose para ejecutar...</p>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Estado del proceso -->
-    <div v-if="explosionStatus" class="mb-6">
-      <!-- Running -->
-      <div v-if="explosionStatus === 'running'" class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-2 border-blue-500 dark:border-blue-400">
+      <!-- InProgress -->
+      <div v-else-if="pipelineStatus === 'InProgress'" class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-2 border-blue-500 dark:border-blue-400">
         <div class="flex items-center space-x-3">
           <div class="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
           <div>
-            <p class="text-sm font-semibold text-blue-800 dark:text-blue-200">Ejecutando pipeline...</p>
+            <p class="text-sm font-semibold text-blue-800 dark:text-blue-200">Generando SUIC...</p>
+            <p class="text-xs text-blue-600 dark:text-blue-400">Run ID: {{ runId }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Succeeded -->
+      <div v-else-if="pipelineStatus === 'Succeeded'" class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border-2 border-green-500 dark:border-green-400">
+        <div class="flex items-center space-x-3">
+          <UIcon name="i-heroicons-check-circle" class="w-6 h-6 text-green-600 dark:text-green-400" />
+          <div>
+            <p class="text-sm font-semibold text-green-800 dark:text-green-200">Pipeline completado exitosamente</p>
+            <p class="text-xs text-green-600 dark:text-green-400">El SUIC ha sido generado correctamente</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Failed/Cancelled -->
+      <div v-else-if="pipelineStatus === 'Failed' || pipelineStatus === 'Cancelled'" class="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border-2 border-red-500 dark:border-red-400">
+        <div class="flex items-start space-x-3">
+          <UIcon name="i-heroicons-exclamation-circle" class="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p class="text-sm font-semibold text-red-800 dark:text-red-200">Pipeline falló o fue cancelado</p>
+            <p class="text-xs text-red-700 dark:text-red-300 mt-1">Estado: {{ pipelineStatus }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Running (estado temporal antes de recibir status) -->
+      <div v-else-if="explosionStatus === 'running'" class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-2 border-blue-500 dark:border-blue-400">
+        <div class="flex items-center space-x-3">
+          <div class="w-6 h-6 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <div>
+            <p class="text-sm font-semibold text-blue-800 dark:text-blue-200">Iniciando pipeline...</p>
             <p class="text-xs text-blue-600 dark:text-blue-400">Este proceso puede tardar varios minutos</p>
           </div>
         </div>
       </div>
 
-      <!-- Success -->
-      <div v-else-if="explosionStatus === 'success'" class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border-2 border-green-500 dark:border-green-400">
+      <!-- Success (estado temporal) -->
+      <div v-else-if="explosionStatus === 'success' && !pipelineStatus" class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border-2 border-green-500 dark:border-green-400">
         <div class="flex items-center space-x-3">
           <UIcon name="i-heroicons-check-circle" class="w-6 h-6 text-green-600 dark:text-green-400" />
           <div>
@@ -97,7 +99,7 @@
         </div>
       </div>
 
-      <!-- Error -->
+      <!-- Error (estado temporal) -->
       <div v-else-if="explosionStatus === 'error'" class="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border-2 border-red-500 dark:border-red-400">
         <div class="flex items-start space-x-3">
           <UIcon name="i-heroicons-exclamation-circle" class="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
@@ -152,6 +154,10 @@ const errorLoadingData = ref(null);
 const suicData = ref(null);
 const primerMes = ref(null);
 
+// Polling del pipeline
+const explosionPollingInterval = ref(null);
+const pipelineStatus = ref(null); // 'Queued', 'InProgress', 'Succeeded', 'Failed', etc.
+
 // Composable para MySQL
 const { getSuicSummary } = useSuicMySQL();
 
@@ -186,6 +192,259 @@ const loadSuicData = async () => {
     errorLoadingData.value = error.message || 'Error desconocido al cargar datos';
   } finally {
     loadingData.value = false;
+  }
+};
+
+// Consultar estado del pipeline de explosión
+const consultarEstadoPipelineExplosion = async (runId) => {
+  try {
+    console.log(`🔍 Consultando estado del pipeline SUIC: ${runId}`);
+    
+    const { data } = await client.queries.getStatusPipeline({ runId });
+    
+    console.log('📋 Respuesta completa de getStatusPipeline:', data);
+    
+    if (!data) {
+      console.warn('No se recibió respuesta del estado del pipeline');
+      return;
+    }
+
+    // La respuesta viene directamente en data, no en data.getStatusPipeline
+    let pipelineInfo = data.getStatusPipeline || data;
+    console.log('📋 Pipeline info raw:', pipelineInfo);
+    
+    // Si pipelineInfo es un string JSON, parsearlo
+    if (typeof pipelineInfo === 'string') {
+      try {
+        pipelineInfo = JSON.parse(pipelineInfo);
+        console.log('📋 Pipeline info parseado:', pipelineInfo);
+      } catch (e) {
+        console.warn('No se pudo parsear pipelineInfo string:', e);
+        return;
+      }
+    }
+    
+    if (!pipelineInfo) {
+      console.warn('Información del pipeline no disponible - el pipeline puede estar aún inicializándose');
+      return;
+    }
+
+    const status = pipelineInfo.status;
+    console.log('🔄 Estado del pipeline SUIC:', status);
+
+    // Actualizar el estado visual del pipeline
+    pipelineStatus.value = status;
+
+    // Procesar según el estado
+    switch (status) {
+      case 'Succeeded':
+        console.log('✅ Pipeline de explosión SUIC completado exitosamente');
+        explosionInProgress.value = false;
+        
+        // Actualizar SUIC con estado completado
+        await actualizarSuicStatus('Completado');
+        
+        useToast().add({
+          title: "SUIC generado exitosamente",
+          description: "El proceso de generación SUIC ha finalizado correctamente",
+          color: "green",
+          timeout: 5000
+        });
+        break;
+
+      case 'Failed':
+      case 'Cancelled':
+      case 'Canceling':
+        console.log('❌ Pipeline de explosión SUIC falló o fue cancelado');
+        explosionInProgress.value = false;
+        
+        // Actualizar SUIC con estado de error
+        await actualizarSuicStatus('Error');
+        
+        useToast().add({
+          title: "Error en generación SUIC",
+          description: `El pipeline falló o fue cancelado con estado: ${status}`,
+          color: "red",
+          timeout: 5000
+        });
+        break;
+
+      case 'Queued':
+        console.log('⏳ Pipeline de explosión SUIC en cola, preparándose para ejecutar...');
+        break;
+
+      case 'InProgress':
+        console.log('⏳ Pipeline de explosión SUIC aún en progreso...');
+        break;
+
+      default:
+        console.warn('⚠️ Estado desconocido del pipeline de explosión SUIC:', status);
+    }
+    
+    // Manejar polling usando la función centralizada
+    await managePolling(runId, status);
+    
+  } catch (error) {
+    console.error('Error consultando estado del pipeline:', error);
+  }
+};
+
+// Función centralizada para manejar todo el polling del pipeline
+const managePolling = async (runId, status) => {
+  console.log(`🔄 managePolling llamado con runId: ${runId}, status: ${status}`);
+  
+  // Estados que requieren polling activo
+  const pollingStates = ['Queued', 'InProgress'];
+  
+  // Estados finales que detienen el polling COMPLETAMENTE
+  const finalStates = ['Succeeded', 'Failed', 'Canceling', 'Cancelled'];
+  
+  if (finalStates.includes(status)) {
+    // Detener polling si está activo y NO permitir más consultas
+    if (explosionPollingInterval.value) {
+      console.log('🛑 Pipeline terminado, deteniendo polling completamente - estado:', status);
+      clearInterval(explosionPollingInterval.value);
+      explosionPollingInterval.value = null;
+    }
+    console.log('🛑 Pipeline en estado final, no se realizarán más consultas hasta reinicio');
+    return;
+  }
+  
+  if (pollingStates.includes(status) || !status) {
+    // Solo iniciar polling si no hay uno activo
+    if (!explosionPollingInterval.value) {
+      console.log('🔄 Iniciando polling para estado:', status || 'desconocido');
+      await iniciarPollingExplosion(runId);
+    } else {
+      console.log('🔄 Polling ya activo, no iniciando nuevo interval');
+    }
+  }
+};
+
+// Función para iniciar polling del estado del pipeline de explosión
+const iniciarPollingExplosion = async (runId) => {
+  try {
+    console.log(`🔄 Iniciando polling para pipeline SUIC con runId: ${runId}`);
+    
+    // Consultar el estado inicial
+    await consultarEstadoPipelineExplosion(runId);
+    
+    // Si ya no hay intervalo (fue detenido por estado final), no continuar
+    if (!explosionPollingInterval.value) {
+      console.log('🛑 Polling fue detenido, no configurando interval');
+      return;
+    }
+    
+    // Configurar polling cada 10 segundos con timeout de 30 minutos
+    const startTime = Date.now();
+    const timeoutMs = 30 * 60 * 1000; // 30 minutos
+    
+    const intervalId = setInterval(async () => {
+      try {
+        console.log('🔄 Ejecutando polling de explosión SUIC...', new Date().toISOString());
+        
+        // Verificar timeout
+        if (Date.now() - startTime > timeoutMs) {
+          console.warn('⏰ Timeout del polling de explosión SUIC alcanzado');
+          clearInterval(intervalId);
+          explosionPollingInterval.value = null;
+          
+          // Resetear estado de progreso
+          explosionInProgress.value = false;
+          
+          useToast().add({
+            title: "Timeout del pipeline",
+            description: "El pipeline de generación SUIC ha tardado más de lo esperado. Verifica el estado manualmente.",
+            color: "orange",
+            timeout: 5000
+          });
+          return;
+        }
+        
+        await consultarEstadoPipelineExplosion(runId);
+        
+        // Si el intervalo fue detenido por estado final, no continuar
+        if (!explosionPollingInterval.value) {
+          console.log('🛑 Polling detenido por estado final, cancelando interval');
+          clearInterval(intervalId);
+          return;
+        }
+      } catch (error) {
+        console.error('Error en polling de explosión SUIC:', error);
+        // No limpiar el interval aquí, continuar intentando
+      }
+    }, 10000);
+    
+    console.log('⏰ Polling configurado cada 10 segundos para runId:', runId);
+    
+    // Guardar el intervalId para poder detenerlo después
+    explosionPollingInterval.value = intervalId;
+    
+  } catch (error) {
+    console.error('Error iniciando polling de explosión SUIC:', error);
+  }
+};
+
+// Función para actualizar el estado de explosión en SUIC
+const actualizarSuicStatus = async (nuevoEstado) => {
+  try {
+    console.log('📝 Intentando actualizar SUIC con estado:', nuevoEstado);
+    console.log('📝 ID del SUIC a actualizar:', props.suicId);
+    
+    const result = await client.models.SUIC.update({
+      id: props.suicId,
+      explosionStatus: nuevoEstado
+    });
+    
+    console.log('📝 Resultado de la actualización de SUIC:', result);
+    
+    console.log(`📝 SUIC actualizado con estado de explosión: ${nuevoEstado}`);
+  } catch (error) {
+    console.error('❌ Error actualizando estado de explosión en SUIC:', error);
+    console.error('❌ Detalles del error:', error.message);
+  }
+};
+
+// Función para verificar el estado inicial del pipeline de explosión
+const checkInitialExplosionState = async () => {
+  try {
+    const { data } = await client.models.SUIC.get({ id: props.suicId });
+    if (!data) return;
+
+    const runIdExplosion = data.explosionRunId;
+    const statusExplosion = data.explosionStatus;
+
+    console.log('🔍 Estado inicial del pipeline SUIC:', { runIdExplosion, statusExplosion });
+
+    if (runIdExplosion && statusExplosion) {
+      // Mapear estados de la base de datos a estados del pipeline
+      let pipelineStatusValue = null;
+      
+      if (statusExplosion === 'En Proceso') {
+        pipelineStatusValue = 'InProgress'; // Asumir que está en progreso si no sabemos el estado exacto
+      } else if (statusExplosion === 'Completado') {
+        pipelineStatusValue = 'Succeeded';
+        explosionInProgress.value = false;
+        pipelineStatus.value = 'Succeeded';
+        runId.value = runIdExplosion;
+        console.log('✅ Pipeline de explosión SUIC ya completado');
+        return; // No necesitamos polling para estado completado
+      } else if (statusExplosion === 'Error') {
+        explosionInProgress.value = false;
+        pipelineStatus.value = 'Failed';
+        console.log('❌ Pipeline de explosión SUIC en estado de error, permitiendo reintento');
+        return; // No necesitamos polling para estado de error
+      }
+      
+      // Si necesitamos polling, usar la función centralizada
+      if (pipelineStatusValue) {
+        runId.value = runIdExplosion;
+        explosionInProgress.value = true;
+        await managePolling(runIdExplosion, pipelineStatusValue);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error verificando estado inicial del pipeline de explosión SUIC:', error);
   }
 };
 
@@ -247,6 +506,16 @@ const ejecutarExplosion = async () => {
       
       explosionStatus.value = 'success';
 
+      // Actualizar SUIC con runId y estado "En Proceso"
+      await client.models.SUIC.update({
+        id: props.suicId,
+        explosionRunId: extractedRunId,
+        explosionStatus: 'En Proceso'
+      });
+
+      // Iniciar polling para monitorear el estado
+      await iniciarPollingExplosion(extractedRunId);
+
       // Cerrar toast de carga
       useToast().remove(loadingToast.id);
 
@@ -276,8 +545,17 @@ const ejecutarExplosion = async () => {
 };
 
 // Cargar datos al montar
-onMounted(() => {
-  loadSuicData();
+onMounted(async () => {
+  await loadSuicData();
+  await checkInitialExplosionState();
+});
+
+// Limpiar polling al desmontar
+onUnmounted(() => {
+  if (explosionPollingInterval.value) {
+    clearInterval(explosionPollingInterval.value);
+    explosionPollingInterval.value = null;
+  }
 });
 </script>
 

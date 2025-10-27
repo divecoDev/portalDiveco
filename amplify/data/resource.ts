@@ -144,6 +144,8 @@ const schema = a.schema({
       filesPath: a.json(),
       createdBy: a.string(),
       type: a.string(), //
+      explosionRunId: a.string(),
+      explosionStatus: a.string(), // 'Pendiente', 'En Proceso', 'Completado', 'Error'
     })
     .authorization((allow) => [allow.publicApiKey()]),
 
