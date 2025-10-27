@@ -17,6 +17,18 @@ export interface SaveProgressCallback {
   (batchIndex: number, totalBatches: number): void;
 }
 
+export interface SuicSummaryResponse {
+  success: boolean;
+  suicId: string;
+  countries: Array<{
+    paisCode: string;
+    totalRecords: number;
+    lastUpdated: string | null;
+    availableMonths: number[]; // Array de números de mes (1-12)
+  }>;
+  message: string;
+}
+
 export const useSuicMySQL = () => {
   const BATCH_SIZE = 500; // Registros por lote
 
@@ -172,9 +184,44 @@ export const useSuicMySQL = () => {
     return results;
   };
 
+  const getSuicSummary = async (suicId: string): Promise<SuicSummaryResponse> => {
+    console.log(`🔍 Consultando resumen de SUIC: ${suicId}`);
+
+    try {
+      const result = await (client as any).queries.getSuicSummary({
+        suicId
+      });
+
+      console.log(`✅ Resumen SUIC obtenido:`, result);
+
+      // Parsear respuesta
+      let parsedResult;
+      if (typeof result === 'string') {
+        parsedResult = JSON.parse(result);
+      } else if (result.data && typeof result.data === 'string') {
+        parsedResult = JSON.parse(result.data);
+      } else {
+        parsedResult = result;
+      }
+
+      return parsedResult as SuicSummaryResponse;
+
+    } catch (error) {
+      console.error(`❌ Error consultando resumen SUIC:`, error);
+      
+      return {
+        success: false,
+        suicId,
+        countries: [],
+        message: `Error consultando resumen: ${error instanceof Error ? error.message : 'Error desconocido'}`
+      };
+    }
+  };
+
   return {
     saveSuicToMySQL,
     saveAllCountries,
+    getSuicSummary,
     BATCH_SIZE
   };
 };

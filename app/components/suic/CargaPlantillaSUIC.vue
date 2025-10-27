@@ -21,26 +21,14 @@
           Cargar Archivo Excel
         </button>
 
-        <!-- Botón para guardar en MySQL -->
+        <!-- Botón para refrescar estado MySQL -->
         <button
-          v-if="hasDataToSave"
-          @click="handleSaveToMySQL"
-          :disabled="isSaving"
-          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          @click="loadMySQLSummary"
+          :disabled="isLoadingSummary"
+          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-blue-800 to-cyan-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
-          <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5" />
-          {{ isSaving ? 'Guardando...' : 'Guardar en Base de Datos' }}
-        </button>
-
-        <!-- Botón para previsualizar datos -->
-        <button
-          v-if="hasDataToSave"
-          @click="handlePreviewData"
-          :disabled="isLoadingPreview"
-          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-        >
-          <UIcon name="i-heroicons-eye" class="w-5 h-5" />
-          {{ isLoadingPreview ? 'Cargando...' : 'Previsualizar Datos' }}
+          <UIcon :name="isLoadingSummary ? 'i-heroicons-arrow-path' : 'i-heroicons-arrow-path'" class="w-5 h-5" :class="{ 'animate-spin': isLoadingSummary }" />
+          {{ isLoadingSummary ? 'Refrescando...' : 'Refrescar Estado' }}
         </button>
       </div>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-3">
@@ -75,10 +63,24 @@
       :months-metadata="monthsMetadata"
       :is-validating="isValidating"
       :validation-progress="validationProgress"
+      :mysql-counts="mysqlCounts"
       @clear-country="handleClearCountry"
       @clear-all="handleClearAll"
       @retry-country="handleRetryCountry"
     />
+
+    <section class="flex justify-center mt-6">
+      <!-- Botón para guardar en MySQL -->
+        <button
+          v-if="hasDataToSave"
+          @click="handleSaveToMySQL"
+          :disabled="isSaving"
+          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-blue-800 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+        >
+          <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5" />
+          {{ isSaving ? 'Guardando...' : 'Guardar en Base de Datos' }}
+        </button>  
+    </section>
 
     <!-- Modal de carga -->
     <SuicUploadModal
@@ -96,12 +98,7 @@
       @confirm="handleConfirm"
     />
 
-    <!-- Modal de previsualización -->
-    <SuicPreviewModal
-      ref="previewModalRef"
-      :preview-data="previewData"
-      @update:open="handlePreviewClose"
-    />
+   
   </div>
 </template>
 
@@ -118,8 +115,8 @@ const props = defineProps({
 });
 
 // Usar composables
-const { loadedCounts, loadData, clearCountry, clearAll, isLoading, error, loadDataFromStorageAsync } = useSuicData(props.suicId);
-const { saveSuicToMySQL } = useSuicMySQL();
+const { loadedCounts, loadData, clearCountry, clearAll, clearCountriesInMySQL, isLoading, error, loadDataFromStorageAsync } = useSuicData(props.suicId);
+const { saveSuicToMySQL, getSuicSummary } = useSuicMySQL();
 const { validateMultipleCountries, monthsMetadata, isValidating, validationProgress } = useSuicValidations();
 
 // Estados para guardado
@@ -128,6 +125,10 @@ const isSaving = ref(false);
 const previewData = ref({});
 const isLoadingPreview = ref(false);
 const previewModalRef = ref(null);
+
+// Estados para MySQL
+const mysqlCounts = ref({});
+const isLoadingSummary = ref(false);
 
 // Computed para verificar si hay datos para guardar
 const hasDataToSave = computed(() => {
@@ -141,9 +142,50 @@ const confirmMessage = ref('');
 const confirmText = ref('');
 const pendingAction = ref(null);
 
+// Función para cargar resumen de MySQL
+const loadMySQLSummary = async () => {
+  isLoadingSummary.value = true;
+  try {
+    const summary = await getSuicSummary(props.suicId);
+    
+    if (summary.success && summary.countries) {
+      const counts = {};
+      summary.countries.forEach(country => {
+        counts[country.paisCode] = {
+          count: country.totalRecords,
+          availableMonths: country.availableMonths || []
+        };
+      });
+      mysqlCounts.value = counts;
+      console.log('✅ Resumen MySQL cargado:', counts);
+      
+      // Limpiar países que ya están en MySQL de IndexedDB
+      const countsForCleanup = {};
+      summary.countries.forEach(country => {
+        countsForCleanup[country.paisCode] = country.totalRecords;
+      });
+      await clearCountriesInMySQL(countsForCleanup);
+      
+      // Recargar datos para actualizar conteos locales
+      await loadData();
+    } else {
+      console.warn('⚠️ No se obtuvo resumen válido de MySQL');
+      mysqlCounts.value = {};
+    }
+  } catch (error) {
+    console.error('❌ Error cargando resumen MySQL:', error);
+    mysqlCounts.value = {};
+  } finally {
+    isLoadingSummary.value = false;
+  }
+};
+
 // Cargar datos al montar
 onMounted(async () => {
   await loadData();
+  
+  // Cargar resumen desde MySQL
+  await loadMySQLSummary();
   
   // Validar datos existentes si los hay
   try {
@@ -283,6 +325,9 @@ const handleRetryCountry = async (paisCode) => {
       });
     }
 
+    // Refrescar resumen MySQL después de guardar exitosamente
+    await loadMySQLSummary();
+
   } catch (error) {
     console.error(`Error reintentando guardado de ${paisCode}:`, error);
     saveStates.value[paisCode] = {
@@ -373,6 +418,9 @@ const handleSaveToMySQL = async () => {
         });
       }
     }
+
+    // Refrescar resumen MySQL después de guardar
+    await loadMySQLSummary();
 
     useToast().add({
       title: 'Proceso completado',

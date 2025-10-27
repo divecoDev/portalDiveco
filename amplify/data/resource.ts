@@ -17,6 +17,7 @@ import { GetMaterialesSinAprovicionamiento } from "../functions/boom/GetMaterial
 import { GetMaterialesSinCentroProduccion } from "../functions/boom/getMaterialesSinCentroProduccion/resource";
 import { aprovisionamiento } from "../functions/porcentajes-asignacion/resource";
 import { suicSaveBatch } from "../functions/suic/resource";
+import { suicGetSummary } from "../functions/suic/getSummary/resource";
 
 const schema = a.schema({
   Todo: a
@@ -278,6 +279,18 @@ const schema = a.schema({
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(suicSaveBatch)),
+
+  /**
+   *  SUIC - Consultar resumen de datos guardados en MySQL
+   */
+  getSuicSummary: a
+    .query()
+    .arguments({
+      suicId: a.string().required(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(suicGetSummary)),
 });
 
 export type Schema = ClientSchema<typeof schema>;

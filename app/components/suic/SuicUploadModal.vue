@@ -259,7 +259,12 @@ const handleFileChange = async (e) => {
   try {
     await processFile(file);
   } catch (error) {
-    validationError.value = error.message;
+    // Mensaje de error personalizado para celdas vacías
+    if (error.message.includes('celda(s) vacía(s)')) {
+      validationError.value = `El archivo contiene celdas vacías. ${error.message}\n\nPor favor, complete todos los campos en el archivo Excel y vuelva a cargarlo.`;
+    } else {
+      validationError.value = error.message;
+    }
   }
 };
 
@@ -337,6 +342,57 @@ const validateColumns = (headers) => {
   console.log('✅ Column validation passed');
 };
 
+// Función para validar y limpiar una fila
+const validateAndCleanRow = (row, headers, rowIndex) => {
+  // 1. Verificar si fila está completamente vacía
+  const isEmpty = row.every(cell => cell === null || cell === undefined || cell === '');
+  if (isEmpty) return null; // Indicar que debe omitirse
+  
+  // 2. Verificar si hay celdas vacías (error fatal)
+  const emptyCells = [];
+  row.forEach((cell, idx) => {
+    if (cell === null || cell === undefined || cell === '') {
+      emptyCells.push({ column: headers[idx], index: idx });
+    }
+  });
+  
+  if (emptyCells.length > 0) {
+    throw new Error(
+      `Fila ${rowIndex + 2}: Se detectaron ${emptyCells.length} celda(s) vacía(s) en columna(s): ${emptyCells.map(c => c.column).join(', ')}. Complete todos los campos.`
+    );
+  }
+  
+  // 3. Limpiar y formatear valores
+  const assignmentColumns = [
+    'asignación_vendedor', 'asignación_canal', 'asignación_color',
+    'asignacion_marca', 'asignación_presentación', 'asignación_modelo'
+  ];
+  
+  const cleanedRow = row.map((cell, idx) => {
+    const header = headers[idx];
+    let value = cell;
+    
+    // Aplicar trim si es string
+    if (typeof value === 'string') {
+      value = value.trim();
+    }
+    
+    // Aplicar formato de 3 dígitos a columnas de asignación
+    if (assignmentColumns.includes(header.toLowerCase())) {
+      const numValue = Number(value);
+      if (!isNaN(numValue) && numValue >= 0) {
+        value = numValue <= 999 
+          ? String(numValue).padStart(3, '0')
+          : String(numValue);
+      }
+    }
+    
+    return value;
+  });
+  
+  return cleanedRow;
+};
+
 const processRows = (rows, headers) => {
   const dataByPais = {};
   const dataRows = rows.slice(1);
@@ -352,48 +408,59 @@ const processRows = (rows, headers) => {
   };
 
   dataRows.forEach((row, index) => {
-    // Usar posiciones fijas ya validadas: pais[0], centro[1]
-    const pais = row[0]?.toString().trim().toUpperCase();
-    const centro = row[1];
-    
-    console.log(`🔍 Row ${index}: Pais=${pais}, Centro=${centro}`);
-    
     let status = 'success';
     let details = 'Procesada correctamente';
     
-    if (!pais) {
-      console.log(`⚠️ Row ${index}: Missing pais`);
-      status = 'error';
-      details = 'Falta país';
-      processingSummary.value.errors++;
-    } else if (!validPaises.includes(pais)) {
-      console.log(`⚠️ Row ${index}: Invalid pais '${pais}'`);
-      status = 'error';
-      details = `País inválido: ${pais}. Válidos: ${validPaises.join(', ')}`;
-      processingSummary.value.errors++;
-    } else {
-      // Procesar fila exitosamente (centro es opcional)
-      const rowData = {};
-      headers.forEach((header, idx) => {
-        rowData[header] = row[idx];
-      });
-
-      if (!dataByPais[pais]) dataByPais[pais] = [];
-      dataByPais[pais].push(rowData);
-      processingSummary.value.success++;
+    try {
+      // Validar y limpiar la fila
+      const cleanedRow = validateAndCleanRow(row, headers, index);
       
-      console.log(`✅ Row ${index}: Pais ${pais}, Centro ${centro} -> Added to ${pais}`);
-    }
+      // Si retorna null, es una fila completamente vacía
+      if (cleanedRow === null) {
+        console.log(`⏭️ Row ${index}: Fila completamente vacía, omitida`);
+        processingSummary.value.skipped++;
+        return;
+      }
+      
+      // Usar posiciones fijas ya validadas: pais[0], centro[1]
+      const pais = cleanedRow[0]?.toString().trim().toUpperCase();
+      const centro = cleanedRow[1];
+      
+      console.log(`🔍 Row ${index}: Pais=${pais}, Centro=${centro}`);
+      
+      if (!validPaises.includes(pais)) {
+        console.log(`⚠️ Row ${index}: Invalid pais '${pais}'`);
+        status = 'error';
+        details = `País inválido: ${pais}. Válidos: ${validPaises.join(', ')}`;
+        processingSummary.value.errors++;
+      } else {
+        // Procesar fila exitosamente
+        const rowData = {};
+        headers.forEach((header, idx) => {
+          rowData[header] = cleanedRow[idx];
+        });
 
-    // Agregar a debug data (solo primeras 5 filas)
-    if (index < 5) {
-      debugData.value.push({
-        rowIndex: index + 1, // +1 porque empezamos desde 0
-        pais: pais || 'N/A',
-        centro: centro || 'N/A',
-        status: status,
-        details: details
-      });
+        if (!dataByPais[pais]) dataByPais[pais] = [];
+        dataByPais[pais].push(rowData);
+        processingSummary.value.success++;
+        
+        console.log(`✅ Row ${index}: Pais ${pais}, Centro ${centro} -> Added to ${pais}`);
+      }
+      
+      // Agregar a debug data (solo primeras 5 filas exitosas)
+      if (index < 5 && status === 'success') {
+        debugData.value.push({
+          rowIndex: index + 1,
+          pais: pais || 'N/A',
+          centro: centro || 'N/A',
+          status: status,
+          details: details
+        });
+      }
+    } catch (error) {
+      // Capturar errores de validación y re-lanzar
+      console.error(`❌ Row ${index}: Error de validación:`, error.message);
+      throw error;
     }
   });
 
