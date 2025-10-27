@@ -11,3 +11,13 @@ export const storage = defineStorage({
     ],
   }),
 });
+
+
+export const suicStorage = defineStorage({
+  name: "suicStorage",
+  access: (allow) => ({
+    "suic/*": [
+      allow.authenticated.to(["read", "write", "delete"]),
+    ],
+  }),
+});
