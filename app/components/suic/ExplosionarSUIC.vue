@@ -123,12 +123,24 @@
         {{ explosionInProgress ? 'Generando...' : 'Generar SUIC' }}
       </button>
     </div>
+
+    <!-- Visualización de meta_diaria_final después de éxito -->
+    <div v-if="pipelineStatus === 'Succeeded'" class="mt-8">
+      <MetaDiariaFinalDisplay
+        :data="metaDiariaData"
+        :summary="metaDiariaSummary"
+        :loading="loadingMetaDiaria"
+        :error="errorMetaDiaria"
+      />
+    </div>
   </div>
 </template>
 
 <script setup>
 import { generateClient } from "aws-amplify/data";
 import { useSuicMySQL } from '~/composables/useSuicMySQL';
+import { useSuicMetaDiariaFinal } from '~/composables/useSuicMetaDiariaFinal';
+import MetaDiariaFinalDisplay from '~/components/suic/MetaDiariaFinalDisplay.vue';
 
 const props = defineProps({
   suicId: {
@@ -153,6 +165,15 @@ const errorLoadingData = ref(null);
 // Datos SUIC
 const suicData = ref(null);
 const primerMes = ref(null);
+
+// Datos de meta_diaria_final
+const metaDiariaData = ref([]);
+const metaDiariaSummary = ref({ sociedades: [], mesesDisponibles: [] });
+const loadingMetaDiaria = ref(false);
+const errorMetaDiaria = ref(null);
+
+// Composable para meta_diaria_final
+const { getMetaDiariaFinal } = useSuicMetaDiariaFinal();
 
 // Polling del pipeline
 const explosionPollingInterval = ref(null);
@@ -243,6 +264,9 @@ const consultarEstadoPipelineExplosion = async (runId) => {
         
         // Actualizar SUIC con estado completado
         await actualizarSuicStatus('Completado');
+        
+        // Consultar datos de meta_diaria_final
+        await consultarMetaDiariaFinal();
         
         useToast().add({
           title: "SUIC generado exitosamente",
@@ -405,6 +429,36 @@ const actualizarSuicStatus = async (nuevoEstado) => {
   }
 };
 
+// Función para consultar datos de meta_diaria_final
+const consultarMetaDiariaFinal = async () => {
+  try {
+    loadingMetaDiaria.value = true;
+    errorMetaDiaria.value = null;
+
+    console.log('🔍 Consultando datos de meta_diaria_final para SUIC:', props.suicId);
+
+    const response = await getMetaDiariaFinal(props.suicId);
+
+    if (response.success && response.data) {
+      metaDiariaData.value = response.data;
+      metaDiariaSummary.value = response.summary;
+      
+      console.log('✅ Datos de meta_diaria_final obtenidos:', {
+        registros: response.data.length,
+        sociedades: response.summary.sociedades.length,
+        meses: response.summary.mesesDisponibles.length
+      });
+    } else {
+      errorMetaDiaria.value = response.message || 'Error al consultar datos';
+    }
+  } catch (error) {
+    console.error('❌ Error consultando meta_diaria_final:', error);
+    errorMetaDiaria.value = error.message || 'Error desconocido';
+  } finally {
+    loadingMetaDiaria.value = false;
+  }
+};
+
 // Función para verificar el estado inicial del pipeline de explosión
 const checkInitialExplosionState = async () => {
   try {
@@ -428,6 +482,10 @@ const checkInitialExplosionState = async () => {
         pipelineStatus.value = 'Succeeded';
         runId.value = runIdExplosion;
         console.log('✅ Pipeline de explosión SUIC ya completado');
+        
+        // Consultar datos de meta_diaria_final si ya está completado
+        await consultarMetaDiariaFinal();
+        
         return; // No necesitamos polling para estado completado
       } else if (statusExplosion === 'Error') {
         explosionInProgress.value = false;

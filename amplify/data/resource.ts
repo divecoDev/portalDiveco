@@ -19,6 +19,7 @@ import { aprovisionamiento } from "../functions/porcentajes-asignacion/resource"
 import { suicSaveBatch } from "../functions/suic/resource";
 import { suicGetSummary } from "../functions/suic/getSummary/resource";
 import { runExplosionSuic } from "../functions/suic/runExplosion/resource";
+import { getMetaDiariaFinal } from "../functions/suic/getMetaDiariaFinal/resource";
 
 const schema = a.schema({
   Todo: a
@@ -294,6 +295,18 @@ const schema = a.schema({
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(suicGetSummary)),
+
+  /**
+   *  SUIC - Consultar datos de meta_diaria_final agregados por sociedad y mes
+   */
+  getMetaDiariaFinal: a
+    .query()
+    .arguments({
+      suicId: a.string().required(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(getMetaDiariaFinal)),
 
   /**
    *  SUIC - Ejecutar pipeline de explosión en Azure Data Factory
