@@ -143,7 +143,9 @@
 </template>
 
 <script setup>
-import { generateClient } from "aws-amplify/data";
+import { executeRPA } from "~/services/rpa-service";
+import { useRpaStatus } from "~/composables/useRpaStatus";
+import { watch } from "vue";
 
 const props = defineProps({
   suicId: {
@@ -152,18 +154,51 @@ const props = defineProps({
   }
 });
 
-const client = generateClient();
-
 // Estados del componente
 const loading = ref(false);
 const error = ref(null);
 const isProcessing = ref(false);
 
-// Estados de los dos RPAs individuales
+// Composable para monitorear estado del RPA
+const {
+  status: rpaStatus,
+  statusData,
+  startPolling,
+  stopPolling,
+  checkRpaStatus,
+} = useRpaStatus(props.suicId, false);
+
+// Estados de los dos RPAs individuales (mapeados desde el estado global)
 const rpaStates = ref({
   'bloqueo-sap': null,      // null, 'running', 'success', 'error'
   'carga-plantilla': null   // null, 'running', 'success', 'error'
 });
+
+// Mapear estado global del RPA a estados individuales basados en el tipo
+const updateRpaStatesFromStatus = () => {
+  if (statusData.value.type && statusData.value.status) {
+    const rpaKey = statusData.value.type;
+    // Mapear estados: pending -> null (pendiente), running -> 'running', completed -> 'success', error -> 'error'
+    if (statusData.value.status === 'pending' || statusData.value.status === null) {
+      rpaStates.value[rpaKey] = null;
+    } else if (statusData.value.status === 'running') {
+      rpaStates.value[rpaKey] = 'running';
+    } else if (statusData.value.status === 'completed') {
+      rpaStates.value[rpaKey] = 'success';
+    } else if (statusData.value.status === 'error') {
+      rpaStates.value[rpaKey] = 'error';
+    }
+  }
+};
+
+// Watch para actualizar estados individuales cuando cambie el estado global
+watch(
+  () => [statusData.value.status, statusData.value.type],
+  () => {
+    updateRpaStatesFromStatus();
+  },
+  { deep: true }
+);
 
 // Métodos auxiliares para UI
 const getRpaStatusText = (rpaKey) => {
@@ -245,13 +280,13 @@ const ejecutarRPAIndividual = async (rpaKey) => {
   }
 
   try {
-    // Actualizar estado a running
-    rpaStates.value[rpaKey] = 'running';
-
     const rpaNames = {
       'bloqueo-sap': 'Bloqueo de usuarios SAP',
       'carga-plantilla': 'Carga de Plantilla SUIC BW'
     };
+
+    // Actualizar estado local inicialmente
+    rpaStates.value[rpaKey] = 'running';
 
     useToast().add({
       title: 'Iniciando RPA',
@@ -259,38 +294,32 @@ const ejecutarRPAIndividual = async (rpaKey) => {
       color: 'blue'
     });
 
-    // TODO: Implementar lógica de integración con servicio externo
-    // Ejemplo para Bloqueo SAP:
-    // if (rpaKey === 'bloqueo-sap') {
-    //   const result = await client.mutations.executeBloqueoSAP({ suicId: props.suicId });
-    // }
-    
-    // Ejemplo para Carga Plantilla:
-    // if (rpaKey === 'carga-plantilla') {
-    //   const result = await client.mutations.executeCargaPlantilla({ suicId: props.suicId });
-    // }
+    // Ejecutar RPA usando el servicio
+    const result = await executeRPA(rpaKey, props.suicId);
 
-    // Simular proceso por 3 segundos
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    if (!result.success) {
+      throw new Error(result.error || 'Error al ejecutar RPA');
+    }
 
-    // Marcar como exitoso
-    rpaStates.value[rpaKey] = 'success';
+    console.log(`✅ RPA ${rpaKey} ejecutado, executionId: ${result.executionId}`);
 
-    useToast().add({
-      title: 'RPA completado',
-      description: `${rpaNames[rpaKey]} finalizó exitosamente`,
-      color: 'green'
-    });
+    // Iniciar polling para monitorear el estado
+    await checkRpaStatus(); // Consulta inicial
+    startPolling();
+
+    // El polling actualizará automáticamente el estado cuando el webhook actualice la BD
 
   } catch (err) {
-    console.error(`Error ejecutando RPA ${rpaKey}:`, err);
+    console.error(`❌ Error ejecutando RPA ${rpaKey}:`, err);
     rpaStates.value[rpaKey] = 'error';
 
     useToast().add({
       title: 'Error en RPA',
-      description: err.message,
+      description: err.message || 'Error desconocido',
       color: 'red'
     });
+
+    stopPolling();
   }
 };
 
@@ -343,8 +372,26 @@ const ejecutarTodosRPA = async () => {
 };
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
   console.log('Componente EjecutarRPA montado para SUIC:', props.suicId);
+  
+  // Verificar estado inicial del RPA al cargar
+  try {
+    await checkRpaStatus();
+    updateRpaStatesFromStatus();
+    
+    // Si hay un RPA en ejecución, iniciar polling
+    if (statusData.value.status === 'running' || statusData.value.status === 'pending') {
+      startPolling();
+    }
+  } catch (err) {
+    console.error('Error verificando estado inicial del RPA:', err);
+  }
+});
+
+// Limpiar polling al desmontar
+onUnmounted(() => {
+  stopPolling();
 });
 </script>
 

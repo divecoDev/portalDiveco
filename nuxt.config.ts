@@ -20,6 +20,7 @@ export default defineNuxtConfig({
     msTenantId: "",
     msClientId: "",
     msClientSecret: "",
+    rpaApiUrl: process.env.RPA_API_URL || "", // URL base de la API externa del RPA
   },
 
    pinia: {
