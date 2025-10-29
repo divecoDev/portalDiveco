@@ -26,7 +26,7 @@ import { GetMaterialesSinAprovicionamiento } from "./functions/boom/GetMateriale
 import { GetMaterialesSinCentroProduccion } from "./functions/boom/getMaterialesSinCentroProduccion/resource";
 import { boomFilesStore } from "./functions/boom/boomFilesStore.ts/resource";
 import { suicSaveBatch } from "./functions/suic/resource";
-
+import {generateSociedadesCsv} from "./functions/suic/generateSociedadesCsv/resource";
 /**
  * Configuración del backend de Amplify
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
@@ -52,6 +52,7 @@ export const backend = defineBackend({
   GetMaterialesSinCentroProduccion,
   boomFilesStore,
   suicSaveBatch,
+  generateSociedadesCsv,
 });
 
 const resetPasswordLambda = backend.resetPassword.resources.lambda;
@@ -197,6 +198,19 @@ const suicSaveBatchPolicy = new iam.PolicyStatement({
 });
 suicSaveBatchLambda.addToRolePolicy(suicSaveBatchPolicy);
 
+/// generateSociedadesCsv con permisos de S3
+const generateSociedadesCsvLambda = backend.generateSociedadesCsv.resources.lambda;
+const generateSociedadesCsvPolicy = new iam.PolicyStatement({
+  actions: [
+    "s3:PutObject",
+    "s3:PutObjectAcl",
+    "s3:GetObject",
+    "s3:DeleteObject",
+    "s3:ListBucket"
+  ],
+  resources: ["arn:aws:s3:::porta-diveco-suic", "arn:aws:s3:::porta-diveco-suic/*"],
+});
+generateSociedadesCsvLambda.addToRolePolicy(generateSociedadesCsvPolicy);
 /*
  * CREACION DE API REST
  */

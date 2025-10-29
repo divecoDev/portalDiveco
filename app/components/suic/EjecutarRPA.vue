@@ -32,6 +32,70 @@
       </div>
     </div>
 
+    <!-- Botón de Generar CSVs por Sociedad -->
+    <div class="mb-6">
+      <div 
+        class="p-4 bg-white dark:bg-gray-800 border-2 rounded-lg transition-all duration-300"
+        :class="getCsvCardClass()"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3 flex-1">
+            <div 
+              class="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+              :class="getCsvIconClass()"
+            >
+              <UIcon name="i-heroicons-document-arrow-down" class="w-6 h-6 text-white" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                Generar CSVs por Sociedad
+              </h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Genera archivos CSV separados por sociedad desde meta_diaria_final
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-3 ml-4">
+            <!-- Estado del proceso -->
+            <div class="text-right">
+              <div class="flex items-center space-x-2">
+                <div v-if="csvGenerating" class="w-5 h-5 border-2 border-cyan-600 border-t-transparent rounded-full animate-spin"></div>
+                <UIcon v-else-if="csvState === 'success'" name="i-heroicons-check-circle" class="w-5 h-5 text-green-600 dark:text-green-400" />
+                <UIcon v-else-if="csvState === 'error'" name="i-heroicons-exclamation-circle" class="w-5 h-5 text-red-600 dark:text-red-400" />
+                <span class="text-xs font-medium" :class="getCsvStatusTextClass()">
+                  {{ getCsvStatusText() }}
+                </span>
+              </div>
+            </div>
+            <button
+              @click="generarCsvsPorSociedad"
+              :disabled="csvGenerating || csvState === 'success'"
+              class="px-4 py-2 text-sm rounded-md font-semibold transition-all duration-300"
+              :class="getCsvButtonClass()"
+            >
+              {{ getCsvButtonText() }}
+            </button>
+          </div>
+        </div>
+        <!-- Mostrar información de archivos generados -->
+        <div v-if="csvState === 'success' && csvFiles.length > 0" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Archivos generados ({{ csvFiles.length }}):
+          </p>
+          <div class="space-y-1 max-h-32 overflow-y-auto">
+            <div 
+              v-for="file in csvFiles" 
+              :key="file.sociedad"
+              class="flex items-center justify-between text-xs bg-gray-50 dark:bg-gray-700/50 rounded px-2 py-1"
+            >
+              <span class="text-gray-600 dark:text-gray-400">{{ file.fileName }}</span>
+              <span class="text-gray-500 dark:text-gray-500">{{ file.recordCount }} registros</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Lista de RPAs -->
     <div class="space-y-4 mb-6">
       <!-- RPA 1: Bloqueo de usuarios SAP -->
@@ -145,7 +209,9 @@
 <script setup>
 import { executeRPA } from "~/services/rpa-service";
 import { useRpaStatus } from "~/composables/useRpaStatus";
+import { useSuicSociedadesCsv } from "~/composables/useSuicSociedadesCsv";
 import { watch } from "vue";
+import { generateClient } from "aws-amplify/data";
 
 const props = defineProps({
   suicId: {
@@ -158,6 +224,15 @@ const props = defineProps({
 const loading = ref(false);
 const error = ref(null);
 const isProcessing = ref(false);
+
+// Estados para generación de CSVs
+const csvGenerating = ref(false);
+const csvState = ref(null); // null, 'running', 'success', 'error'
+const csvFiles = ref([]);
+
+// Composable para generar CSVs
+const { generateSociedadesCsv } = useSuicSociedadesCsv();
+const dataClient = generateClient();
 
 // Composable para monitorear estado del RPA
 const {
@@ -265,6 +340,133 @@ const getRpaCardClass = (rpaKey) => {
       return 'border-red-400 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10';
     default: 
       return 'border-gray-300 dark:border-gray-600';
+  }
+};
+
+// Métodos auxiliares para UI de CSVs
+const getCsvStatusText = () => {
+  switch (csvState.value) {
+    case 'running': return 'Generando...';
+    case 'success': return 'Completado';
+    case 'error': return 'Error';
+    default: return 'Pendiente';
+  }
+};
+
+const getCsvStatusTextClass = () => {
+  switch (csvState.value) {
+    case 'running': return 'text-cyan-600 dark:text-cyan-400';
+    case 'success': return 'text-green-600 dark:text-green-400';
+    case 'error': return 'text-red-600 dark:text-red-400';
+    default: return 'text-gray-500 dark:text-gray-400';
+  }
+};
+
+const getCsvButtonText = () => {
+  switch (csvState.value) {
+    case 'running': return 'Generando...';
+    case 'success': return 'Completado';
+    default: return 'Generar CSVs';
+  }
+};
+
+const getCsvButtonClass = () => {
+  switch (csvState.value) {
+    case 'running':
+      return 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 cursor-wait';
+    case 'success':
+      return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 cursor-not-allowed';
+    case 'error':
+      return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/40';
+    default:
+      return 'bg-cyan-500 text-white hover:bg-cyan-600 cursor-pointer';
+  }
+};
+
+const getCsvIconClass = () => {
+  switch (csvState.value) {
+    case 'running': return 'bg-cyan-500 dark:bg-cyan-600';
+    case 'success': return 'bg-green-500 dark:bg-green-600';
+    case 'error': return 'bg-red-500 dark:bg-red-600';
+    default: return 'bg-cyan-400 dark:bg-cyan-500';
+  }
+};
+
+const getCsvCardClass = () => {
+  switch (csvState.value) {
+    case 'running': 
+      return 'border-cyan-400 dark:border-cyan-600 bg-cyan-50/50 dark:bg-cyan-900/10';
+    case 'success': 
+      return 'border-green-400 dark:border-green-600 bg-green-50/50 dark:bg-green-900/10';
+    case 'error': 
+      return 'border-red-400 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10';
+    default: 
+      return 'border-gray-300 dark:border-gray-600';
+  }
+};
+
+// Generar CSVs por sociedad
+const generarCsvsPorSociedad = async () => {
+  if (!props.suicId) {
+    useToast().add({
+      title: 'Error',
+      description: 'Falta el ID del SUIC',
+      color: 'red'
+    });
+    return;
+  }
+
+  try {
+    csvGenerating.value = true;
+    csvState.value = 'running';
+    csvFiles.value = [];
+
+    useToast().add({
+      title: 'Generando CSVs',
+      description: 'Generando archivos CSV por sociedad...',
+      color: 'blue'
+    });
+
+    const result = await generateSociedadesCsv(props.suicId);
+
+    if (!result.success) {
+      throw new Error(result.error || result.message || 'Error al generar CSVs');
+    }
+
+    csvState.value = 'success';
+    csvFiles.value = result.files || [];
+
+    // Guardar paths en el modelo SUIC (campo csvFilesPath)
+    try {
+      const csvFilesPathAsString = JSON.stringify(csvFiles.value || []);
+      await dataClient.models.SUIC.update({
+        id: props.suicId,
+        csvFilesPath: csvFilesPathAsString
+      });
+      console.log('💾 csvFilesPath actualizado en modelo SUIC');
+    } catch (e) {
+      console.error('❌ Error actualizando csvFilesPath en SUIC:', e);
+    }
+
+    useToast().add({
+      title: 'CSVs generados exitosamente',
+      description: `Se generaron ${result.totalSocieties} archivos CSV`,
+      color: 'green'
+    });
+
+    console.log(`✅ CSVs generados: ${result.totalSocieties} archivos`);
+
+  } catch (err) {
+    console.error('❌ Error generando CSVs:', err);
+    csvState.value = 'error';
+
+    useToast().add({
+      title: 'Error generando CSVs',
+      description: err.message || 'Error desconocido',
+      color: 'red'
+    });
+  } finally {
+    csvGenerating.value = false;
   }
 };
 
