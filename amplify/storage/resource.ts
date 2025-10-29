@@ -9,5 +9,8 @@ export const storage = defineStorage({
     "archivos-originales/*": [
       allow.authenticated.to(["read", "write", "delete"]),
     ],
+    "suic/*": [
+      allow.authenticated.to(["read", "write", "delete"]),
+    ],
   }),
 });

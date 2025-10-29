@@ -207,6 +207,30 @@ export const useSuicData = (suicId: string) => {
     }
   };
 
+  // Limpiar países que ya están en MySQL
+  const clearCountriesInMySQL = async (mysqlCounts: Record<string, number>): Promise<string[]> => {
+    const cleanedCountries: string[] = [];
+    
+    try {
+      console.log('🧹 Limpiando países que ya existen en MySQL...');
+      
+      for (const paisCode of Object.keys(mysqlCounts)) {
+        // Verificar si el país también está en IndexedDB
+        if (loadedCounts.value[paisCode]) {
+          console.log(`🗑️ Limpiando ${paisCode} de IndexedDB (ya está en MySQL)...`);
+          await clearCountry(paisCode);
+          cleanedCountries.push(paisCode);
+        }
+      }
+      
+      console.log(`✅ Países limpiados de IndexedDB: ${cleanedCountries.join(', ')}`);
+      return cleanedCountries;
+    } catch (err: any) {
+      console.error('Error limpiando países en MySQL:', err);
+      throw err;
+    }
+  };
+
   return {
     loadedCounts,
     isLoading,
@@ -216,6 +240,7 @@ export const useSuicData = (suicId: string) => {
     saveData,
     loadData,
     clearCountry,
-    clearAll
+    clearAll,
+    clearCountriesInMySQL
   };
 };

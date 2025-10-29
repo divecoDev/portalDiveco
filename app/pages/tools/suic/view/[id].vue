@@ -139,15 +139,47 @@
         class="w-full"
       >
         <template #carga-plantilla>
-          <CargaPlantillaSUIC :suic-id="suicId" />
+          <CargaPlantillaSUIC :suic-id="suicId" @next-step="handleNextStep" />
         </template>
         
         <template #ejecutar-proceso>
-          <div class="p-6 bg-white dark:bg-gray-800 rounded-xl">
-            <p class="text-gray-500 dark:text-gray-400">Este paso se implementará próximamente</p>
-          </div>
+          <ExplosionarSUIC :suic-id="suicId" />
+        </template>
+
+        <template #ejecutar-rpa>
+          <EjecutarRPA :suic-id="suicId" />
         </template>
       </UStepper>
+
+      <!-- Botones de navegación -->
+      <div class="flex items-center justify-between mt-6 pt-6 border-t border-cyan-200/30 dark:border-cyan-700/30">
+        <!-- Botón Anterior -->
+        <button
+          @click="irAPasoAnterior"
+          :disabled="currentStep === 0"
+          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+        >
+          <UIcon name="i-heroicons-arrow-left" class="w-5 h-5" />
+          Anterior
+        </button>
+
+        <!-- Indicador de pasos -->
+        <div class="flex items-center space-x-2">
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Paso {{ currentStep + 1 }} de {{ stepperItems.length }}
+          </span>
+        </div>
+
+        <!-- Botón Siguiente -->
+        <button
+          @click="irAPasoSiguiente"
+          :disabled="currentStep === stepperItems.length - 1"
+          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+        >
+          Siguiente
+          <UIcon name="i-heroicons-arrow-right" class="w-5 h-5" />
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -155,6 +187,8 @@
 <script setup>
 import { generateClient } from "aws-amplify/data";
 import CargaPlantillaSUIC from "~/components/suic/CargaPlantillaSUIC.vue";
+import ExplosionarSUIC from "~/components/suic/ExplosionarSUIC.vue";
+import EjecutarRPA from "~/components/suic/EjecutarRPA.vue";
 
 definePageMeta({
   middleware: ["require-role"],
@@ -196,8 +230,13 @@ const stepperItems = ref([
   },
   {
     slot: "ejecutar-proceso",
-    title: "Ejecutar Proceso",
+    title: "Generar SUIC",
     icon: "i-heroicons-cog",
+  },
+  {
+    slot: "ejecutar-rpa",
+    title: "Ejecutar RPA",
+    icon: "i-heroicons-cpu-chip",
   },
 ]);
 
@@ -232,6 +271,31 @@ const formatDate = (dateString) => {
     hour: "2-digit",
     minute: "2-digit",
   });
+};
+
+// Manejar siguiente paso
+const handleNextStep = () => {
+  if (mainStepper.value) {
+    // Avanzar al siguiente paso
+    currentStep.value = 1;
+    console.log('✅ Avanzando al paso de Generar SUIC');
+  }
+};
+
+// Navegar al paso anterior
+const irAPasoAnterior = () => {
+  if (currentStep.value > 0) {
+    currentStep.value--;
+    console.log(`⬅️ Navegando al paso ${currentStep.value}`);
+  }
+};
+
+// Navegar al paso siguiente
+const irAPasoSiguiente = () => {
+  if (currentStep.value < stepperItems.value.length - 1) {
+    currentStep.value++;
+    console.log(`➡️ Navegando al paso ${currentStep.value}`);
+  }
 };
 
 // Lifecycle

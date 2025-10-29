@@ -48,7 +48,7 @@
             class="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
             @click="startTour"
           >
-            Tour General
+            Tour
           </UButton>
 
           <NuxtLink :to="`/tools/explosion-materiales/edit/${explosionId}`">
@@ -57,7 +57,7 @@
               size="lg"
               color="blue"
               variant="outline"
-               class="bg-gradient-to-r from-gray-500 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+               class="bg-gradient-to-r from-emerald-500 to-emerald-800 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
             >
               Editar
             </UButton>
@@ -71,7 +71,7 @@
               variant="outline"
                class="bg-gradient-to-r from-gray-500 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
             >
-              Volver al Listado
+              Volver
             </UButton>
           </NuxtLink>
         </div>

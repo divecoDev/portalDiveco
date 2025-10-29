@@ -15,6 +15,57 @@
       </button>
     </div>
 
+    <!-- Alerta de inconsistencia de meses -->
+    <div 
+      v-if="!monthsConsistencyValidation.isConsistent" 
+      class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-500 dark:border-red-400 rounded-lg"
+    >
+      <div class="flex items-start space-x-3">
+        <UIcon name="i-heroicons-exclamation-triangle" class="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+        <div class="flex-1">
+          <h4 class="text-sm font-bold text-red-800 dark:text-red-200 mb-2">
+            Inconsistencia en Meses de Datos
+          </h4>
+          <p class="text-sm text-red-700 dark:text-red-300 mb-3">
+            {{ monthsConsistencyValidation.message }}. Los países deben tener exactamente los mismos meses para mantener consistencia en los datos.
+          </p>
+          
+          <!-- Detalle de meses esperados -->
+          <div class="bg-white dark:bg-gray-800 rounded p-3 mb-3">
+            <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Meses esperados (referencia: {{ monthsConsistencyValidation.referencePais }}):
+            </p>
+            <div class="flex flex-wrap gap-1">
+              <span
+                v-for="monthNum in monthsConsistencyValidation.referenceMonths"
+                :key="monthNum"
+                class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-700"
+              >
+                {{ ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][monthNum - 1] }}
+              </span>
+            </div>
+          </div>
+          
+          <!-- Lista de países inconsistentes -->
+          <div class="bg-white dark:bg-gray-800 rounded p-3">
+            <p class="text-xs font-semibold text-red-700 dark:text-red-300 mb-2">
+              Países con meses incorrectos:
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <span
+                v-for="paisCode in monthsConsistencyValidation.inconsistentCountries"
+                :key="paisCode"
+                class="inline-flex items-center px-2 py-1 rounded text-xs bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-700 font-medium"
+              >
+                <UIcon name="i-heroicons-x-circle" class="w-3 h-3 mr-1" />
+                {{ paisCode }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Lista de países en formato data items -->
     <div class="space-y-3">
       <div
@@ -27,39 +78,73 @@
         ]"
       >
         <!-- Sección Izquierda: Identidad del país -->
-        <div class="flex items-center min-w-0 flex-shrink-0">
+        <div class="flex items-center space-x-3 min-w-0 flex-shrink-0">
           <div class="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center font-bold text-2xl">
               <span class="flex items-center justify-center w-full h-full">
               {{ pais.flag }}
             </span>
           </div>
+          
+          <!-- Indicador de inconsistencia de meses -->
+          <div v-if="isCountryInconsistent(pais.code)" class="flex-shrink-0">
+            <div class="flex items-center space-x-1 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded border border-red-300 dark:border-red-700">
+              <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-red-600 dark:text-red-400" />
+              <span class="text-xs font-semibold text-red-700 dark:text-red-300">Meses incorrectos</span>
+            </div>
+          </div>
         </div>
 
         <!-- Sección Central: Información de datos -->
         <div class="flex-1 min-w-0">
-          <div v-if="loadedCounts[pais.code]" class="space-y-3">
-            <!-- Registros cargados -->
-            <div class="flex items-center space-x-3">
-              <UIcon name="i-heroicons-table-cells" class="w-5 h-5 text-cyan-600 flex-shrink-0" />
+          <div class="space-y-3">
+            <!-- MySQL (prioridad 1: si existe) -->
+            <div v-if="mysqlCounts[pais.code]" class="flex items-center space-x-3">
+              <UIcon name="i-heroicons-database" class="w-5 h-5 text-green-600 flex-shrink-0" />
               <div class="min-w-0">
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">
-                  {{ loadedCounts[pais.code].toLocaleString() }}
+                <p class="text-2xl font-bold text-green-600">
+                  {{ (typeof mysqlCounts[pais.code] === 'object' ? mysqlCounts[pais.code].count : mysqlCounts[pais.code]).toLocaleString() }}
                 </p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">
-                  registros cargados
+                <p class="text-sm text-green-500">
+                  registros guardados
                 </p>
               </div>
             </div>
 
-            <!-- Tags de meses disponibles -->
-            <div v-if="getCountryMetadata(pais.code)" class="space-y-2">
+            <!-- Local (prioridad 2: si NO está en MySQL pero sí en local) -->
+            <div v-else-if="loadedCounts[pais.code]" class="flex items-center space-x-3">
+              <UIcon name="i-heroicons-table-cells" class="w-5 h-5 text-blue-600 flex-shrink-0" />
+              <div class="min-w-0">
+                <p class="text-2xl font-bold text-blue-600">
+                  {{ loadedCounts[pais.code].toLocaleString() }}
+                </p>
+                <p class="text-sm text-blue-500">
+                  registros locales (pendiente guardar)
+                </p>
+              </div>
+            </div>
+
+            <!-- Sin datos -->
+            <div v-else class="flex items-center space-x-3">
+              <UIcon name="i-heroicons-information-circle" class="w-5 h-5 text-gray-400 flex-shrink-0" />
+              <div class="min-w-0">
+                <p class="text-lg font-medium text-gray-500 dark:text-gray-400">
+                  Sin datos
+                </p>
+                <p class="text-sm text-gray-400 dark:text-gray-500">
+                  No hay registros cargados
+                </p>
+              </div>
+            </div>
+
+            <!-- Tags de meses disponibles (para datos locales O MySQL) -->
+            <div v-if="(loadedCounts[pais.code] && !mysqlCounts[pais.code] && getCountryMetadata(pais.code)) || mysqlCounts[pais.code]" class="space-y-2 mt-3">
               <div class="flex items-center space-x-2">
                 <UIcon name="i-heroicons-calendar" class="w-4 h-4 text-gray-500 flex-shrink-0" />
                 <span class="text-xs font-medium text-gray-600 dark:text-gray-400">Meses con datos:</span>
               </div>
               <div class="flex flex-wrap gap-1">
                 <span
-                  v-for="monthMeta in getAvailableMonthsMetadata(pais.code)"
+                  v-for="monthMeta in mysqlCounts[pais.code] ? getMySQLAvailableMonths(pais.code) : getAvailableMonthsMetadata(pais.code)"
                   :key="monthMeta.monthNumber"
                   :class="getMonthTagClasses(monthMeta)"
                   :title="getMonthTooltip(monthMeta)"
@@ -74,18 +159,18 @@
               </div>
               
               <!-- Mensaje si no hay meses -->
-              <div v-if="getAvailableMonthsMetadata(pais.code).length === 0" class="text-xs text-gray-500 dark:text-gray-400">
+              <div v-if="(mysqlCounts[pais.code] ? getMySQLAvailableMonths(pais.code) : getAvailableMonthsMetadata(pais.code)).length === 0" class="text-xs text-gray-500 dark:text-gray-400">
                 No se detectaron meses con datos
               </div>
             </div>
 
-            <!-- Debug: Mostrar información de metadata -->
-            <div v-if="loadedCounts[pais.code] && !getCountryMetadata(pais.code)" class="text-xs text-gray-500 dark:text-gray-400">
+            <!-- Debug: Validando datos locales -->
+            <div v-if="loadedCounts[pais.code] && !mysqlCounts[pais.code] && !getCountryMetadata(pais.code)" class="text-xs text-blue-500 mt-2">
               Validando datos...
             </div>
 
-            <!-- Estado de validación -->
-            <div v-if="isValidating && validationProgress?.paisCode === pais.code" class="space-y-1">
+            <!-- Estado de validación (solo para datos locales) -->
+            <div v-if="isValidating && validationProgress?.paisCode === pais.code && !mysqlCounts[pais.code]" class="space-y-1 mt-3">
               <div class="flex items-center space-x-2">
                 <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 text-blue-600 animate-spin" />
                 <span class="text-xs font-medium text-blue-600">Validando datos...</span>
@@ -101,22 +186,12 @@
               </p>
             </div>
           </div>
-          <div v-else class="flex items-center space-x-3">
-            <UIcon name="i-heroicons-table-cells" class="w-5 h-5 text-gray-400 flex-shrink-0" />
-            <div>
-              <p class="text-lg font-medium text-gray-500 dark:text-gray-400">
-                Sin datos
-              </p>
-              <p class="text-sm text-gray-400 dark:text-gray-500">
-                No hay registros cargados
-              </p>
-            </div>
-          </div>
         </div>
 
         <!-- Sección Derecha: Estado de guardado -->
         <div class="flex-shrink-0 min-w-0">
-          <div v-if="loadedCounts[pais.code] && saveStates[pais.code]" class="space-y-2">
+          <!-- Estado de guardado para datos locales -->
+          <div v-if="!mysqlCounts[pais.code] && loadedCounts[pais.code] && saveStates[pais.code]" class="space-y-2">
             <!-- Guardando con barra de progreso -->
             <div v-if="saveStates[pais.code].status === 'saving'" class="space-y-2">
               <div class="flex items-center space-x-2">
@@ -165,18 +240,26 @@
               </div>
             </div>
           </div>
-          <div v-else-if="loadedCounts[pais.code]" class="flex items-center space-x-2">
-            <UIcon name="i-heroicons-clock" class="w-5 h-5 text-gray-500" />
+          <!-- Estado pendiente para datos locales sin guardar -->
+          <div v-else-if="!mysqlCounts[pais.code] && loadedCounts[pais.code]" class="flex items-center space-x-2">
+            <UIcon name="i-heroicons-clock" class="w-5 h-5 text-blue-500" />
             <div>
-              <p class="text-sm font-semibold text-gray-500">Pendiente</p>
-              <p class="text-xs text-gray-400">Sin procesar</p>
+              <p class="text-sm font-semibold text-blue-500">Pendiente</p>
+              <p class="text-xs text-blue-400">Sin guardar</p>
+            </div>
+          </div>
+          <!-- Estado para MySQL (ya guardado) -->
+          <div v-else-if="mysqlCounts[pais.code]" class="flex items-center space-x-2">
+            <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-green-600" />
+            <div>
+              <p class="text-sm font-semibold text-green-600">Guardado</p>
             </div>
           </div>
         </div>
 
-        <!-- Sección de Acciones: Botones -->
+        <!-- Sección de Acciones: Botones (solo para datos locales) -->
         <div class="flex-shrink-0">
-          <div v-if="loadedCounts[pais.code]" class="flex space-x-2">
+          <div v-if="!mysqlCounts[pais.code] && loadedCounts[pais.code]" class="flex space-x-2">
             <!-- Botón limpiar -->
             <button
               v-if="!saveStates[pais.code] || saveStates[pais.code].status !== 'saving'"
@@ -241,6 +324,10 @@ const props = defineProps({
   validationProgress: {
     type: Object,
     default: null
+  },
+  mysqlCounts: {
+    type: Object,
+    default: () => ({})
   }
 });
 
@@ -291,12 +378,112 @@ const getMonthTooltip = (monthMeta) => {
   }
 };
 
+// Validación de consistencia de meses
+const monthsConsistencyValidation = computed(() => {
+  // Recolectar todos los países con datos (local + MySQL)
+  const countriesWithData = [];
+  
+  // Agregar países locales
+  Object.keys(props.loadedCounts).forEach(paisCode => {
+    const metadata = getCountryMetadata(paisCode);
+    if (metadata && metadata.availableMonths.length > 0) {
+      countriesWithData.push({
+        paisCode,
+        months: metadata.availableMonths.sort((a, b) => a - b),
+        source: 'local'
+      });
+    }
+  });
+  
+  // Agregar países MySQL
+  Object.keys(props.mysqlCounts).forEach(paisCode => {
+    const mysqlData = props.mysqlCounts[paisCode];
+    if (mysqlData && mysqlData.availableMonths && mysqlData.availableMonths.length > 0) {
+      countriesWithData.push({
+        paisCode,
+        months: mysqlData.availableMonths.sort((a, b) => a - b),
+        source: 'mysql'
+      });
+    }
+  });
+  
+  // Si no hay países con datos, no hay inconsistencia
+  if (countriesWithData.length === 0) {
+    return {
+      isConsistent: true,
+      referencePais: null,
+      referenceMonths: [],
+      inconsistentCountries: [],
+      message: null
+    };
+  }
+  
+  // Encontrar el país con más meses (referencia)
+  const referenceCountry = countriesWithData.reduce((max, country) => 
+    country.months.length > max.months.length ? country : max
+  );
+  
+  const referenceMonths = referenceCountry.months;
+  
+  // Validar que todos tengan los mismos meses
+  const inconsistentCountries = countriesWithData.filter(country => {
+    if (country.months.length !== referenceMonths.length) return true;
+    return !country.months.every((month, idx) => month === referenceMonths[idx]);
+  });
+  
+  const isConsistent = inconsistentCountries.length === 0;
+  
+  return {
+    isConsistent,
+    referencePais: referenceCountry.paisCode,
+    referenceMonths,
+    inconsistentCountries: inconsistentCountries.map(c => c.paisCode),
+    totalCountries: countriesWithData.length,
+    message: isConsistent 
+      ? null 
+      : `${inconsistentCountries.length} país(es) tienen meses diferentes`
+  };
+});
+
+// Función para detectar país inconsistente
+const isCountryInconsistent = (paisCode) => {
+  return monthsConsistencyValidation.value.inconsistentCountries.includes(paisCode);
+};
+
+// Función para obtener meses de MySQL
+const getMySQLAvailableMonths = (paisCode) => {
+  const mysqlData = props.mysqlCounts[paisCode];
+  if (!mysqlData || !mysqlData.availableMonths) return [];
+  
+  const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  
+  return mysqlData.availableMonths.map(monthNum => ({
+    monthNumber: monthNum,
+    monthName: monthNames[monthNum - 1],
+    isComplete: true, // Asumimos que están completos si están en MySQL
+    hasData: true,
+    errorCount: 0
+  }));
+};
+
 // Función para obtener las clases CSS según el estado del país
 const getCardClasses = (paisCode) => {
+  // PRIORIDAD 1: Validar consistencia de meses
+  if (isCountryInconsistent(paisCode)) {
+    return 'border-red-500 bg-red-50 dark:bg-red-900/20 dark:border-red-400';
+  }
+  
+  // PRIORIDAD 2: Estado de MySQL
+  if (props.mysqlCounts[paisCode]) {
+    return 'border-green-500 bg-green-50 dark:bg-green-900/20 dark:border-green-400';
+  }
+
+  // PRIORIDAD 3: Sin datos
   if (!props.loadedCounts[paisCode]) {
     return 'border-gray-300 bg-white dark:bg-gray-800 dark:border-gray-600';
   }
 
+  // PRIORIDAD 4: Estados de guardado local
   const saveState = props.saveStates[paisCode];
   if (!saveState) {
     return 'border-blue-300 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-600';

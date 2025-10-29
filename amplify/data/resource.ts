@@ -17,6 +17,9 @@ import { GetMaterialesSinAprovicionamiento } from "../functions/boom/GetMaterial
 import { GetMaterialesSinCentroProduccion } from "../functions/boom/getMaterialesSinCentroProduccion/resource";
 import { aprovisionamiento } from "../functions/porcentajes-asignacion/resource";
 import { suicSaveBatch } from "../functions/suic/resource";
+import { suicGetSummary } from "../functions/suic/getSummary/resource";
+import { runExplosionSuic } from "../functions/suic/runExplosion/resource";
+import { getMetaDiariaFinal } from "../functions/suic/getMetaDiariaFinal/resource";
 
 const schema = a.schema({
   Todo: a
@@ -142,6 +145,8 @@ const schema = a.schema({
       filesPath: a.json(),
       createdBy: a.string(),
       type: a.string(), //
+      explosionRunId: a.string(),
+      explosionStatus: a.string(), // 'Pendiente', 'En Proceso', 'Completado', 'Error'
     })
     .authorization((allow) => [allow.publicApiKey()]),
 
@@ -278,6 +283,45 @@ const schema = a.schema({
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(suicSaveBatch)),
+
+  /**
+   *  SUIC - Consultar resumen de datos guardados en MySQL
+   */
+  getSuicSummary: a
+    .query()
+    .arguments({
+      suicId: a.string().required(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(suicGetSummary)),
+
+  /**
+   *  SUIC - Consultar datos de meta_diaria_final agregados por sociedad y mes
+   */
+  getMetaDiariaFinal: a
+    .query()
+    .arguments({
+      suicId: a.string().required(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(getMetaDiariaFinal)),
+
+  /**
+   *  SUIC - Ejecutar pipeline de explosión en Azure Data Factory
+   */
+  runExplosionSuic: a
+    .mutation()
+    .arguments({
+      pipelineName: a.string(),
+      idSuic: a.string().required(),
+      tipo: a.string().required(),
+      primerMes: a.integer().required(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(runExplosionSuic)),
 });
 
 export type Schema = ClientSchema<typeof schema>;

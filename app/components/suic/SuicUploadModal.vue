@@ -28,7 +28,7 @@
           />
           <UIcon name="i-heroicons-document-arrow-up" class="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <button
-            @click="$refs.fileInput.click()"
+            @click="fileInput?.click()"
             class="text-cyan-600 hover:text-cyan-700 font-medium"
           >
             Seleccionar archivo Excel
@@ -60,6 +60,17 @@
             <div>
               <p class="text-sm font-medium text-gray-900 dark:text-white">Procesando archivo...</p>
               <p class="text-xs text-gray-500 dark:text-gray-400">{{ totalRows }} filas</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subiendo a S3 -->
+        <div v-if="isUploadingToS3" class="p-4 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg">
+          <div class="flex items-center space-x-3">
+            <div class="w-6 h-6 border-3 border-cyan-600 border-t-transparent rounded-full animate-spin"></div>
+            <div>
+              <p class="text-sm font-medium text-gray-900 dark:text-white">Guardando archivo original...</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Subiendo a almacenamiento en la nube</p>
             </div>
           </div>
         </div>
@@ -190,6 +201,8 @@
 <script setup>
 import readXlsxFile from 'read-excel-file';
 import { useSuicData } from '~/composables/useSuicData';
+import { useSuicFileUpload } from '~/composables/useSuicFileUpload';
+import { useSuicFileState } from '~/composables/useSuicFileState';
 import { detectAvailableMonths, validateMonthCompleteness } from '~/services/suicValidators';
 
 const props = defineProps({
@@ -200,6 +213,8 @@ const props = defineProps({
 const emit = defineEmits(['update:open', 'data-loaded']);
 
 const { saveData, loadDataFromStorage, isLoading: isDataLoading, error: dataError } = useSuicData(props.suicId);
+const { uploadSuicFile, updateSuicFilesPath } = useSuicFileUpload();
+const { setFile, getFile, clearFile: clearUploadedFile, hasFile } = useSuicFileState();
 
 // Estado
 const fileInput = ref(null);
@@ -214,6 +229,7 @@ const conflictingPaises = ref([]);
 const pendingData = ref({});
 const monthsValidationWarning = ref('');
 const incompleteMonthsDetected = ref([]);
+const isUploadingToS3 = ref(false);
 
 // Debug data
 const debugData = ref([]);
@@ -223,6 +239,8 @@ const processingSummary = ref({
   errors: 0,
   skipped: 0
 });
+
+// File upload tracking movido a composable useSuicFileState
 
 const isOpen = computed({
   get: () => props.open,
@@ -236,10 +254,10 @@ const requiredColumns = [
   'linea', 'asignacion_color', 'color', 'asignacion_marca', 'marca',
   'asignacion_presentacion', 'presentacion', 'asignacion_modelo', 'modelo_2',
   'asignacion_tamano', 'tamano',
-  ...Array.from({length: 12}, (_, i) => i + 1).flatMap(n => [
-    `unidades_plan_${n}`, `precio_proyectado_${n}`, `venta_bruta_plan_${n}`,
-    `porcentaje__desc_merc_${n}`, `descuento_merc_${n}`,
-    `porcentaje__desc_ben_${n}`, `descuento_ben_${n}`, `venta_plan_${n}`
+  ...Array.from({length: 12}, (_, i) => i + 1).flatMap(monthNum => [
+    `unidades_plan_${monthNum}`, `precio_proyectado_${monthNum}`, `venta_bruta_plan_${monthNum}`,
+    `porcentaje__desc_merc_${monthNum}`, `descuento_merc_${monthNum}`,
+    `porcentaje__desc_ben_${monthNum}`, `descuento_ben_${monthNum}`, `venta_plan_${monthNum}`
   ])
 ];
 
@@ -251,6 +269,9 @@ const handleFileChange = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
+  // Usar composable para guardar el archivo
+  setFile(file);
+  console.log('✅ Archivo guardado en composable');
   fileName.value = file.name;
   validationError.value = '';
   success.value = false;
@@ -259,7 +280,12 @@ const handleFileChange = async (e) => {
   try {
     await processFile(file);
   } catch (error) {
-    validationError.value = error.message;
+    // Mensaje de error personalizado para celdas vacías
+    if (error.message.includes('celda(s) vacía(s)')) {
+      validationError.value = `El archivo contiene celdas vacías. ${error.message}\n\nPor favor, complete todos los campos en el archivo Excel y vuelva a cargarlo.`;
+    } else {
+      validationError.value = error.message;
+    }
   }
 };
 
@@ -337,6 +363,80 @@ const validateColumns = (headers) => {
   console.log('✅ Column validation passed');
 };
 
+// Función para validar y limpiar una fila
+const validateAndCleanRow = (row, headers, rowIndex) => {
+  // 1. Verificar si fila está completamente vacía
+  const isEmpty = row.every(cell => cell === null || cell === undefined || cell === '');
+  if (isEmpty) return null; // Indicar que debe omitirse
+  
+  // 2. Columnas fijas obligatorias (las primeras 21 columnas)
+  const requiredFixedColumns = [
+    'pais', 'centro', 'asignacion_vendedor', 'vendedor', 'codigo_cliente',
+    'cliente_correcto', 'asignacion_canal', 'canal', 'material', 'modelo',
+    'linea', 'asignacion_color', 'color', 'asignacion_marca', 'marca',
+    'asignacion_presentacion', 'presentacion', 'asignacion_modelo', 'modelo_2',
+    'asignacion_tamano', 'tamano'
+  ];
+  
+  // 3. Verificar solo celdas vacías en columnas fijas (obligatorias)
+  const emptyCells = [];
+  row.forEach((cell, idx) => {
+    const headerName = headers[idx]?.toString().toLowerCase();
+    const isRequiredColumn = requiredFixedColumns.includes(headerName);
+    
+    // Solo validar columnas fijas como obligatorias
+    if (isRequiredColumn && (cell === null || cell === undefined || cell === '')) {
+      emptyCells.push({ column: headers[idx], index: idx });
+    }
+  });
+  
+  if (emptyCells.length > 0) {
+    throw new Error(
+      `Fila ${rowIndex + 2}: Se detectaron ${emptyCells.length} celda(s) vacía(s) en columna(s) obligatorias: ${emptyCells.map(c => c.column).join(', ')}. Complete estos campos.`
+    );
+  }
+  
+  // 4. Limpiar y formatear valores
+  const assignmentColumns = [
+    'asignación_vendedor', 'asignación_canal', 'asignación_color',
+    'asignacion_marca', 'asignación_presentación', 'asignación_modelo'
+  ];
+  
+  const cleanedRow = row.map((cell, idx) => {
+    const header = headers[idx];
+    let value = cell;
+    
+    // Si la celda está vacía y es una columna de mes, dejar como null o 0
+    if ((value === null || value === undefined || value === '')) {
+      const headerLower = header?.toString().toLowerCase();
+      // Detectar si es columna de mes
+      const isMonthColumn = /_(1|2|3|4|5|6|7|8|9|10|11|12)$/.test(headerLower);
+      if (isMonthColumn) {
+        return null; // Dejar null para columnas de meses vacías
+      }
+    }
+    
+    // Aplicar trim si es string
+    if (typeof value === 'string') {
+      value = value.trim();
+    }
+    
+    // Aplicar formato de 3 dígitos a columnas de asignación
+    if (assignmentColumns.includes(header.toLowerCase())) {
+      const numValue = Number(value);
+      if (!isNaN(numValue) && numValue >= 0) {
+        value = numValue <= 999 
+          ? String(numValue).padStart(3, '0')
+          : String(numValue);
+      }
+    }
+    
+    return value;
+  });
+  
+  return cleanedRow;
+};
+
 const processRows = (rows, headers) => {
   const dataByPais = {};
   const dataRows = rows.slice(1);
@@ -352,48 +452,59 @@ const processRows = (rows, headers) => {
   };
 
   dataRows.forEach((row, index) => {
-    // Usar posiciones fijas ya validadas: pais[0], centro[1]
-    const pais = row[0]?.toString().trim().toUpperCase();
-    const centro = row[1];
-    
-    console.log(`🔍 Row ${index}: Pais=${pais}, Centro=${centro}`);
-    
     let status = 'success';
     let details = 'Procesada correctamente';
     
-    if (!pais) {
-      console.log(`⚠️ Row ${index}: Missing pais`);
-      status = 'error';
-      details = 'Falta país';
-      processingSummary.value.errors++;
-    } else if (!validPaises.includes(pais)) {
-      console.log(`⚠️ Row ${index}: Invalid pais '${pais}'`);
-      status = 'error';
-      details = `País inválido: ${pais}. Válidos: ${validPaises.join(', ')}`;
-      processingSummary.value.errors++;
-    } else {
-      // Procesar fila exitosamente (centro es opcional)
-      const rowData = {};
-      headers.forEach((header, idx) => {
-        rowData[header] = row[idx];
-      });
-
-      if (!dataByPais[pais]) dataByPais[pais] = [];
-      dataByPais[pais].push(rowData);
-      processingSummary.value.success++;
+    try {
+      // Validar y limpiar la fila
+      const cleanedRow = validateAndCleanRow(row, headers, index);
       
-      console.log(`✅ Row ${index}: Pais ${pais}, Centro ${centro} -> Added to ${pais}`);
-    }
+      // Si retorna null, es una fila completamente vacía
+      if (cleanedRow === null) {
+        console.log(`⏭️ Row ${index}: Fila completamente vacía, omitida`);
+        processingSummary.value.skipped++;
+        return;
+      }
+      
+      // Usar posiciones fijas ya validadas: pais[0], centro[1]
+      const pais = cleanedRow[0]?.toString().trim().toUpperCase();
+      const centro = cleanedRow[1];
+      
+      console.log(`🔍 Row ${index}: Pais=${pais}, Centro=${centro}`);
+      
+      if (!validPaises.includes(pais)) {
+        console.log(`⚠️ Row ${index}: Invalid pais '${pais}'`);
+        status = 'error';
+        details = `País inválido: ${pais}. Válidos: ${validPaises.join(', ')}`;
+        processingSummary.value.errors++;
+      } else {
+        // Procesar fila exitosamente
+        const rowData = {};
+        headers.forEach((header, idx) => {
+          rowData[header] = cleanedRow[idx];
+        });
 
-    // Agregar a debug data (solo primeras 5 filas)
-    if (index < 5) {
-      debugData.value.push({
-        rowIndex: index + 1, // +1 porque empezamos desde 0
-        pais: pais || 'N/A',
-        centro: centro || 'N/A',
-        status: status,
-        details: details
-      });
+        if (!dataByPais[pais]) dataByPais[pais] = [];
+        dataByPais[pais].push(rowData);
+        processingSummary.value.success++;
+        
+        console.log(`✅ Row ${index}: Pais ${pais}, Centro ${centro} -> Added to ${pais}`);
+      }
+      
+      // Agregar a debug data (solo primeras 5 filas exitosas)
+      if (index < 5 && status === 'success') {
+        debugData.value.push({
+          rowIndex: index + 1,
+          pais: pais || 'N/A',
+          centro: centro || 'N/A',
+          status: status,
+          details: details
+        });
+      }
+    } catch (error) {
+      // Capturar errores de validación y re-lanzar
+      console.error(`❌ Row ${index}: Error de validación:`, error.message);
+      throw error;
     }
   });
 
@@ -459,6 +570,46 @@ const confirmUpload = async () => {
 
 const saveAndNotify = async (data) => {
   console.log('💾 saveAndNotify - Data to save:', data);
+  
+  // Subir archivo original a S3 antes de guardar en IndexedDB
+  const uploadFile = getFile();
+  if (uploadFile) {
+    try {
+      isUploadingToS3.value = true;
+      
+      const countries = Object.keys(data);
+      console.log('☁️ Subiendo archivo a S3 para países:', countries);
+      
+      const fileMetadata = await uploadSuicFile(
+        props.suicId,
+        uploadFile,
+        countries
+      );
+      
+      console.log('✅ Archivo subido a S3:', fileMetadata.s3Path);
+      
+      // Actualizar filesPath en SUIC
+      await updateSuicFilesPath(
+        props.suicId,
+        fileMetadata,
+        countries
+      );
+      
+      console.log('✅ filesPath actualizado en SUIC');
+      
+    } catch (error) {
+      console.error('❌ Error subiendo archivo a S3:', error);
+      useToast().add({
+        title: 'Error al guardar archivo',
+        description: 'No se pudo subir el archivo a S3. Los datos se guardarán localmente.',
+        color: 'yellow'
+      });
+    } finally {
+      isUploadingToS3.value = false;
+    }
+  }
+  
+  // Guardar datos en IndexedDB (código existente)
   await saveData(data);
   const totalRecords = Object.values(data).reduce((sum, arr) => sum + arr.length, 0);
   console.log('📊 Total records calculated:', totalRecords);
@@ -474,6 +625,7 @@ const cancelUpload = () => {
 };
 
 const clearFile = () => {
+  clearUploadedFile(); // Limpiar referencia al archivo usando composable
   fileName.value = '';
   fileInput.value.value = '';
   validationError.value = '';

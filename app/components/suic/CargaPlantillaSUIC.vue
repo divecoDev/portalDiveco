@@ -6,7 +6,7 @@
         <!-- Botón para descargar plantilla -->
         <button
           @click="downloadTemplate"
-          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
         >
           <UIcon name="i-heroicons-document-arrow-down" class="w-5 h-5" />
           Descargar Plantilla
@@ -21,26 +21,14 @@
           Cargar Archivo Excel
         </button>
 
-        <!-- Botón para guardar en MySQL -->
+        <!-- Botón para refrescar estado MySQL -->
         <button
-          v-if="hasDataToSave"
-          @click="handleSaveToMySQL"
-          :disabled="isSaving"
-          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          @click="loadMySQLSummary"
+          :disabled="isLoadingSummary"
+          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
-          <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5" />
-          {{ isSaving ? 'Guardando...' : 'Guardar en Base de Datos' }}
-        </button>
-
-        <!-- Botón para previsualizar datos -->
-        <button
-          v-if="hasDataToSave"
-          @click="handlePreviewData"
-          :disabled="isLoadingPreview"
-          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-        >
-          <UIcon name="i-heroicons-eye" class="w-5 h-5" />
-          {{ isLoadingPreview ? 'Cargando...' : 'Previsualizar Datos' }}
+          <UIcon :name="isLoadingSummary ? 'i-heroicons-arrow-path' : 'i-heroicons-arrow-path'" class="w-5 h-5" :class="{ 'animate-spin': isLoadingSummary }" />
+          {{ isLoadingSummary ? 'Refrescando...' : 'Refrescar Estado' }}
         </button>
       </div>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-3">
@@ -75,10 +63,43 @@
       :months-metadata="monthsMetadata"
       :is-validating="isValidating"
       :validation-progress="validationProgress"
+      :mysql-counts="mysqlCounts"
       @clear-country="handleClearCountry"
       @clear-all="handleClearAll"
       @retry-country="handleRetryCountry"
     />
+
+    <section class="flex flex-wrap justify-center gap-4 mt-6">
+      <!-- Botón para ver archivos cargados -->
+      <button
+        @click="showFilesModal = true"
+        class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+      >
+        <UIcon name="i-heroicons-folder-open" class="w-5 h-5" />
+         Archivos
+      </button>
+
+      <!-- Botón para guardar en MySQL -->
+        <button
+          v-if="hasDataToSave"
+          @click="handleSaveToMySQL"
+          :disabled="isSaving"
+          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-800 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+        >
+          <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5" />
+          {{ isSaving ? 'Guardando...' : 'Guardar' }}
+        </button>
+
+        <!-- Botón para siguiente paso -->
+        <button
+          v-if="canProceedToNextStep"
+          @click="handleNextStep"
+          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+        >
+          <UIcon name="i-heroicons-arrow-right" class="w-5 h-5" />
+          Siguiente: Generar SUIC
+        </button>
+    </section>
 
     <!-- Modal de carga -->
     <SuicUploadModal
@@ -96,12 +117,14 @@
       @confirm="handleConfirm"
     />
 
-    <!-- Modal de previsualización -->
-    <SuicPreviewModal
-      ref="previewModalRef"
-      :preview-data="previewData"
-      @update:open="handlePreviewClose"
+    <!-- Modal de archivos -->
+    <SuicFilesModal
+      v-model:open="showFilesModal"
+      :suic-id="suicId"
+      :files-path="suicFilesPath"
     />
+
+   
   </div>
 </template>
 
@@ -109,6 +132,7 @@
 import { useSuicData } from '~/composables/useSuicData';
 import { useSuicMySQL } from '~/composables/useSuicMySQL';
 import { useSuicValidations } from '~/composables/useSuicValidations';
+import { generateClient } from 'aws-amplify/data';
 
 const props = defineProps({
   suicId: {
@@ -117,10 +141,15 @@ const props = defineProps({
   }
 });
 
+// Definir emits
+const emit = defineEmits(['next-step']);
+
 // Usar composables
-const { loadedCounts, loadData, clearCountry, clearAll, isLoading, error, loadDataFromStorageAsync } = useSuicData(props.suicId);
-const { saveSuicToMySQL } = useSuicMySQL();
+const { loadedCounts, loadData, clearCountry, clearAll, clearCountriesInMySQL, isLoading, error, loadDataFromStorageAsync } = useSuicData(props.suicId);
+const { saveSuicToMySQL, getSuicSummary } = useSuicMySQL();
 const { validateMultipleCountries, monthsMetadata, isValidating, validationProgress } = useSuicValidations();
+
+const client = generateClient();
 
 // Estados para guardado
 const saveStates = ref({});
@@ -129,21 +158,124 @@ const previewData = ref({});
 const isLoadingPreview = ref(false);
 const previewModalRef = ref(null);
 
+// Estados para MySQL
+const mysqlCounts = ref({});
+const isLoadingSummary = ref(false);
+
 // Computed para verificar si hay datos para guardar
 const hasDataToSave = computed(() => {
   return Object.keys(loadedCounts.value).length > 0;
 });
 
+// Computed para verificar si puede proceder al siguiente paso
+const canProceedToNextStep = computed(() => {
+  // Debe haber al menos un país con datos guardados en MySQL
+  const hasCountriesInMySQL = Object.keys(mysqlCounts.value).length > 0;
+  
+  if (!hasCountriesInMySQL) return false;
+  
+  // TODO: Validar que los meses sean consistentes usando monthsMetadata
+  // Por ahora retornamos true si hay países en MySQL
+  return true;
+});
+
 const showUploadModal = ref(false);
 const showConfirmModal = ref(false);
+const showFilesModal = ref(false);
 const confirmTitle = ref('');
 const confirmMessage = ref('');
 const confirmText = ref('');
 const pendingAction = ref(null);
+const suicFilesPath = ref({});
+
+// Función para cargar resumen de MySQL
+const loadMySQLSummary = async () => {
+  isLoadingSummary.value = true;
+  try {
+    const summary = await getSuicSummary(props.suicId);
+    
+    if (summary.success && summary.countries) {
+      const counts = {};
+      summary.countries.forEach(country => {
+        counts[country.paisCode] = {
+          count: country.totalRecords,
+          availableMonths: country.availableMonths || []
+        };
+      });
+      mysqlCounts.value = counts;
+      console.log('✅ Resumen MySQL cargado:', counts);
+      
+      // Limpiar países que ya están en MySQL de IndexedDB
+      const countsForCleanup = {};
+      summary.countries.forEach(country => {
+        countsForCleanup[country.paisCode] = country.totalRecords;
+      });
+      await clearCountriesInMySQL(countsForCleanup);
+      
+      // Recargar datos para actualizar conteos locales
+      await loadData();
+    } else {
+      console.warn('⚠️ No se obtuvo resumen válido de MySQL');
+      mysqlCounts.value = {};
+    }
+  } catch (error) {
+    console.error('❌ Error cargando resumen MySQL:', error);
+    mysqlCounts.value = {};
+  } finally {
+    isLoadingSummary.value = false;
+  }
+};
+
+// Función para cargar filesPath del modelo SUIC
+const loadSuicFilesPath = async () => {
+  try {
+    console.log('📂 Cargando filesPath del modelo SUIC...');
+    
+    const models = client.models;
+    if (!models?.SUIC) {
+      console.warn('⚠️ Modelo SUIC no disponible');
+      return;
+    }
+    
+    const { data: suic } = await models.SUIC.get({ id: props.suicId });
+    
+    if (suic && suic.filesPath) {
+      console.log('✅ filesPath cargado (raw):', suic.filesPath);
+      console.log('✅ filesPath tipo:', typeof suic.filesPath);
+      
+      // Si filesPath es un string JSON, parsearlo
+      if (typeof suic.filesPath === 'string') {
+        try {
+          const parsed = JSON.parse(suic.filesPath);
+          console.log('✅ filesPath parseado:', parsed);
+          suicFilesPath.value = parsed;
+        } catch (e) {
+          console.error('❌ Error parseando filesPath:', e);
+          suicFilesPath.value = {};
+        }
+      } else {
+        // Ya es un objeto
+        suicFilesPath.value = suic.filesPath;
+      }
+    } else {
+      console.log('📭 No hay filesPath en el modelo SUIC');
+      suicFilesPath.value = {};
+    }
+  } catch (error) {
+    console.error('❌ Error cargando filesPath:', error);
+    suicFilesPath.value = {};
+  }
+};
 
 // Cargar datos al montar
 onMounted(async () => {
   await loadData();
+  
+  // Cargar resumen desde MySQL
+  await loadMySQLSummary();
+  
+  // Cargar filesPath del modelo SUIC
+  await loadSuicFilesPath();
   
   // Validar datos existentes si los hay
   try {
@@ -167,6 +299,9 @@ onMounted(async () => {
 // Manejar datos cargados desde modal
 const handleDataLoaded = async () => {
   await loadData(); // Recargar conteos
+  
+  // Recargar filesPath después de cargar nuevos datos
+  await loadSuicFilesPath();
   
   // Validar datos cargados
   try {
@@ -283,6 +418,9 @@ const handleRetryCountry = async (paisCode) => {
       });
     }
 
+    // Refrescar resumen MySQL después de guardar exitosamente
+    await loadMySQLSummary();
+
   } catch (error) {
     console.error(`Error reintentando guardado de ${paisCode}:`, error);
     saveStates.value[paisCode] = {
@@ -373,6 +511,9 @@ const handleSaveToMySQL = async () => {
         });
       }
     }
+
+    // Refrescar resumen MySQL después de guardar
+    await loadMySQLSummary();
 
     useToast().add({
       title: 'Proceso completado',
@@ -471,5 +612,17 @@ const downloadTemplate = () => {
       color: 'red'
     });
   }
+};
+
+// Manejar siguiente paso
+const handleNextStep = () => {
+  // Emitir evento para que el componente padre avance en el stepper
+  emit('next-step');
+  
+  useToast().add({
+    title: 'Procediendo a Generación',
+    description: 'Avanzando al siguiente paso del proceso SUIC',
+    color: 'blue'
+  });
 };
 </script>
