@@ -147,6 +147,10 @@ const schema = a.schema({
       type: a.string(), //
       explosionRunId: a.string(),
       explosionStatus: a.string(), // 'Pendiente', 'En Proceso', 'Completado', 'Error'
+      rpaExecutionId: a.string(), // ID único generado antes de ejecutar el RPA
+      rpaStatus: a.string(), // Estados: 'pending', 'running', 'completed', 'error'
+      rpaType: a.string(), // Tipo de RPA: 'bloqueo-sap', 'carga-plantilla'
+      rpaLastUpdate: a.string(), // Timestamp de última actualización
     })
     .authorization((allow) => [allow.publicApiKey()]),
 
