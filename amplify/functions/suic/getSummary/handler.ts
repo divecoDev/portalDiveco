@@ -9,6 +9,8 @@ interface CountrySummary {
   totalRecords: number;
   lastUpdated: string | null;
   availableMonths: number[]; // Array de números de mes (1-12)
+  ventasByMonth: number[]; // Array de 12 posiciones con totales de ventas
+  unidadesByMonth: number[]; // Array de 12 posiciones con totales de unidades
 }
 
 interface SuicSummaryResponse {
@@ -145,7 +147,57 @@ export const handler = async (event: any): Promise<SuicSummaryResponse> => {
             (precio_proyectado_12 IS NOT NULL AND precio_proyectado_12 != '') OR 
             (venta_bruta_plan_12 IS NOT NULL AND venta_bruta_plan_12 != '') OR 
             (venta_plan_12 IS NOT NULL AND venta_plan_12 != '')
-          THEN 1 ELSE 0 END) > 0 as has_month_12
+          THEN 1 ELSE 0 END) > 0 as has_month_12,
+          -- Sumas de venta_plan por mes
+          SUM(CASE WHEN venta_plan_1 IS NOT NULL AND venta_plan_1 != '' 
+              THEN CAST(venta_plan_1 AS DECIMAL(15,2)) ELSE 0 END) as total_venta_1,
+          SUM(CASE WHEN venta_plan_2 IS NOT NULL AND venta_plan_2 != '' 
+              THEN CAST(venta_plan_2 AS DECIMAL(15,2)) ELSE 0 END) as total_venta_2,
+          SUM(CASE WHEN venta_plan_3 IS NOT NULL AND venta_plan_3 != '' 
+              THEN CAST(venta_plan_3 AS DECIMAL(15,2)) ELSE 0 END) as total_venta_3,
+          SUM(CASE WHEN venta_plan_4 IS NOT NULL AND venta_plan_4 != '' 
+              THEN CAST(venta_plan_4 AS DECIMAL(15,2)) ELSE 0 END) as total_venta_4,
+          SUM(CASE WHEN venta_plan_5 IS NOT NULL AND venta_plan_5 != '' 
+              THEN CAST(venta_plan_5 AS DECIMAL(15,2)) ELSE 0 END) as total_venta_5,
+          SUM(CASE WHEN venta_plan_6 IS NOT NULL AND venta_plan_6 != '' 
+              THEN CAST(venta_plan_6 AS DECIMAL(15,2)) ELSE 0 END) as total_venta_6,
+          SUM(CASE WHEN venta_plan_7 IS NOT NULL AND venta_plan_7 != '' 
+              THEN CAST(venta_plan_7 AS DECIMAL(15,2)) ELSE 0 END) as total_venta_7,
+          SUM(CASE WHEN venta_plan_8 IS NOT NULL AND venta_plan_8 != '' 
+              THEN CAST(venta_plan_8 AS DECIMAL(15,2)) ELSE 0 END) as total_venta_8,
+          SUM(CASE WHEN venta_plan_9 IS NOT NULL AND venta_plan_9 != '' 
+              THEN CAST(venta_plan_9 AS DECIMAL(15,2)) ELSE 0 END) as total_venta_9,
+          SUM(CASE WHEN venta_plan_10 IS NOT NULL AND venta_plan_10 != '' 
+              THEN CAST(venta_plan_10 AS DECIMAL(15,2)) ELSE 0 END) as total_venta_10,
+          SUM(CASE WHEN venta_plan_11 IS NOT NULL AND venta_plan_11 != '' 
+              THEN CAST(venta_plan_11 AS DECIMAL(15,2)) ELSE 0 END) as total_venta_11,
+          SUM(CASE WHEN venta_plan_12 IS NOT NULL AND venta_plan_12 != '' 
+              THEN CAST(venta_plan_12 AS DECIMAL(15,2)) ELSE 0 END) as total_venta_12,
+          -- Sumas de unidades_plan por mes
+          SUM(CASE WHEN unidades_plan_1 IS NOT NULL AND unidades_plan_1 != '' 
+              THEN CAST(unidades_plan_1 AS SIGNED) ELSE 0 END) as total_unidades_1,
+          SUM(CASE WHEN unidades_plan_2 IS NOT NULL AND unidades_plan_2 != '' 
+              THEN CAST(unidades_plan_2 AS SIGNED) ELSE 0 END) as total_unidades_2,
+          SUM(CASE WHEN unidades_plan_3 IS NOT NULL AND unidades_plan_3 != '' 
+              THEN CAST(unidades_plan_3 AS SIGNED) ELSE 0 END) as total_unidades_3,
+          SUM(CASE WHEN unidades_plan_4 IS NOT NULL AND unidades_plan_4 != '' 
+              THEN CAST(unidades_plan_4 AS SIGNED) ELSE 0 END) as total_unidades_4,
+          SUM(CASE WHEN unidades_plan_5 IS NOT NULL AND unidades_plan_5 != '' 
+              THEN CAST(unidades_plan_5 AS SIGNED) ELSE 0 END) as total_unidades_5,
+          SUM(CASE WHEN unidades_plan_6 IS NOT NULL AND unidades_plan_6 != '' 
+              THEN CAST(unidades_plan_6 AS SIGNED) ELSE 0 END) as total_unidades_6,
+          SUM(CASE WHEN unidades_plan_7 IS NOT NULL AND unidades_plan_7 != '' 
+              THEN CAST(unidades_plan_7 AS SIGNED) ELSE 0 END) as total_unidades_7,
+          SUM(CASE WHEN unidades_plan_8 IS NOT NULL AND unidades_plan_8 != '' 
+              THEN CAST(unidades_plan_8 AS SIGNED) ELSE 0 END) as total_unidades_8,
+          SUM(CASE WHEN unidades_plan_9 IS NOT NULL AND unidades_plan_9 != '' 
+              THEN CAST(unidades_plan_9 AS SIGNED) ELSE 0 END) as total_unidades_9,
+          SUM(CASE WHEN unidades_plan_10 IS NOT NULL AND unidades_plan_10 != '' 
+              THEN CAST(unidades_plan_10 AS SIGNED) ELSE 0 END) as total_unidades_10,
+          SUM(CASE WHEN unidades_plan_11 IS NOT NULL AND unidades_plan_11 != '' 
+              THEN CAST(unidades_plan_11 AS SIGNED) ELSE 0 END) as total_unidades_11,
+          SUM(CASE WHEN unidades_plan_12 IS NOT NULL AND unidades_plan_12 != '' 
+              THEN CAST(unidades_plan_12 AS SIGNED) ELSE 0 END) as total_unidades_12
         FROM suic 
         WHERE id_suic = ?
         GROUP BY pais
@@ -167,13 +219,29 @@ export const handler = async (event: any): Promise<SuicSummaryResponse> => {
           }
         }
         
+        // Extraer totales de ventas por mes
+        const ventasByMonth: number[] = [];
+        for (let i = 1; i <= 12; i++) {
+          ventasByMonth.push(parseFloat(row[`total_venta_${i}`] || '0') || 0);
+        }
+        
+        // Extraer totales de unidades por mes
+        const unidadesByMonth: number[] = [];
+        for (let i = 1; i <= 12; i++) {
+          unidadesByMonth.push(parseInt(row[`total_unidades_${i}`] || '0') || 0);
+        }
+        
         console.log(`📅 Meses disponibles para ${row.pais}:`, availableMonths);
+        console.log(`💰 Total ventas por mes para ${row.pais}:`, ventasByMonth);
+        console.log(`📦 Total unidades por mes para ${row.pais}:`, unidadesByMonth);
         
         return {
           paisCode: row.pais as string,
           totalRecords: row.totalRecords as number,
           lastUpdated: null,
-          availableMonths
+          availableMonths,
+          ventasByMonth,
+          unidadesByMonth
         };
       }) as CountrySummary[];
 

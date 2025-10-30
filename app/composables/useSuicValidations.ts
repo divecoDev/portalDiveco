@@ -27,6 +27,8 @@ export interface CountryMonthsMetadata {
   monthsMetadata: MonthValidationResult[];
   isValidating: boolean;
   lastValidated: Date | null;
+  ventasByMonth?: number[]; // Array de 12 posiciones con totales de ventas
+  unidadesByMonth?: number[]; // Array de 12 posiciones con totales de unidades
 }
 
 export const useSuicValidations = () => {
@@ -107,7 +109,9 @@ export const useSuicValidations = () => {
         totalErrors: finalResult.totalErrors,
         monthsMetadata: finalResult.monthsMetadata,
         isValidating: false,
-        lastValidated: new Date()
+        lastValidated: new Date(),
+        ventasByMonth: finalResult.ventasByMonth,
+        unidadesByMonth: finalResult.unidadesByMonth
       };
 
       // Actualizar estado global

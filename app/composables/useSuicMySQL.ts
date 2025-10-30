@@ -25,6 +25,8 @@ export interface SuicSummaryResponse {
     totalRecords: number;
     lastUpdated: string | null;
     availableMonths: number[]; // Array de números de mes (1-12)
+    ventasByMonth?: number[]; // Array de 12 posiciones con totales de ventas
+    unidadesByMonth?: number[]; // Array de 12 posiciones con totales de unidades
   }>;
   message: string;
 }
