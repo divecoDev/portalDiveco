@@ -85,6 +85,8 @@ export interface MonthValidationResult {
   hasData: boolean;
   missingColumns: string[];
   errorCount: number;
+  totalUnidades?: number; // Suma de unidades_plan_N del mes
+  totalVentas?: number; // Suma de venta_plan_N del mes
 }
 
 export interface CountryValidationResult {
@@ -93,6 +95,8 @@ export interface CountryValidationResult {
   validationErrors: ValidationError[];
   totalErrors: number;
   monthsMetadata: MonthValidationResult[];
+  ventasByMonth?: number[]; // Array de 12 posiciones con totales de ventas
+  unidadesByMonth?: number[]; // Array de 12 posiciones con totales de unidades
 }
 
 /**
@@ -103,6 +107,21 @@ export function hasValidData(value: any): boolean {
   if (typeof value === 'string') return value.trim() !== '';
   if (typeof value === 'number') return value !== 0;
   return true;
+}
+
+/**
+ * Parsea un valor numérico de una columna SUIC
+ */
+function parseNumericValue(value: any): number {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const cleaned = value.trim();
+    if (cleaned === '') return 0;
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
 }
 
 /**
@@ -191,6 +210,24 @@ export function validateCountryData(dataArray: Record<string, any>[]): CountryVa
     });
   });
   
+  // Calcular totales por mes (ventas y unidades)
+  const ventasByMonth = new Array(12).fill(0);
+  const unidadesByMonth = new Array(12).fill(0);
+  
+  dataArray.forEach(record => {
+    for (let month = 1; month <= 12; month++) {
+      // Sumar ventas
+      const ventaField = `venta_plan_${month}`;
+      const ventaValue = parseNumericValue(record[ventaField]);
+      ventasByMonth[month - 1] += ventaValue;
+      
+      // Sumar unidades
+      const unidadesField = `unidades_plan_${month}`;
+      const unidadesValue = parseNumericValue(record[unidadesField]);
+      unidadesByMonth[month - 1] += unidadesValue;
+    }
+  });
+  
   // Generar metadata por mes
   SUIC_MONTHS_CONFIG.MONTHS.forEach(month => {
     const monthNumber = month.number;
@@ -203,7 +240,9 @@ export function validateCountryData(dataArray: Record<string, any>[]): CountryVa
       isComplete: hasData && incompleteRows.length === 0,
       hasData,
       missingColumns: [], // Se llena dinámicamente si es necesario
-      errorCount: incompleteRows.length
+      errorCount: incompleteRows.length,
+      totalUnidades: unidadesByMonth[monthNumber - 1] > 0 ? unidadesByMonth[monthNumber - 1] : undefined,
+      totalVentas: ventasByMonth[monthNumber - 1] > 0 ? ventasByMonth[monthNumber - 1] : undefined
     });
   });
   
@@ -212,7 +251,9 @@ export function validateCountryData(dataArray: Record<string, any>[]): CountryVa
     incompleteMonths,
     validationErrors,
     totalErrors: validationErrors.length,
-    monthsMetadata
+    monthsMetadata,
+    ventasByMonth,
+    unidadesByMonth
   };
 }
 
@@ -262,6 +303,23 @@ export function combineValidationResults(
     totalErrors += result.totalErrors;
   });
   
+  // Combinar totales por mes
+  const combinedVentasByMonth = new Array(12).fill(0);
+  const combinedUnidadesByMonth = new Array(12).fill(0);
+  
+  results.forEach(result => {
+    if (result.ventasByMonth) {
+      result.ventasByMonth.forEach((venta, index) => {
+        combinedVentasByMonth[index] += venta;
+      });
+    }
+    if (result.unidadesByMonth) {
+      result.unidadesByMonth.forEach((unidades, index) => {
+        combinedUnidadesByMonth[index] += unidades;
+      });
+    }
+  });
+  
   // Generar metadata final
   const monthsMetadata: MonthValidationResult[] = SUIC_MONTHS_CONFIG.MONTHS.map(month => {
     const monthNumber = month.number;
@@ -274,7 +332,9 @@ export function combineValidationResults(
       isComplete: hasData && incompleteRows.length === 0,
       hasData,
       missingColumns: [],
-      errorCount: incompleteRows.length
+      errorCount: incompleteRows.length,
+      totalUnidades: combinedUnidadesByMonth[monthNumber - 1] > 0 ? combinedUnidadesByMonth[monthNumber - 1] : undefined,
+      totalVentas: combinedVentasByMonth[monthNumber - 1] > 0 ? combinedVentasByMonth[monthNumber - 1] : undefined
     };
   });
   
@@ -283,6 +343,8 @@ export function combineValidationResults(
     incompleteMonths: combinedIncompleteMonths,
     validationErrors: combinedValidationErrors,
     totalErrors,
-    monthsMetadata
+    monthsMetadata,
+    ventasByMonth: combinedVentasByMonth,
+    unidadesByMonth: combinedUnidadesByMonth
   };
 }

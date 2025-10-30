@@ -20,6 +20,7 @@ import { suicSaveBatch } from "../functions/suic/resource";
 import { suicGetSummary } from "../functions/suic/getSummary/resource";
 import { runExplosionSuic } from "../functions/suic/runExplosion/resource";
 import { getMetaDiariaFinal } from "../functions/suic/getMetaDiariaFinal/resource";
+import { generateSociedadesCsv } from "../functions/suic/generateSociedadesCsv/resource";
 
 const schema = a.schema({
   Todo: a
@@ -143,6 +144,7 @@ const schema = a.schema({
     .model({
       descripcion: a.string(),
       filesPath: a.json(),
+      csvFilesPath: a.json(),
       createdBy: a.string(),
       type: a.string(), //
       explosionRunId: a.string(),
@@ -326,6 +328,18 @@ const schema = a.schema({
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(runExplosionSuic)),
+
+  /**
+   *  SUIC - Generar archivos CSV por sociedad desde meta_diaria_final
+   */
+  generateSociedadesCsv: a
+    .mutation()
+    .arguments({
+      suicId: a.string().required(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(generateSociedadesCsv)),
 });
 
 export type Schema = ClientSchema<typeof schema>;

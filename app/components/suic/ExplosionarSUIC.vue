@@ -8,9 +8,6 @@
         </div>
         Generar SUIC
       </h2>
-      <p class="text-gray-600 dark:text-gray-400 ml-13">
-        Procesa los datos SUIC mediante Azure Data Factory
-      </p>
     </div>
 
     <!-- Loading state -->
@@ -534,7 +531,7 @@ const ejecutarExplosion = async () => {
     // Mostrar toast de carga
     const loadingToast = useToast().add({
       title: 'Generando SUIC...',
-      description: 'Iniciando pipeline de Azure Data Factory. Esto puede tomar varios minutos.',
+      description: 'Iniciando pipeline. Esto puede tomar varios minutos.',
       color: 'blue',
       timeout: 0
     });

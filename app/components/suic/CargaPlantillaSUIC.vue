@@ -199,7 +199,9 @@ const loadMySQLSummary = async () => {
       summary.countries.forEach(country => {
         counts[country.paisCode] = {
           count: country.totalRecords,
-          availableMonths: country.availableMonths || []
+          availableMonths: country.availableMonths || [],
+          ventasByMonth: country.ventasByMonth || [],
+          unidadesByMonth: country.unidadesByMonth || []
         };
       });
       mysqlCounts.value = counts;
