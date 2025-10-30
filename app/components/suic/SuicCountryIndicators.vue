@@ -80,14 +80,9 @@
         <div class="w-full px-5 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 bg-gray-200/40 dark:bg-gray-700/40 backdrop-blur-sm rounded-full border-2 border-gray-300/50 dark:border-gray-600/50 flex items-center justify-center font-bold text-2xl shadow-sm">
-              <span class="flex items-center justify-center w-full h-full">
-              {{ pais.flag }}
-            </span>
-          </div>
+              
               <div>
                 <h4 class="text-lg font-bold text-gray-800 dark:text-gray-200">{{ pais.name }}</h4>
-                <p class="text-xs text-gray-600 dark:text-gray-400">{{ pais.code }}</p>
               </div>
             </div>
             
@@ -167,7 +162,7 @@
             </div>
 
         <!-- Contenido del card -->
-        <div class="p-5 flex flex-col lg:flex-row lg:items-center gap-4">
+        <div class="flex flex-col lg:flex-row lg:items-center">
           <!-- Sección Central: Información de datos -->
           <div class="flex-1 min-w-0">
             <div class="space-y-3">
