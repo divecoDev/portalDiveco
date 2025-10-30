@@ -12,11 +12,19 @@
             >
               <UIcon name="i-heroicons-eye" class="w-7 h-7 text-white" />
             </div>
-            {{ suic?.descripcion || "Cargando..." }}
+            <div class="flex space-x-4 items-center">
+               <div>
+                <p class="text-2xl font-bold text-gray-600 dark:text-gray-300">
+                  {{ suic?.descripcion || "Cargando..." }}
+                </p>
+               </div>
+               <div>
+                <p class="text-xs bg-cyan-500 text-white px-2 py-1 rounded-mddark:text-gray-300 rounded-full">
+                  {{ suic?.type }}
+                </p>
+               </div>
+            </div>
           </h1>
-          <p class="mt-3 text-lg text-gray-600 dark:text-gray-300 ml-16">
-            Detalles de la carga SUIC
-          </p>
         </div>
 
         <!-- Botones de acción -->
@@ -74,57 +82,6 @@
           Volver al Listado
         </button>
       </NuxtLink>
-    </div>
-
-    <!-- Información adicional en el header -->
-    <div v-else class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
-      <!-- Información adicional -->
-      <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-md shadow-lg border border-cyan-200/30 dark:border-cyan-700/30 p-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <!-- Tipo -->
-          <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-              <UIcon name="i-heroicons-tag" class="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Tipo</p>
-              <UBadge
-                :color="suic.type === 'Cierre' ? 'green' : 'blue'"
-                variant="subtle"
-                size="lg"
-                class="font-semibold"
-              >
-                {{ suic.type }}
-              </UBadge>
-            </div>
-          </div>
-
-          <!-- Fecha de creación -->
-          <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center">
-              <UIcon name="i-heroicons-calendar" class="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Fecha de creación</p>
-              <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ formatDate(suic.createdAt) }}</p>
-            </div>
-          </div>
-
-          <!-- Archivos -->
-          <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center">
-              <UIcon name="i-heroicons-document" class="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Archivos</p>
-              <p class="text-sm font-semibold text-gray-900 dark:text-white flex items-center">
-                <UIcon name="i-heroicons-clock" class="w-4 h-4 mr-1" />
-                Pendiente
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- Stepper de procesos -->
