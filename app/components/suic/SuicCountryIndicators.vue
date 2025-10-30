@@ -239,7 +239,7 @@
             </div>
 
             <!-- Debug: Validando datos locales -->
-            <div v-if="loadedCounts[pais.code] && !mysqlCounts[pais.code] && !getCountryMetadata(pais.code)" class="text-xs text-blue-500 mt-2">
+            <div v-if="loadedCounts[pais.code] && !mysqlCounts[pais.code] && !getCountryMetadata(pais.code)" class="text-xs text-blue-500 mt-2 mx-4">
               Validando datos...
             </div>
 
@@ -264,12 +264,12 @@
 
         <!-- Sección de Acciones: Botones (solo para datos locales) -->
         <div class="flex-shrink-0">
-          <div v-if="!mysqlCounts[pais.code] && loadedCounts[pais.code]" class="flex space-x-2">
+          <div v-if="!mysqlCounts[pais.code] && loadedCounts[pais.code]" class="flex space-x-2 p-4">
             <!-- Botón limpiar -->
             <button
               v-if="!saveStates[pais.code] || saveStates[pais.code].status !== 'saving'"
               @click="$emit('clear-country', pais.code)"
-              class="rounded-md inline-flex items-center px-3 py-2 text-sm gap-1 shadow-md bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+              class="rounded-md  inline-flex items-center px-3 py-2 text-sm gap-1 shadow-md bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
             >
               <UIcon name="i-heroicons-trash" class="w-4 h-4" />
               Limpiar
