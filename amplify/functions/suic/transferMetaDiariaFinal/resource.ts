@@ -1,10 +1,10 @@
 import { defineFunction, secret } from '@aws-amplify/backend';
 
-export const generateSociedadesCsv = defineFunction({
-  name: 'generateSociedadesCsv',
+export const transferMetaDiariaFinal = defineFunction({
+  name: 'transferMetaDiariaFinal',
   entry: './handler.ts',
   timeoutSeconds: 900,
-  memoryMB: 2048,
+  memoryMB: 5 * 1024,
   environment: {
     MYSQL_HOST: secret("MYSQL_HOST"),
     MYSQL_USER: secret("MYSQL_USER"),
@@ -14,8 +14,4 @@ export const generateSociedadesCsv = defineFunction({
     MYSQL_SSL: "false",
   }
 });
-
-
-
-
 

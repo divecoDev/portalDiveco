@@ -89,16 +89,6 @@
           <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5" />
           {{ isSaving ? 'Guardando...' : 'Guardar' }}
         </button>
-
-        <!-- Botón para siguiente paso -->
-        <button
-          v-if="canProceedToNextStep"
-          @click="handleNextStep"
-          class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
-        >
-          <UIcon name="i-heroicons-arrow-right" class="w-5 h-5" />
-          Siguiente: Generar SUIC
-        </button>
     </section>
 
     <!-- Modal de carga -->

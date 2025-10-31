@@ -6,11 +6,8 @@
         <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center mr-3">
           <UIcon name="i-heroicons-cpu-chip" class="w-6 h-6 text-white" />
         </div>
-        Ejecutar RPA
+        Guadar SUIC
       </h2>
-      <p class="text-gray-600 dark:text-gray-400 ml-13">
-        Ejecución de robots
-      </p>
     </div>
 
     <!-- Loading state -->
@@ -48,11 +45,9 @@
             </div>
             <div class="flex-1 min-w-0">
               <h3 class="text-base font-semibold text-gray-900 dark:text-white">
-                Generar CSVs por Sociedad
+                Guardar SUIC 
               </h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Genera archivos CSV separados por sociedad desde meta_diaria_final
-              </p>
+              
             </div>
           </div>
           <div class="flex items-center space-x-3 ml-4">
@@ -172,9 +167,9 @@ const getCsvStatusTextClass = () => {
 
 const getCsvButtonText = () => {
   switch (csvState.value) {
-    case 'running': return 'Generando...';
+    case 'running': return 'Cargando...';
     case 'success': return 'Completado';
-    default: return 'Generar CSVs';
+    default: return 'Guardar';
   }
 };
 

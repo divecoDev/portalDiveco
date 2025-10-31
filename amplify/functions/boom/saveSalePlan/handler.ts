@@ -15,9 +15,11 @@ export const handler = async (event: any) => {
   try {
     const pool = new sql.ConnectionPool(sqlConf);
     await pool.connect();
-    const result = await pool.request().query("SELECT TOP 10 * FROM Bronze.S076");
+    const result = await pool.request().query("SELECT  * FROM Gold.Meta_Diaria_Final");
     console.log(result);
     pool.close();
+
+
 } catch (error) {
     console.error(error);
     throw new Error("Failed to connect to SQL Server");

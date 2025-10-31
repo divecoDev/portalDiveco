@@ -192,7 +192,7 @@ const stepperItems = ref([
   },
   {
     slot: "ejecutar-rpa",
-    title: "Ejecutar RPA",
+    title: "Guardar",
     icon: "i-heroicons-cpu-chip",
   },
 ]);
