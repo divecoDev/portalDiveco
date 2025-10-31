@@ -18,6 +18,7 @@ interface MetaDiariaFinalResponse {
     sociedades: string[];
     mesesDisponibles: string[];
   };
+  totalCount?: number;
   message?: string;
 }
 
@@ -63,6 +64,13 @@ export const handler = async (event: any): Promise<MetaDiariaFinalResponse> => {
     console.log('✅ Conexión a MySQL establecida');
 
     try {
+      // Consultar conteo total primero
+      const countQuery = `SELECT COUNT(*) as total FROM meta_diaria_final WHERE id_suic = ?`;
+      console.log(`🔍 Consultando conteo total para SUIC: ${body.suicId}`);
+      const [countRows] = await connection.execute<mysql.RowDataPacket[]>(countQuery, [body.suicId]);
+      const totalCount = countRows[0]?.total || 0;
+      console.log(`📊 Conteo total: ${totalCount} registros`);
+
       // Consultar datos agregados por sociedad y mes
       const query = `
         SELECT
@@ -80,11 +88,11 @@ export const handler = async (event: any): Promise<MetaDiariaFinalResponse> => {
           Sociedad, MesExtraido
       `;
 
-      console.log(`🔍 Ejecutando query para SUIC: ${body.suicId}`);
+      console.log(`🔍 Ejecutando query agregada para SUIC: ${body.suicId}`);
       const [rows] = await connection.execute(query, [body.suicId]);
       const data = rows as MetaDiariaFinalRow[];
 
-      console.log(`✅ Datos obtenidos: ${data.length} registros`);
+      console.log(`✅ Datos obtenidos: ${data.length} registros agregados`);
 
       // Generar resumen
       const sociedades = [...new Set(data.map(row => row.Sociedad))].sort();
@@ -97,7 +105,8 @@ export const handler = async (event: any): Promise<MetaDiariaFinalResponse> => {
           sociedades,
           mesesDisponibles: meses
         },
-        message: `Datos obtenidos exitosamente: ${data.length} registros de ${sociedades.length} sociedades`
+        totalCount,
+        message: `Datos obtenidos exitosamente: ${data.length} registros agregados de ${sociedades.length} sociedades (${totalCount} registros totales)`
       };
 
     } finally {

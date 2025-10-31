@@ -14,6 +14,7 @@ interface MetaDiariaFinalResponse {
     sociedades: string[];
     mesesDisponibles: string[];
   };
+  totalCount?: number;
   message?: string;
 }
 
@@ -24,7 +25,7 @@ export const useSuicMetaDiariaFinal = () => {
     try {
       console.log('🔍 Consultando meta_diaria_final para SUIC:', suicId);
 
-      const { data } = await client.queries.getMetaDiariaFinal({ suicId });
+      const { data } = await (client.queries as any).getMetaDiariaFinal({ suicId });
 
       console.log('📊 Respuesta de meta_diaria_final:', data);
 
@@ -66,8 +67,19 @@ export const useSuicMetaDiariaFinal = () => {
     }
   };
 
+  const getMetaDiariaFinalCount = async (suicId: string): Promise<number> => {
+    try {
+      const response = await getMetaDiariaFinal(suicId);
+      return response.totalCount ?? 0;
+    } catch (error) {
+      console.error('❌ Error obteniendo conteo de meta_diaria_final:', error);
+      return 0;
+    }
+  };
+
   return {
-    getMetaDiariaFinal
+    getMetaDiariaFinal,
+    getMetaDiariaFinalCount
   };
 };
 

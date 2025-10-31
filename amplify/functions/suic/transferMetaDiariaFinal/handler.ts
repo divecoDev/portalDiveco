@@ -163,6 +163,48 @@ export const handler = async (event: any): Promise<TransferResponse> => {
 
         console.log(`✅ Transferencia completada: ${totalRecords} registros`);
 
+        // Verificar que todos los registros estén disponibles en MySQL
+        console.log('🔍 Verificando sincronización de datos en MySQL...');
+        const maxRetries = 3;
+        const retryDelays = [10000, 15000, 20000]; // 10s, 15s, 20s
+        let verified = false;
+
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+          try {
+            const [countResult] = await mysqlConnection.execute<mysql.RowDataPacket[]>(
+              'SELECT COUNT(*) as total FROM meta_diaria_final WHERE id_suic = ?',
+              [body.suicId]
+            );
+            
+            const mysqlCount = countResult[0]?.total || 0;
+            console.log(`📊 Intento ${attempt + 1}/${maxRetries}: MySQL tiene ${mysqlCount} registros, esperados ${totalRecords}`);
+
+            if (mysqlCount === totalRecords) {
+              console.log(`✅ Verificación exitosa: Todos los ${totalRecords} registros están disponibles en MySQL`);
+              verified = true;
+              break;
+            } else {
+              console.log(`⏳ Sincronización aún en progreso: ${mysqlCount}/${totalRecords} registros disponibles`);
+              
+              if (attempt < maxRetries - 1) {
+                const delay = retryDelays[attempt];
+                console.log(`⏱️ Esperando ${delay}ms antes del siguiente intento...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+              }
+            }
+          } catch (error) {
+            console.error(`❌ Error verificando conteo (intento ${attempt + 1}):`, error);
+            if (attempt < maxRetries - 1) {
+              const delay = retryDelays[attempt];
+              await new Promise(resolve => setTimeout(resolve, delay));
+            }
+          }
+        }
+
+        if (!verified) {
+          console.warn(`⚠️ No se pudo verificar completamente la sincronización después de ${maxRetries} intentos. Los datos pueden estar aún sincronizándose en segundo plano.`);
+        }
+
       } finally {
         console.log('🔌 Cerrando conexión a MySQL...');
         await mysqlConnection.end();

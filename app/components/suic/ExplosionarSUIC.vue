@@ -70,7 +70,6 @@
           <div class="w-6 h-6 border-3 border-cyan-600 border-t-transparent rounded-full animate-spin"></div>
           <div>
             <p class="text-sm font-semibold text-cyan-800 dark:text-cyan-200">Transferiendo datos...</p>
-            <p class="text-xs text-cyan-600 dark:text-cyan-400">Moviendo datos de MSSQL a MySQL</p>
           </div>
         </div>
       </div>
@@ -184,7 +183,7 @@ const transferInProgress = ref(false);
 const transferExecuted = ref(false); // Flag para prevenir transferencias duplicadas
 
 // Composable para meta_diaria_final
-const { getMetaDiariaFinal } = useSuicMetaDiariaFinal();
+const { getMetaDiariaFinal, getMetaDiariaFinalCount } = useSuicMetaDiariaFinal();
 
 // Polling del pipeline
 const explosionPollingInterval = ref(null);
@@ -280,7 +279,13 @@ const consultarEstadoPipelineExplosion = async (runId) => {
         if (!transferExecuted.value) {
           transferExecuted.value = true;
           console.log('🔄 Ejecutando transferencia única para runId:', runId);
-          await transferirMetaDiariaFinal();
+          const recordsTransferred = await transferirMetaDiariaFinal();
+          
+          // Esperar a que los datos estén sincronizados en MySQL antes de consultar
+          if (recordsTransferred && recordsTransferred > 0) {
+            console.log('⏳ Esperando sincronización de datos en MySQL antes de consultar...');
+            await waitForDataSync(recordsTransferred);
+          }
         } else {
           console.log('⏭️ Transferencia ya ejecutada para este runId, omitiendo');
         }
@@ -473,6 +478,8 @@ const transferirMetaDiariaFinal = async () => {
         color: "green",
         timeout: 5000
       });
+      
+      return result.recordsTransferred;
     } else {
       throw new Error(result.message || 'Error en la transferencia');
     }
@@ -485,8 +492,58 @@ const transferirMetaDiariaFinal = async () => {
       color: "red",
       timeout: 7000
     });
+    
+    return null;
   } finally {
     transferInProgress.value = false;
+  }
+};
+
+// Función para esperar a que los datos estén sincronizados en MySQL
+const waitForDataSync = async (expectedCount) => {
+  try {
+    console.log(`🔄 Esperando sincronización de datos en MySQL (esperados: ${expectedCount} registros)`);
+    
+    // Delay inicial de 2-3 segundos
+    console.log('⏱️ Esperando 3 segundos iniciales para que MySQL procese los INSERTs...');
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    const maxRetries = 6; // Máximo 6 intentos (3s inicial + 6 * 10s = ~63s máximo)
+    const retryDelay = 10000; // 10 segundos entre intentos
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        console.log(`🔍 Verificando sincronización (intento ${attempt + 1}/${maxRetries})...`);
+        
+        const currentCount = await getMetaDiariaFinalCount(props.suicId);
+        console.log(`📊 MySQL tiene ${currentCount} registros, esperados ${expectedCount}`);
+        
+        if (currentCount === expectedCount) {
+          console.log(`✅ Sincronización completa: ${currentCount} registros disponibles en MySQL`);
+          return true;
+        } else {
+          const progress = ((currentCount / expectedCount) * 100).toFixed(1);
+          console.log(`⏳ Sincronización en progreso: ${currentCount}/${expectedCount} (${progress}%)`);
+          
+          if (attempt < maxRetries - 1) {
+            console.log(`⏱️ Esperando ${retryDelay}ms antes del siguiente intento...`);
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+          }
+        }
+      } catch (error) {
+        console.error(`❌ Error verificando conteo (intento ${attempt + 1}):`, error);
+        if (attempt < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
+    }
+    
+    // Si llegamos aquí, no se pudo verificar completamente
+    console.warn(`⚠️ No se pudo verificar completamente la sincronización después de ${maxRetries} intentos. Continuando de todas formas...`);
+    return false;
+  } catch (error) {
+    console.error('❌ Error en waitForDataSync:', error);
+    return false;
   }
 };
 
