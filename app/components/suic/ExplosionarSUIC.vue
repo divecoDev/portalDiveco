@@ -54,11 +54,23 @@
 
       <!-- Succeeded -->
       <div v-else-if="pipelineStatus === 'Succeeded'" class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border-2 border-green-500 dark:border-green-400">
-        <div class="flex items-center space-x-3">
-          <UIcon name="i-heroicons-check-circle" class="w-6 h-6 text-green-600 dark:text-green-400" />
-          <div>
+        <div class="flex items-start space-x-3">
+          <UIcon name="i-heroicons-check-circle" class="w-6 h-6 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+          <div class="flex-1">
             <p class="text-sm font-semibold text-green-800 dark:text-green-200">Pipeline completado exitosamente</p>
             <p class="text-xs text-green-600 dark:text-green-400">El SUIC ha sido generado correctamente</p>
+            <p class="text-xs text-green-600 dark:text-green-400 mt-1">Puedes regenerar el SUIC si necesitas actualizar los datos</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transferring -->
+      <div v-if="transferInProgress" class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-2 border-cyan-500 dark:border-cyan-400 mt-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-6 h-6 border-3 border-cyan-600 border-t-transparent rounded-full animate-spin"></div>
+          <div>
+            <p class="text-sm font-semibold text-cyan-800 dark:text-cyan-200">Transferiendo datos...</p>
+            <p class="text-xs text-cyan-600 dark:text-cyan-400">Moviendo datos de MSSQL a MySQL</p>
           </div>
         </div>
       </div>
@@ -109,15 +121,15 @@
     </div>
 
     <!-- Botón de acción -->
-    <div class="flex justify-center">
+    <div class="flex flex-col items-center">
       <button
         @click="ejecutarExplosion"
-        :disabled="explosionInProgress || !suicData || !primerMes"
+        :disabled="explosionInProgress || !suicData || !primerMes || pipelineStatus === 'InProgress' || pipelineStatus === 'Queued'"
         class="rounded-md inline-flex items-center px-8 py-4 text-lg gap-2 shadow-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
       >
         <UIcon v-if="!explosionInProgress" name="i-heroicons-bolt" class="w-6 h-6" />
         <div v-else class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-        {{ explosionInProgress ? 'Generando...' : 'Generar SUIC' }}
+        {{ explosionInProgress ? 'Generando...' : (pipelineStatus === 'Succeeded' ? 'Regenerar SUIC' : 'Generar SUIC') }}
       </button>
     </div>
 
@@ -168,6 +180,8 @@ const metaDiariaData = ref([]);
 const metaDiariaSummary = ref({ sociedades: [], mesesDisponibles: [] });
 const loadingMetaDiaria = ref(false);
 const errorMetaDiaria = ref(null);
+const transferInProgress = ref(false);
+const transferExecuted = ref(false); // Flag para prevenir transferencias duplicadas
 
 // Composable para meta_diaria_final
 const { getMetaDiariaFinal } = useSuicMetaDiariaFinal();
@@ -262,6 +276,15 @@ const consultarEstadoPipelineExplosion = async (runId) => {
         // Actualizar SUIC con estado completado
         await actualizarSuicStatus('Completado');
         
+        // Transferir datos de MSSQL a MySQL SOLO si no se ha ejecutado para este runId
+        if (!transferExecuted.value) {
+          transferExecuted.value = true;
+          console.log('🔄 Ejecutando transferencia única para runId:', runId);
+          await transferirMetaDiariaFinal();
+        } else {
+          console.log('⏭️ Transferencia ya ejecutada para este runId, omitiendo');
+        }
+        
         // Consultar datos de meta_diaria_final
         await consultarMetaDiariaFinal();
         
@@ -347,15 +370,6 @@ const iniciarPollingExplosion = async (runId) => {
   try {
     console.log(`🔄 Iniciando polling para pipeline SUIC con runId: ${runId}`);
     
-    // Consultar el estado inicial
-    await consultarEstadoPipelineExplosion(runId);
-    
-    // Si ya no hay intervalo (fue detenido por estado final), no continuar
-    if (!explosionPollingInterval.value) {
-      console.log('🛑 Polling fue detenido, no configurando interval');
-      return;
-    }
-    
     // Configurar polling cada 10 segundos con timeout de 30 minutos
     const startTime = Date.now();
     const timeoutMs = 30 * 60 * 1000; // 30 minutos
@@ -401,6 +415,9 @@ const iniciarPollingExplosion = async (runId) => {
     // Guardar el intervalId para poder detenerlo después
     explosionPollingInterval.value = intervalId;
     
+    // Consultar el estado inicial inmediatamente después de configurar el interval
+    await consultarEstadoPipelineExplosion(runId);
+    
   } catch (error) {
     console.error('Error iniciando polling de explosión SUIC:', error);
   }
@@ -423,6 +440,53 @@ const actualizarSuicStatus = async (nuevoEstado) => {
   } catch (error) {
     console.error('❌ Error actualizando estado de explosión en SUIC:', error);
     console.error('❌ Detalles del error:', error.message);
+  }
+};
+
+// Función para transferir datos de MSSQL a MySQL
+const transferirMetaDiariaFinal = async () => {
+  try {
+    transferInProgress.value = true;
+    console.log('🔄 Iniciando transferencia de meta_diaria_final desde MSSQL a MySQL');
+
+    const { data } = await client.mutations.transferMetaDiariaFinal({ suicId: props.suicId });
+
+    console.log('📋 Respuesta de transferencia:', data);
+
+    // Parsear respuesta si viene como string
+    let result;
+    if (typeof data === 'string') {
+      result = JSON.parse(data);
+    } else if (data && typeof data === 'object') {
+      result = data.transferMetaDiariaFinal || data;
+    } else {
+      throw new Error('Respuesta inválida del servidor');
+    }
+
+    if (result.success) {
+      console.log('✅ Transferencia completada:', result.message);
+      console.log('📊 Registros transferidos:', result.recordsTransferred);
+      
+      useToast().add({
+        title: "Transferencia completada",
+        description: `${result.recordsTransferred} registros transferidos exitosamente`,
+        color: "green",
+        timeout: 5000
+      });
+    } else {
+      throw new Error(result.message || 'Error en la transferencia');
+    }
+  } catch (error) {
+    console.error('❌ Error transfiriendo meta_diaria_final:', error);
+    
+    useToast().add({
+      title: "Error en transferencia",
+      description: error instanceof Error ? error.message : 'Error desconocido al transferir datos',
+      color: "red",
+      timeout: 7000
+    });
+  } finally {
+    transferInProgress.value = false;
   }
 };
 
@@ -514,6 +578,15 @@ const ejecutarExplosion = async () => {
     return;
   }
 
+  // Si hay un pipeline completado, resetear estados para nueva ejecución
+  if (pipelineStatus.value === 'Succeeded' || pipelineStatus.value === 'Failed') {
+    console.log('🔄 Reejecutando pipeline SUIC desde estado:', pipelineStatus.value);
+    pipelineStatus.value = null;
+    explosionStatus.value = null;
+    runId.value = null;
+    transferExecuted.value = false; // Resetear flag de transferencia
+  }
+
   try {
     explosionInProgress.value = true;
     explosionStatus.value = 'running';
@@ -567,6 +640,9 @@ const ejecutarExplosion = async () => {
         explosionRunId: extractedRunId,
         explosionStatus: 'En Proceso'
       });
+
+      // Resetear flag para permitir transferencia en este nuevo pipeline
+      transferExecuted.value = false;
 
       // Iniciar polling para monitorear el estado
       await iniciarPollingExplosion(extractedRunId);

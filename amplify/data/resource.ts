@@ -21,6 +21,7 @@ import { suicGetSummary } from "../functions/suic/getSummary/resource";
 import { runExplosionSuic } from "../functions/suic/runExplosion/resource";
 import { getMetaDiariaFinal } from "../functions/suic/getMetaDiariaFinal/resource";
 import { generateSociedadesCsv } from "../functions/suic/generateSociedadesCsv/resource";
+import { transferMetaDiariaFinal } from "../functions/suic/transferMetaDiariaFinal/resource";
 
 const schema = a.schema({
   Todo: a
@@ -340,6 +341,18 @@ const schema = a.schema({
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(generateSociedadesCsv)),
+
+  /**
+   *  SUIC - Transferir datos de meta_diaria_final desde MSSQL a MySQL
+   */
+  transferMetaDiariaFinal: a
+    .mutation()
+    .arguments({
+      suicId: a.string().required(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(transferMetaDiariaFinal)),
 });
 
 export type Schema = ClientSchema<typeof schema>;

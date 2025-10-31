@@ -27,6 +27,7 @@ import { GetMaterialesSinCentroProduccion } from "./functions/boom/getMateriales
 import { boomFilesStore } from "./functions/boom/boomFilesStore.ts/resource";
 import { suicSaveBatch } from "./functions/suic/resource";
 import {generateSociedadesCsv} from "./functions/suic/generateSociedadesCsv/resource";
+import { transferMetaDiariaFinal } from "./functions/suic/transferMetaDiariaFinal/resource";
 /**
  * Configuración del backend de Amplify
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
@@ -53,6 +54,7 @@ export const backend = defineBackend({
   boomFilesStore,
   suicSaveBatch,
   generateSociedadesCsv,
+  transferMetaDiariaFinal,
 });
 
 const resetPasswordLambda = backend.resetPassword.resources.lambda;
@@ -211,6 +213,18 @@ const generateSociedadesCsvPolicy = new iam.PolicyStatement({
   resources: ["arn:aws:s3:::porta-diveco-suic", "arn:aws:s3:::porta-diveco-suic/*"],
 });
 generateSociedadesCsvLambda.addToRolePolicy(generateSociedadesCsvPolicy);
+
+const transferMetaDiariaFinalLambda = backend.transferMetaDiariaFinal.resources.lambda;
+const transferMetaDiariaFinalPolicy = new iam.PolicyStatement({
+  actions: [
+    "ec2:CreateNetworkInterface",
+    "ec2:DescribeNetworkInterfaces",
+    "ec2:DeleteNetworkInterface",
+  ],
+  resources: ["*"],
+});
+transferMetaDiariaFinalLambda.addToRolePolicy(transferMetaDiariaFinalPolicy);
+
 /*
  * CREACION DE API REST
  */
