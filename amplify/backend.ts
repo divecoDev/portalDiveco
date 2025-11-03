@@ -24,6 +24,7 @@ import { BoomGetStatusPipeline } from "./functions/boom/GetStatusPipeline/resour
 import { GetPlanProduccion } from "./functions/boom/GetPlanProduccion/resource";
 import { GetMaterialesSinAprovicionamiento } from "./functions/boom/GetMaterialesSinAprovicionamiento/resource";
 import { GetMaterialesSinCentroProduccion } from "./functions/boom/getMaterialesSinCentroProduccion/resource";
+import { validacionMaterialesResolver } from "./functions/validacionMaterialesResolver/resource";
 import { boomFilesStore } from "./functions/boom/boomFilesStore.ts/resource";
 import { suicSaveBatch } from "./functions/suic/resource";
 import {generateSociedadesCsv} from "./functions/suic/generateSociedadesCsv/resource";
@@ -51,6 +52,7 @@ export const backend = defineBackend({
   GetPlanProduccion,
   GetMaterialesSinAprovicionamiento,
   GetMaterialesSinCentroProduccion,
+  validacionMaterialesResolver,
   boomFilesStore,
   suicSaveBatch,
   generateSociedadesCsv,
@@ -170,6 +172,17 @@ getMaterialesSinAprovicionamientoLambda.addFunctionUrl(
     authType: FunctionUrlAuthType.NONE,
   }
 );
+// Agregar permisop  para network interface
+const getMaterialesSinAprovicionamientoNetworkInterfacePolicy = new iam.PolicyStatement({
+  actions: [
+    "ec2:CreateNetworkInterface",
+    "ec2:DescribeNetworkInterfaces",
+    "ec2:DeleteNetworkInterface",
+  ],
+  resources: ["*"],
+});
+getMaterialesSinAprovicionamientoLambda.addToRolePolicy(getMaterialesSinAprovicionamientoNetworkInterfacePolicy);
+
 
 const getMaterialesSinCentroProduccionLambda = backend.GetMaterialesSinCentroProduccion.resources.lambda;
 const getMaterialesSinCentroProduccionPolicy = new iam.PolicyStatement(getBoomS3Policy);
@@ -224,6 +237,17 @@ const transferMetaDiariaFinalPolicy = new iam.PolicyStatement({
   resources: ["*"],
 });
 transferMetaDiariaFinalLambda.addToRolePolicy(transferMetaDiariaFinalPolicy);
+
+const validacionMaterialesResolverLambda = backend.validacionMaterialesResolver.resources.lambda;
+const validacionMaterialesResolverPolicy = new iam.PolicyStatement({
+  actions: [
+    "ec2:CreateNetworkInterface",
+    "ec2:DescribeNetworkInterfaces",
+    "ec2:DeleteNetworkInterface",
+  ],
+  resources: ["*"],
+});
+validacionMaterialesResolverLambda.addToRolePolicy(validacionMaterialesResolverPolicy);
 
 /*
  * CREACION DE API REST

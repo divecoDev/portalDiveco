@@ -15,6 +15,7 @@ import { runPipeline } from "../functions/boom/runPipeline/resource";
 import { BoomGetStatusPipeline } from "../functions/boom/GetStatusPipeline/resource";
 import { GetMaterialesSinAprovicionamiento } from "../functions/boom/GetMaterialesSinAprovicionamiento/resource";
 import { GetMaterialesSinCentroProduccion } from "../functions/boom/getMaterialesSinCentroProduccion/resource";
+import { validacionMaterialesResolver } from "../functions/validacionMaterialesResolver/resource";
 import { aprovisionamiento } from "../functions/porcentajes-asignacion/resource";
 import { suicSaveBatch } from "../functions/suic/resource";
 import { suicGetSummary } from "../functions/suic/getSummary/resource";
@@ -253,6 +254,16 @@ const schema = a.schema({
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(GetMaterialesSinCentroProduccion)),
+
+  /**
+   *  Validación de materiales desde MSSQL
+   */
+  getValidacionMateriales: a
+    .query()
+    .arguments({ version: a.string().required() })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(validacionMaterialesResolver)),
 
   /**
    *  CRUD de Aprovisionamiento
