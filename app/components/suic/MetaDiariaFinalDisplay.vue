@@ -209,6 +209,33 @@
                     </span>
                   </td>
                 </tr>
+                <!-- Fila de PPU -->
+                <tr class="hover:bg-cyan-50/50 dark:hover:bg-cyan-900/10 transition-colors duration-150">
+                  <td class="px-4 py-3 whitespace-nowrap sticky left-0 bg-white dark:bg-gray-800 z-10">
+                    <div class="flex items-center space-x-2">
+                      <UIcon name="i-heroicons-hashtag" class="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                      <span class="text-sm font-semibold text-gray-900 dark:text-white">PPU</span>
+                    </div>
+                  </td>
+                  <td 
+                    v-for="(mes, index) in getSortedMeses(sociedad)"
+                    :key="`ppu-${mes}`"
+                    :class="[
+                      'px-4 py-3 whitespace-nowrap text-center',
+                      index % 2 === 0 ? 'bg-gray-50 dark:bg-gray-800/50' : 'bg-white dark:bg-gray-900/50'
+                    ]"
+                    :title="'PPU = Venta Neta / Cantidad'"
+                  >
+                    <span class="text-sm font-semibold text-gray-900 dark:text-white">
+                      {{ formatPPU(getValueForMes(sociedad, mes, 'venta'), getValueForMes(sociedad, mes, 'cantidad')) }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-right bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600">
+                    <span class="text-sm font-bold text-gray-900 dark:text-white">
+                      {{ formatPPU(getSociedadTotalVenta(sociedad), getSociedadTotalCantidad(sociedad)) }}
+                    </span>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -310,6 +337,16 @@ const formatNumber = (num) => {
 
 const formatCurrency = (num) => {
   return formatNumber(Math.round(num));
+};
+
+// Formateo seguro PPU (dos decimales, evita división por cero)
+const formatPPU = (venta, cantidad) => {
+  const v = Number(venta) || 0;
+  const q = Number(cantidad) || 0;
+  if (q <= 0 || !Number.isFinite(v) || !Number.isFinite(q)) return '-';
+  const ppu = v / q;
+  if (!Number.isFinite(ppu)) return '-';
+  return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(ppu);
 };
 </script>
 

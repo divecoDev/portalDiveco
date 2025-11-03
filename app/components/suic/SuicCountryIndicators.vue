@@ -181,6 +181,9 @@
                         >
                           {{ monthMeta.monthName }}
                         </th>
+                        <th class="px-2 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 border-l border-gray-300 dark:border-gray-600 min-w-[70px]">
+                          Total
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -199,6 +202,12 @@
                           </span>
                           <span v-else class="text-gray-400 dark:text-gray-600">-</span>
                         </td>
+                        <td class="px-2 py-2 text-xs text-center text-gray-800 dark:text-gray-200 border-l border-gray-300 dark:border-gray-600">
+                          <span v-if="getCountryTotalUnits(pais.code) > 0">
+                            {{ getCountryTotalUnits(pais.code).toLocaleString('en-US') }}
+                          </span>
+                          <span v-else class="text-gray-400 dark:text-gray-600">-</span>
+                        </td>
                       </tr>
                       <!-- Fila de Ventas -->
                       <tr class="border-t border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
@@ -212,6 +221,35 @@
                         >
                           <span v-if="getMonthSalesTotal(pais.code, monthMeta.monthNumber) > 0">
                             ${{ getMonthSalesTotal(pais.code, monthMeta.monthNumber).toLocaleString('en-US', { maximumFractionDigits: 0 }) }}
+                          </span>
+                          <span v-else class="text-gray-400 dark:text-gray-600">-</span>
+                        </td>
+                        <td class="px-2 py-2 text-xs text-center text-gray-800 dark:text-gray-200 border-l border-gray-300 dark:border-gray-600">
+                          <span v-if="getCountryTotalSales(pais.code) > 0">
+                            ${{ getCountryTotalSales(pais.code).toLocaleString('en-US', { maximumFractionDigits: 0 }) }}
+                          </span>
+                          <span v-else class="text-gray-400 dark:text-gray-600">-</span>
+                        </td>
+                      </tr>
+                      <!-- Fila de PPU -->
+                      <tr class="border-t border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors bg-cyan-50/30 dark:bg-cyan-900/10">
+                        <td class="px-2 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-300 dark:border-gray-600 whitespace-nowrap">
+                          📊 PPU
+                        </td>
+                        <td 
+                          v-for="monthMeta in getAvailableMonthsForTable(pais.code)"
+                          :key="`ppu-${monthMeta.monthNumber}`"
+                          class="px-2 py-2 text-xs text-center text-gray-800 dark:text-gray-200 border-r border-gray-300 dark:border-gray-600 last:border-r-0"
+                          :title="'PPU = Ventas Netas / Unidades'"
+                        >
+                          <span v-if="getMonthUnitsTotal(pais.code, monthMeta.monthNumber) > 0 && getMonthSalesTotal(pais.code, monthMeta.monthNumber) > 0">
+                            {{ formatNumberSafe(getMonthSalesTotal(pais.code, monthMeta.monthNumber) / getMonthUnitsTotal(pais.code, monthMeta.monthNumber), 2) }}
+                          </span>
+                          <span v-else class="text-gray-400 dark:text-gray-600">-</span>
+                        </td>
+                        <td class="px-2 py-2 text-xs text-center text-gray-800 dark:text-gray-200 border-l border-gray-300 dark:border-gray-600 font-semibold">
+                          <span v-if="getCountryTotalUnits(pais.code) > 0 && getCountryTotalSales(pais.code) > 0">
+                            {{ formatNumberSafe(getCountryTotalSales(pais.code) / getCountryTotalUnits(pais.code), 2) }}
                           </span>
                           <span v-else class="text-gray-400 dark:text-gray-600">-</span>
                         </td>
@@ -748,5 +786,11 @@ const getCardClasses = (paisCode) => {
     default:
       return 'border-blue-300 bg-white dark:bg-gray-800 dark:border-blue-600';
   }
+};
+
+// Formateo seguro para PPU
+const formatNumberSafe = (value, digits = 2) => {
+  if (value === null || value === undefined || Number.isNaN(value) || !Number.isFinite(value)) return '-';
+  return Number(value).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 };
 </script>
