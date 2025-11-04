@@ -197,3 +197,42 @@ export function formatDeviceFingerprint(fingerprint?: string): string {
   return fingerprint;
 }
 
+/**
+ * Normaliza un correo electrónico eliminando prefijos de proveedores de autenticación
+ * Ejemplo: microsoftentraidsaml_jonhathan.rodas.gt@camasolympia.com -> jonhathan.rodas.gt@camasolympia.com
+ */
+export function normalizeEmail(email?: string | null): string {
+  if (!email || email === "unknown" || email === "unknown@example.com") {
+    return "unknown@example.com";
+  }
+
+  // Lista de prefijos comunes de proveedores de autenticación
+  const authPrefixes = [
+    "microsoftentraidsaml_",
+    "novafinanzaz_",
+    "google_",
+    "facebook_",
+    "github_",
+    "twitter_",
+  ];
+
+  let normalizedEmail = email;
+
+  // Eliminar prefijos de autenticación
+  for (const prefix of authPrefixes) {
+    if (normalizedEmail.toLowerCase().startsWith(prefix.toLowerCase())) {
+      normalizedEmail = normalizedEmail.substring(prefix.length);
+      break; // Solo eliminar un prefijo
+    }
+  }
+
+  // Validar que el correo resultante tenga un formato válido
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(normalizedEmail)) {
+    // Si después de eliminar el prefijo no es un correo válido, devolver el original
+    return email;
+  }
+
+  return normalizedEmail;
+}
+

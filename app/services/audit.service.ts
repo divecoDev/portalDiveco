@@ -19,6 +19,7 @@ import type {
 } from "~/domain/audit/types";
 import { detectChanges } from "~/domain/audit/audit-domain.service";
 import { generateDeviceFingerprint, getDeviceInfo } from "~/utils/device-fingerprint";
+import { normalizeEmail } from "~/utils/audit-helpers";
 
 /**
  * Servicio de auditoría
@@ -89,9 +90,11 @@ export class AuditService {
       const user = await getCurrentUser();
       const deviceInfo = getDeviceInfo();
 
+      const rawEmail = user.signInDetails?.loginId || user.username || "unknown@example.com";
+      
       return {
         userId: user.userId,
-        userEmail: user.signInDetails?.loginId || user.username || "unknown@example.com",
+        userEmail: normalizeEmail(rawEmail),
         userName: user.username || "Unknown User",
         ipAddress: "unknown", // IP no disponible desde el navegador (se capturaría en el servidor)
         userAgent: deviceInfo.userAgent,
@@ -140,45 +143,51 @@ export class AuditService {
         throw new Error("El cliente de Amplify no tiene el modelo AuditLog disponible");
       }
 
-      // Preparar metadata: Amplify Gen 2 requiere que los campos a.json() se envíen como strings JSON
-      // Según el patrón usado en otros módulos (useSuicFileUpload.ts), los campos JSON deben ser strings
-      let preparedMetadata: string | undefined = undefined;
-      if (metadata && typeof metadata === "object") {
-        try {
-          console.log("🔍 Preparando metadata:", metadata);
-          
-          // Crear una copia limpia del objeto, eliminando valores undefined
-          const cleanMetadata: Record<string, any> = {};
-          for (const [key, value] of Object.entries(metadata)) {
-            if (value !== undefined) {
-              try {
-                // Serializar y deserializar para asegurar que sea JSON válido
-                const serialized = JSON.stringify(value);
-                cleanMetadata[key] = JSON.parse(serialized);
-              } catch (serializeError) {
-                console.warn(`⚠️ Error al serializar propiedad ${key}:`, serializeError);
-                // Omitir esta propiedad si no se puede serializar
+          // Preparar metadata: Amplify Gen 2 requiere que los campos a.json() se envíen como strings JSON
+          // Según el patrón usado en otros módulos (useSuicFileUpload.ts), los campos JSON deben ser strings
+          let preparedMetadata: string | undefined = undefined;
+          if (metadata && typeof metadata === "object") {
+            try {
+              console.log("🔍 Preparando metadata:", metadata);
+              
+              // Crear una copia limpia del objeto, eliminando valores undefined
+              const cleanMetadata: Record<string, any> = {};
+              for (const [key, value] of Object.entries(metadata)) {
+                if (value !== undefined) {
+                  try {
+                    // Normalizar userEmail si existe en el metadata
+                    let processedValue = value;
+                    if (key === "userEmail" && typeof value === "string") {
+                      processedValue = normalizeEmail(value);
+                    }
+                    
+                    // Serializar y deserializar para asegurar que sea JSON válido
+                    const serialized = JSON.stringify(processedValue);
+                    cleanMetadata[key] = JSON.parse(serialized);
+                  } catch (serializeError) {
+                    console.warn(`⚠️ Error al serializar propiedad ${key}:`, serializeError);
+                    // Omitir esta propiedad si no se puede serializar
+                  }
+                }
               }
+              
+              // Solo asignar si tiene propiedades válidas
+              if (Object.keys(cleanMetadata).length > 0) {
+                // Serializar a string JSON como requiere Amplify Gen 2
+                preparedMetadata = JSON.stringify(cleanMetadata);
+                console.log("✅ Metadata preparado como string JSON:", preparedMetadata);
+              } else {
+                console.log("ℹ️ Metadata vacío después de limpiar, omitiendo campo");
+                preparedMetadata = undefined;
+              }
+            } catch (metadataError) {
+              console.warn("⚠️ Error al preparar metadata:", metadataError);
+              console.warn("  - Metadata original:", metadata);
+              preparedMetadata = undefined;
             }
-          }
-          
-          // Solo asignar si tiene propiedades válidas
-          if (Object.keys(cleanMetadata).length > 0) {
-            // Serializar a string JSON como requiere Amplify Gen 2
-            preparedMetadata = JSON.stringify(cleanMetadata);
-            console.log("✅ Metadata preparado como string JSON:", preparedMetadata);
           } else {
-            console.log("ℹ️ Metadata vacío después de limpiar, omitiendo campo");
-            preparedMetadata = undefined;
+            console.log("ℹ️ Metadata no proporcionado o no es objeto, omitiendo campo");
           }
-        } catch (metadataError) {
-          console.warn("⚠️ Error al preparar metadata:", metadataError);
-          console.warn("  - Metadata original:", metadata);
-          preparedMetadata = undefined;
-        }
-      } else {
-        console.log("ℹ️ Metadata no proporcionado o no es objeto, omitiendo campo");
-      }
 
       // Construir el objeto de datos, usando undefined para campos opcionales que no tienen valor
       // Amplify Gen 2 requiere que los campos opcionales sean undefined, no null, para omitirlos
