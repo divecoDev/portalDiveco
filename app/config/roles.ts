@@ -142,6 +142,15 @@ export const PERMISSIONS: Record<string, PermissionConfig> = {
       "/tools/suic/edit/:id"
     ],
   },
+  view_audit: {
+    name: "view_audit",
+    displayName: "Ver Auditoría",
+    description: "Permite acceder al módulo de auditoría y logs del sistema",
+    routes: [
+      "/tools/auditoria",
+      "/tools/auditoria/:id"
+    ],
+  },
 };
 
 // Función para verificar si un rol tiene un permiso específico

@@ -575,8 +575,8 @@ const navigationSections = computed(() => {
     }
   }
 
-  // Agregar "Auditoría" para ADMIN
-  if (hasGroup("ADMIN")) {
+  // Agregar "Auditoría" para ADMIN y AUDITORIA
+  if (hasGroup("ADMIN") || hasGroup("AUDITORIA")) {
     const toolsSection = sections.find((s) => s.title === "Herramientas");
     const auditItem = {
       name: "Auditoría",

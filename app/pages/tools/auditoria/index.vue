@@ -91,16 +91,17 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+  middleware: ["auth", "require-role"],
+  requiredRole: ["ADMIN", "AUDITORIA"],
+  layout: "default",
+});
+
 import { ref, watch, onMounted } from "vue";
 import { useAudit } from "~/composables/useAudit";
 import type { AuditModule, AuditAction } from "~/domain/audit/types";
 import AuditFilters from "~/components/audit/AuditFilters.vue";
 import AuditLogList from "~/components/audit/AuditLogList.vue";
-
-definePageMeta({
-  middleware: ["auth"],
-  layout: "default",
-});
 
 useSeoMeta({
   title: "Auditoría - Portal Diveco",

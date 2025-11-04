@@ -79,15 +79,16 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+  middleware: ["auth", "require-role"],
+  requiredRole: ["ADMIN", "AUDITORIA"],
+  layout: "default",
+});
+
 import { onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { useAudit } from "~/composables/useAudit";
 import AuditLogDetail from "~/components/audit/AuditLogDetail.vue";
-
-definePageMeta({
-  middleware: ["auth"],
-  layout: "default",
-});
 
 const route = useRoute();
 const { currentLog, loading, error, getAuditLogDetail } = useAudit();

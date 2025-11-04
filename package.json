@@ -41,6 +41,7 @@
     "read-excel-file": "^6.0.1",
     "vue": "^3.5.18",
     "vue-chartjs": "^5.3.2",
+    "vue-json-pretty": "^2.6.0",
     "vue-router": "^4.5.1",
     "xml2js": "^0.6.2"
   },
