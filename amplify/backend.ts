@@ -25,6 +25,7 @@ import { GetPlanProduccion } from "./functions/boom/GetPlanProduccion/resource";
 import { GetMaterialesSinAprovicionamiento } from "./functions/boom/GetMaterialesSinAprovicionamiento/resource";
 import { GetMaterialesSinCentroProduccion } from "./functions/boom/getMaterialesSinCentroProduccion/resource";
 import { validacionMaterialesResolver } from "./functions/validacionMaterialesResolver/resource";
+import { materialesPorCentroResolver } from "./functions/materialesPorCentroResolver/resource";
 import { boomFilesStore } from "./functions/boom/boomFilesStore.ts/resource";
 import { suicSaveBatch } from "./functions/suic/resource";
 import {generateSociedadesCsv} from "./functions/suic/generateSociedadesCsv/resource";
@@ -53,6 +54,7 @@ export const backend = defineBackend({
   GetMaterialesSinAprovicionamiento,
   GetMaterialesSinCentroProduccion,
   validacionMaterialesResolver,
+  materialesPorCentroResolver,
   boomFilesStore,
   suicSaveBatch,
   generateSociedadesCsv,
@@ -248,6 +250,17 @@ const validacionMaterialesResolverPolicy = new iam.PolicyStatement({
   resources: ["*"],
 });
 validacionMaterialesResolverLambda.addToRolePolicy(validacionMaterialesResolverPolicy);
+
+const materialesPorCentroResolverLambda = backend.materialesPorCentroResolver.resources.lambda;
+const materialesPorCentroResolverPolicy = new iam.PolicyStatement({
+  actions: [
+    "ec2:CreateNetworkInterface",
+    "ec2:DescribeNetworkInterfaces",
+    "ec2:DeleteNetworkInterface",
+  ],
+  resources: ["*"],
+});
+materialesPorCentroResolverLambda.addToRolePolicy(materialesPorCentroResolverPolicy);
 
 /*
  * CREACION DE API REST

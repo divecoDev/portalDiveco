@@ -1,0 +1,9 @@
+{
+  "name": "materiales-por-centro-resolver",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "mssql": "^11.0.1"
+  }
+}
+
