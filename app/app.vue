@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Authenticator } from "@aws-amplify/ui-vue";
 import "@aws-amplify/ui-vue/styles.css";
 import { onMounted, h, defineComponent } from "vue";
@@ -33,21 +33,49 @@ const handleNovaFinanzasSignIn = async () => {
 
 // Componente funcional para ejecutar checkAuth cuando el usuario está autenticado
 const AuthenticatedContent = defineComponent({
-  setup() {
+  async setup() {
+    // Registrar onMounted ANTES del primer await
     onMounted(async () => {
       console.log("🔐 AuthenticatedContent montado, ejecutando checkAuth()...");
       
+      // Esperar un poco para asegurar que Amplify esté completamente configurado
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       try {
-        // Ejecutar checkAuth() cuando el componente se monta (usuario autenticado)
-        const { useAuth } = await import("~/composables/useAuth");
-        const { checkAuth } = useAuth();
+        // Verificar usuario antes de ejecutar checkAuth
+        const { getCurrentUser } = await import("aws-amplify/auth");
+        const user = await getCurrentUser();
         
-        // Ejecutar checkAuth en background (no bloquear)
-        checkAuth().catch((error) => {
-          console.warn("⚠️ Error al ejecutar checkAuth en AuthenticatedContent:", error);
-        });
-      } catch (error) {
-        console.warn("⚠️ Error al importar useAuth en AuthenticatedContent:", error);
+        if (user) {
+          console.log("✅ Usuario autenticado en AuthenticatedContent, ejecutando checkAuth()...");
+          console.log("  - userId:", user.userId);
+          console.log("  - username:", user.username);
+          
+          // Ejecutar checkAuth() cuando el componente se monta (usuario autenticado)
+          const { useAuth } = await import("~/composables/useAuth");
+          const { checkAuth } = useAuth();
+          
+          // Ejecutar checkAuth en background (no bloquear)
+          checkAuth().then(() => {
+            console.log("✅ checkAuth() completado en AuthenticatedContent");
+          }).catch((error) => {
+            console.error("❌ Error al ejecutar checkAuth en AuthenticatedContent:", error);
+            console.error("  - Error completo:", JSON.stringify(error, null, 2));
+          });
+        } else {
+          console.log("ℹ️ No hay usuario autenticado en AuthenticatedContent");
+        }
+      } catch (error: any) {
+        // Si no hay usuario autenticado, no es un error
+        if (
+          error?.name === "NotAuthenticatedException" ||
+          error?.name === "NoCurrentUserException"
+        ) {
+          console.log("ℹ️ No hay usuario autenticado en AuthenticatedContent (esperado)");
+        } else {
+          console.error("❌ Error al ejecutar checkAuth en AuthenticatedContent:", error);
+          console.error("  - Error completo:", JSON.stringify(error, null, 2));
+        }
       }
     });
 
@@ -153,7 +181,7 @@ const AuthenticatedContent = defineComponent({
         </div>
       </template>
 
-      <template v-slot="{ user, signOut }">
+      <template v-slot>
         <!-- Componente para ejecutar checkAuth cuando el usuario está autenticado -->
         <AuthenticatedContent />
         

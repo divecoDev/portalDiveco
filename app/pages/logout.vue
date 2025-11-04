@@ -99,7 +99,7 @@ const goToRoot = async () => {
 
   try {
     // Redirigir a la raíz
-    await navigateTo("/");
+    navigateTo("/");
   } catch (error) {
     console.error("Error al redirigir:", error);
     // Si falla la navegación, usar window.location
@@ -116,6 +116,13 @@ onMounted(async () => {
     if (window.location.pathname === '/logout') {
       // Limpiar localStorage
       localStorage.clear();
+      
+      // Limpiar sessionStorage para permitir que el próximo login se registre
+      // (importante para que la próxima vez que inicien sesión se registre el login)
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        sessionStorage.removeItem("lastLoggedUserId");
+        console.log("🧹 Limpiado lastLoggedUserId de sessionStorage");
+      }
       
       // Cerrar sesión automáticamente al cargar la página
       // (la auditoría ya se registró antes de navegar aquí)

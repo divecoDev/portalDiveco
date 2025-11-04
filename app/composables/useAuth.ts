@@ -115,13 +115,30 @@ export const useAuth = () => {
       // Registrar auditoría de login si no se ha registrado para este userId en esta sesión
       // Usar sessionStorage para evitar duplicados en recargas de página
       const storedLastLoggedUserId = getLastLoggedUserId();
-      const shouldLogLogin = !storedLastLoggedUserId || storedLastLoggedUserId !== user.userId;
+      
+      // Verificar si es un login genuino
+      // Si es un nuevo login (usuario diferente o no había usuario previo) Y no hay userId almacenado
+      // O si el userId almacenado es diferente al actual
+      // También consideramos login si no había usuario previo en esta ejecución (nueva sesión/navegador)
+      const isDifferentUser = storedLastLoggedUserId && storedLastLoggedUserId !== user.userId;
+      const isFirstAccess = !storedLastLoggedUserId;
+      const isNewUserSession = isNewLogin && !previousUserId; // Primer acceso en esta ejecución de la app
+      
+      // Registramos login si:
+      // 1. Es el primer acceso (no hay userId almacenado en sessionStorage)
+      // 2. Es un usuario diferente al almacenado
+      // 3. Es un nuevo login Y no había usuario previo en esta ejecución (nueva sesión/navegador)
+      //    Esto maneja el caso donde sessionStorage tiene un userId pero es de una sesión anterior
+      const shouldLogLogin = isFirstAccess || isDifferentUser || isNewUserSession;
 
       console.log("🔍 checkAuth() - Verificación de login para auditoría:");
       console.log("  - userId:", user.userId);
       console.log("  - previousUserId:", previousUserId);
       console.log("  - storedLastLoggedUserId:", storedLastLoggedUserId);
       console.log("  - isNewLogin:", isNewLogin);
+      console.log("  - isDifferentUser:", isDifferentUser);
+      console.log("  - isFirstAccess:", isFirstAccess);
+      console.log("  - isNewUserSession:", isNewUserSession);
       console.log("  - shouldLogLogin:", shouldLogLogin);
       
       // Registrar auditoría de login si es necesario
@@ -144,12 +161,26 @@ export const useAuth = () => {
           const rawEmail = user.signInDetails?.loginId || user.username || "unknown";
           const { normalizeAuthIdentifier } = await import("~/utils/audit-helpers");
           
-          const loginResult = await logLogin(user.userId, {
-            userRole: userRole.value,
-            userGroups: userGroups.value.map((g) => g.GroupName),
+          // Preparar metadata de login, manejando el caso donde los grupos aún no están cargados
+          const loginMetadata: Record<string, any> = {
             userEmail: normalizeAuthIdentifier(rawEmail),
             loginMethod: "Microsoft Entra ID SAML",
-          });
+          };
+          
+          // Agregar userRole solo si está disponible
+          if (userRole.value) {
+            loginMetadata.userRole = userRole.value;
+          }
+          
+          // Agregar userGroups solo si están disponibles
+          if (userGroups.value && userGroups.value.length > 0) {
+            loginMetadata.userGroups = userGroups.value.map((g) => g.GroupName);
+          } else {
+            console.warn("⚠️ Grupos de usuario no disponibles aún, registrando login sin grupos");
+            loginMetadata.userGroups = [];
+          }
+
+          const loginResult = await logLogin(user.userId, loginMetadata);
           
           console.log("📥 Resultado de logLogin:", loginResult);
           
@@ -260,9 +291,12 @@ export const useAuth = () => {
         console.error("❌ Error al registrar auditoría de logout:", auditError);
       }
 
-      // Limpiar estado de login registrado
+      // Limpiar estado de login registrado ANTES de cerrar sesión
+      // Esto permite que el próximo login se registre correctamente
       setLastLoggedUserId(null);
       lastLoggedUserId.value = null;
+      
+      console.log("🧹 Limpiado lastLoggedUserId antes de cerrar sesión");
 
       const { signOut } = await import("aws-amplify/auth");
       await signOut();
