@@ -19,7 +19,7 @@ import type {
 } from "~/domain/audit/types";
 import { detectChanges } from "~/domain/audit/audit-domain.service";
 import { generateDeviceFingerprint, getDeviceInfo } from "~/utils/device-fingerprint";
-import { normalizeEmail } from "~/utils/audit-helpers";
+import { normalizeAuthIdentifier } from "~/utils/audit-helpers";
 
 /**
  * Servicio de auditoría
@@ -91,11 +91,12 @@ export class AuditService {
       const deviceInfo = getDeviceInfo();
 
       const rawEmail = user.signInDetails?.loginId || user.username || "unknown@example.com";
+      const rawUserName = user.username || "Unknown User";
       
       return {
         userId: user.userId,
-        userEmail: normalizeEmail(rawEmail),
-        userName: user.username || "Unknown User",
+        userEmail: normalizeAuthIdentifier(rawEmail),
+        userName: normalizeAuthIdentifier(rawUserName),
         ipAddress: "unknown", // IP no disponible desde el navegador (se capturaría en el servidor)
         userAgent: deviceInfo.userAgent,
         deviceFingerprint: generateDeviceFingerprint(),
@@ -155,10 +156,10 @@ export class AuditService {
               for (const [key, value] of Object.entries(metadata)) {
                 if (value !== undefined) {
                   try {
-                    // Normalizar userEmail si existe en el metadata
+                    // Normalizar userEmail y userName si existen en el metadata
                     let processedValue = value;
-                    if (key === "userEmail" && typeof value === "string") {
-                      processedValue = normalizeEmail(value);
+                    if ((key === "userEmail" || key === "userName") && typeof value === "string") {
+                      processedValue = normalizeAuthIdentifier(value);
                     }
                     
                     // Serializar y deserializar para asegurar que sea JSON válido

@@ -142,12 +142,12 @@ export const useAuth = () => {
           
           console.log("📞 Llamando a logLogin...");
           const rawEmail = user.signInDetails?.loginId || user.username || "unknown";
-          const { normalizeEmail } = await import("~/utils/audit-helpers");
+          const { normalizeAuthIdentifier } = await import("~/utils/audit-helpers");
           
           const loginResult = await logLogin(user.userId, {
             userRole: userRole.value,
             userGroups: userGroups.value.map((g) => g.GroupName),
-            userEmail: normalizeEmail(rawEmail),
+            userEmail: normalizeAuthIdentifier(rawEmail),
             loginMethod: "Microsoft Entra ID SAML",
           });
           
@@ -233,8 +233,8 @@ export const useAuth = () => {
       const rawEmail = currentUser.value?.signInDetails?.loginId || 
                        currentUser.value?.username || 
                        "unknown";
-      const { normalizeEmail } = await import("~/utils/audit-helpers");
-      const userEmail = normalizeEmail(rawEmail);
+      const { normalizeAuthIdentifier } = await import("~/utils/audit-helpers");
+      const userEmail = normalizeAuthIdentifier(rawEmail);
 
       // Registrar auditoría de logout (en background, no bloquear)
       console.log("🚪 Cerrando sesión, registrando auditoría...", { userId, userEmail });

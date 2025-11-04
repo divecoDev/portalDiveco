@@ -198,12 +198,15 @@ export function formatDeviceFingerprint(fingerprint?: string): string {
 }
 
 /**
- * Normaliza un correo electrónico eliminando prefijos de proveedores de autenticación
- * Ejemplo: microsoftentraidsaml_jonhathan.rodas.gt@camasolympia.com -> jonhathan.rodas.gt@camasolympia.com
+ * Normaliza un identificador de autenticación eliminando prefijos de proveedores
+ * Funciona tanto para correos electrónicos como para nombres de usuario
+ * Ejemplos:
+ * - microsoftentraidsaml_jonhathan.rodas.gt@camasolympia.com -> jonhathan.rodas.gt@camasolympia.com
+ * - microsoftentraidsaml_jonhathan.rodas.gt -> jonhathan.rodas.gt
  */
-export function normalizeEmail(email?: string | null): string {
-  if (!email || email === "unknown" || email === "unknown@example.com") {
-    return "unknown@example.com";
+export function normalizeAuthIdentifier(identifier?: string | null): string {
+  if (!identifier || identifier === "unknown" || identifier === "unknown@example.com" || identifier === "Unknown User") {
+    return identifier || "unknown";
   }
 
   // Lista de prefijos comunes de proveedores de autenticación
@@ -216,23 +219,34 @@ export function normalizeEmail(email?: string | null): string {
     "twitter_",
   ];
 
-  let normalizedEmail = email;
+  let normalized = identifier;
 
   // Eliminar prefijos de autenticación
   for (const prefix of authPrefixes) {
-    if (normalizedEmail.toLowerCase().startsWith(prefix.toLowerCase())) {
-      normalizedEmail = normalizedEmail.substring(prefix.length);
+    if (normalized.toLowerCase().startsWith(prefix.toLowerCase())) {
+      normalized = normalized.substring(prefix.length);
       break; // Solo eliminar un prefijo
     }
   }
 
-  // Validar que el correo resultante tenga un formato válido
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(normalizedEmail)) {
-    // Si después de eliminar el prefijo no es un correo válido, devolver el original
-    return email;
+  // Si es un correo, validar formato
+  if (normalized.includes("@")) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalized)) {
+      // Si después de eliminar el prefijo no es un correo válido, devolver el original
+      return identifier;
+    }
   }
 
-  return normalizedEmail;
+  return normalized;
+}
+
+/**
+ * Normaliza un correo electrónico eliminando prefijos de proveedores de autenticación
+ * Ejemplo: microsoftentraidsaml_jonhathan.rodas.gt@camasolympia.com -> jonhathan.rodas.gt@camasolympia.com
+ * @deprecated Usa normalizeAuthIdentifier en su lugar para mayor flexibilidad
+ */
+export function normalizeEmail(email?: string | null): string {
+  return normalizeAuthIdentifier(email);
 }
 

@@ -767,13 +767,13 @@ const navigateToLogout = async () => {
       // Registrar auditoría antes de cerrar sesión
       const { useAudit } = await import("~/composables/useAudit");
       const { logLogout } = useAudit();
-      const { normalizeEmail } = await import("~/utils/audit-helpers");
+      const { normalizeAuthIdentifier } = await import("~/utils/audit-helpers");
       
       const userId = currentUserData.userId;
       const rawEmail = currentUserData.signInDetails?.loginId || 
                        currentUserData.username || 
                        "unknown";
-      const userEmail = normalizeEmail(rawEmail);
+      const userEmail = normalizeAuthIdentifier(rawEmail);
       
       console.log("📞 Llamando a logLogout...", { userId, userEmail });
       
