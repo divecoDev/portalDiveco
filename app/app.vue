@@ -1,6 +1,7 @@
 <script setup>
 import { Authenticator } from "@aws-amplify/ui-vue";
 import "@aws-amplify/ui-vue/styles.css";
+import { onMounted, h, defineComponent } from "vue";
 
 import { signInWithRedirect } from "aws-amplify/auth";
 
@@ -29,6 +30,30 @@ const handleNovaFinanzasSignIn = async () => {
     console.error("Error al iniciar sesión:", error);
   }
 };
+
+// Componente funcional para ejecutar checkAuth cuando el usuario está autenticado
+const AuthenticatedContent = defineComponent({
+  setup() {
+    onMounted(async () => {
+      console.log("🔐 AuthenticatedContent montado, ejecutando checkAuth()...");
+      
+      try {
+        // Ejecutar checkAuth() cuando el componente se monta (usuario autenticado)
+        const { useAuth } = await import("~/composables/useAuth");
+        const { checkAuth } = useAuth();
+        
+        // Ejecutar checkAuth en background (no bloquear)
+        checkAuth().catch((error) => {
+          console.warn("⚠️ Error al ejecutar checkAuth en AuthenticatedContent:", error);
+        });
+      } catch (error) {
+        console.warn("⚠️ Error al importar useAuth en AuthenticatedContent:", error);
+      }
+    });
+
+    return () => h("div", { style: "display: none;" }); // Componente invisible que solo ejecuta lógica
+  },
+});
 </script>
 
 <template>
@@ -129,6 +154,9 @@ const handleNovaFinanzasSignIn = async () => {
       </template>
 
       <template v-slot="{ user, signOut }">
+        <!-- Componente para ejecutar checkAuth cuando el usuario está autenticado -->
+        <AuthenticatedContent />
+        
         <div class="bg-white min-h-screen">
           <NuxtLayout>
             <NuxtPage />

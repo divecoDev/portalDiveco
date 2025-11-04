@@ -16,6 +16,17 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
 
     console.log("Usuario autenticado correctamente");
+    
+    // Llamar a checkAuth() para registrar auditoría de login si es necesario
+    try {
+      const { useAuth } = await import("~/composables/useAuth");
+      const { checkAuth } = useAuth();
+      await checkAuth();
+    } catch (authError) {
+      // No bloquear la navegación si falla checkAuth
+      console.warn("⚠️ Error al ejecutar checkAuth en middleware:", authError);
+    }
+    
     return;
   } catch (error) {
     console.error("Error en middleware auth:", error);

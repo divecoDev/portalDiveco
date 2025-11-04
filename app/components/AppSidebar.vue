@@ -418,7 +418,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { signOut } from "aws-amplify/auth";
 import { fetchUserAttributes, getCurrentUser } from "aws-amplify/auth";
@@ -450,6 +450,7 @@ const {
 } = useUserGroups();
 const { getCompleteUserData, getInitials, isLoadingPhoto, getPhotoFromCache } =
   useMicrosoftGraph();
+const { currentUser: authCurrentUser, logout: authLogout } = useAuth();
 
 // Detectar si estamos en modo desarrollo
 const isDevelopment = computed(() => {
@@ -570,6 +571,27 @@ const navigationSections = computed(() => {
       sections.push({
         title: "Herramientas",
         items: [suicItem],
+      });
+    }
+  }
+
+  // Agregar "Auditoría" para ADMIN
+  if (hasGroup("ADMIN")) {
+    const toolsSection = sections.find((s) => s.title === "Herramientas");
+    const auditItem = {
+      name: "Auditoría",
+      href: "/tools/auditoria",
+      icon: "i-heroicons-document-text",
+      badge: "Nuevo",
+      badgeColor: "cyan",
+    };
+
+    if (toolsSection) {
+      toolsSection.items.push(auditItem);
+    } else {
+      sections.push({
+        title: "Herramientas",
+        items: [auditItem],
       });
     }
   }
@@ -712,11 +734,79 @@ const closeUserMenu = () => {
   isUserMenuOpen.value = false;
 };
 
-const navigateToLogout = () => {
+const navigateToLogout = async () => {
+  console.log("🚪 navigateToLogout() ejecutándose...");
+  
   // Cerrar el menú de usuario
   closeUserMenu();
 
+  // Registrar auditoría ANTES de navegar a logout
+  try {
+    console.log("🔍 Obteniendo información del usuario para logout...");
+    
+    // Intentar obtener el usuario desde authCurrentUser primero, si no está disponible, obtenerlo directamente
+    let currentUserData = authCurrentUser.value;
+    
+    if (!currentUserData) {
+      console.log("⚠️ authCurrentUser no disponible, obteniendo usuario directamente de Amplify...");
+      try {
+        const user = await getCurrentUser();
+        currentUserData = user;
+        console.log("✅ Usuario obtenido directamente de Amplify:", user.userId);
+      } catch (getUserError) {
+        console.warn("⚠️ No se pudo obtener usuario de Amplify:", getUserError);
+      }
+    }
+    
+    if (currentUserData) {
+      console.log("✅ Usuario encontrado, registrando auditoría de logout...", {
+        userId: currentUserData.userId,
+        userEmail: currentUserData.signInDetails?.loginId || currentUserData.username || "unknown",
+      });
+      
+      // Registrar auditoría antes de cerrar sesión
+      const { useAudit } = await import("~/composables/useAudit");
+      const { logLogout } = useAudit();
+      
+      const userId = currentUserData.userId;
+      const userEmail = currentUserData.signInDetails?.loginId || 
+                       currentUserData.username || 
+                       "unknown";
+      
+      console.log("📞 Llamando a logLogout...", { userId, userEmail });
+      
+      // Esperar a que se complete la auditoría antes de navegar
+      try {
+        const logoutResult = await logLogout(userId, {
+          userEmail,
+          logoutMethod: "Navegación a Logout",
+        });
+        
+        console.log("📥 Resultado de logLogout:", logoutResult);
+        
+        if (logoutResult.success) {
+          console.log("✅ Auditoría de logout registrada exitosamente:", logoutResult.logId);
+        } else {
+          console.error("❌ Error al registrar auditoría de logout:", logoutResult.error);
+        }
+      } catch (logoutError) {
+        const errorObj = logoutError as { message?: string; stack?: string };
+        console.error("❌ Error al ejecutar logLogout:", logoutError);
+        console.error("  - Error completo:", JSON.stringify(logoutError, null, 2));
+        console.error("  - Stack:", errorObj?.stack);
+      }
+    } else {
+      console.warn("⚠️ No se encontró usuario para registrar logout");
+    }
+  } catch (error) {
+    const err = error as { message?: string; stack?: string };
+    console.error("❌ Error al preparar auditoría de logout:", error);
+    console.error("  - Error completo:", JSON.stringify(error, null, 2));
+    console.error("  - Stack:", err?.stack);
+  }
+
   // Redirigir a la página de logout
+  console.log("🔀 Redirigiendo a /logout...");
   navigateTo("/logout");
 };
 
@@ -725,15 +815,19 @@ const logout = async () => {
   closeUserMenu();
 
   try {
-    // Cerrar sesión usando Amplify Auth
-    await signOut();
-    // Redireccionar a la raíz después del cierre de sesión
-    await window.location.reload();
+    // Usar el composable useAuth para logout (que incluye auditoría)
+    await authLogout();
   } catch (error) {
     console.error("Error al cerrar sesión:", error);
 
-    // Si hay un error, mostrar mensaje y redireccionar de todas formas
-    await navigateTo("/");
+    // Si hay un error, intentar cerrar sesión directamente
+    try {
+      await signOut();
+      await navigateTo("/");
+    } catch (signOutError) {
+      console.error("Error al cerrar sesión con signOut:", signOutError);
+      await navigateTo("/");
+    }
   }
 };
 

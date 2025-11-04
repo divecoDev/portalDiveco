@@ -65,7 +65,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { signOut } from "aws-amplify/auth";
 
@@ -75,7 +75,20 @@ const isLoading = ref(false);
 // Métodos
 const logout = async () => {
   try {
-    await signOut();
+    // Intentar cerrar sesión (puede que ya esté cerrada)
+    try {
+      await signOut();
+    } catch (signOutError) {
+      // Si ya está cerrada la sesión, no es un error crítico
+      if (signOutError && typeof signOutError === "object" && "name" in signOutError) {
+        const error = signOutError as { name: string };
+        if (error.name !== "NotAuthenticatedException") {
+          console.warn("⚠️ Error al cerrar sesión:", signOutError);
+        }
+      } else {
+        console.warn("⚠️ Error al cerrar sesión:", signOutError);
+      }
+    }
   } catch (error) {
     console.error("Error al cerrar sesión desde página de logout:", error);
   }
@@ -99,10 +112,13 @@ const goToRoot = async () => {
 // Lifecycle
 onMounted(async () => {
   try {
-    // Solo limpiar localStorage si estamos realmente en la página de logout
+    // Solo ejecutar si estamos realmente en la página de logout
     if (window.location.pathname === '/logout') {
+      // Limpiar localStorage
       localStorage.clear();
+      
       // Cerrar sesión automáticamente al cargar la página
+      // (la auditoría ya se registró antes de navegar aquí)
       await logout();
     }
   } catch (error) {

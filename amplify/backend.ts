@@ -30,6 +30,7 @@ import { boomFilesStore } from "./functions/boom/boomFilesStore.ts/resource";
 import { suicSaveBatch } from "./functions/suic/resource";
 import {generateSociedadesCsv} from "./functions/suic/generateSociedadesCsv/resource";
 import { transferMetaDiariaFinal } from "./functions/suic/transferMetaDiariaFinal/resource";
+/* Functions Audit */
 /**
  * Configuración del backend de Amplify
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more

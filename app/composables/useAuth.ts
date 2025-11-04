@@ -37,10 +37,45 @@ export const useAuth = () => {
     return getRoleDisplayName(userRole.value);
   });
 
+  // Estado para rastrear si ya se registró el login en esta sesión
+  // Usar sessionStorage para persistir entre recargas de página
+  const getLastLoggedUserId = (): string | null => {
+    if (process.client) {
+      return sessionStorage.getItem("lastLoggedUserId");
+    }
+    return null;
+  };
+
+  const setLastLoggedUserId = (userId: string | null): void => {
+    if (process.client) {
+      if (userId) {
+        sessionStorage.setItem("lastLoggedUserId", userId);
+      } else {
+        sessionStorage.removeItem("lastLoggedUserId");
+      }
+    }
+  };
+
+  const lastLoggedUserId = ref<string | null>(getLastLoggedUserId());
+
   // Métodos
   const checkAuth = async () => {
+    console.log("🔍 checkAuth() ejecutándose...");
     try {
       const user = await getCurrentUser();
+      const previousUserId = currentUser.value?.userId;
+      const isNewLogin = previousUserId !== user.userId || !currentUser.value;
+
+      console.log("🔍 checkAuth() - Información del usuario:", {
+        userId: user.userId,
+        previousUserId,
+        isNewLogin,
+        hasCurrentUser: !!currentUser.value,
+      });
+
+      // Actualizar el usuario actual ANTES de verificar login para auditoría
+      // Esto asegura que tengamos el usuario disponible para la auditoría
+
       currentUser.value = user;
       isAuthenticated.value = true;
 
@@ -77,6 +112,68 @@ export const useAuth = () => {
         }
       }
 
+      // Registrar auditoría de login si no se ha registrado para este userId en esta sesión
+      // Usar sessionStorage para evitar duplicados en recargas de página
+      const storedLastLoggedUserId = getLastLoggedUserId();
+      const shouldLogLogin = !storedLastLoggedUserId || storedLastLoggedUserId !== user.userId;
+
+      console.log("🔍 checkAuth() - Verificación de login para auditoría:");
+      console.log("  - userId:", user.userId);
+      console.log("  - previousUserId:", previousUserId);
+      console.log("  - storedLastLoggedUserId:", storedLastLoggedUserId);
+      console.log("  - isNewLogin:", isNewLogin);
+      console.log("  - shouldLogLogin:", shouldLogLogin);
+      
+      // Registrar auditoría de login si es necesario
+      if (shouldLogLogin) {
+        console.log("🔐 Login detectado, registrando auditoría...");
+        console.log("  - userId:", user.userId);
+        console.log("  - userEmail:", user.signInDetails?.loginId || user.username || "unknown");
+        console.log("  - userRole:", userRole.value);
+        console.log("  - userGroups:", userGroups.value.map((g) => g.GroupName));
+        
+        // Actualizar el userId almacenado ANTES de registrar (para evitar duplicados)
+        setLastLoggedUserId(user.userId);
+        lastLoggedUserId.value = user.userId;
+        
+        try {
+          const { useAudit } = await import("~/composables/useAudit");
+          const { logLogin } = useAudit();
+          
+          console.log("📞 Llamando a logLogin...");
+          const loginResult = await logLogin(user.userId, {
+            userRole: userRole.value,
+            userGroups: userGroups.value.map((g) => g.GroupName),
+            userEmail: user.signInDetails?.loginId || user.username || "unknown",
+            loginMethod: "Microsoft Entra ID SAML",
+          });
+          
+          console.log("📥 Resultado de logLogin:", loginResult);
+          
+          if (loginResult.success) {
+            console.log("✅ Auditoría de login registrada exitosamente:", loginResult.logId);
+          } else {
+            console.error("❌ Error al registrar auditoría de login:", loginResult.error);
+            // Si falla, limpiar el userId almacenado para intentar de nuevo en la próxima vez
+            setLastLoggedUserId(null);
+            lastLoggedUserId.value = null;
+          }
+        } catch (auditError: any) {
+          // No bloquear autenticación si falla la auditoría
+          console.error("❌ Error al registrar auditoría de login:", auditError);
+          console.error("  - Error completo:", JSON.stringify(auditError, null, 2));
+          console.error("  - Stack:", auditError?.stack);
+          // Si falla, limpiar el userId almacenado para intentar de nuevo en la próxima vez
+          setLastLoggedUserId(null);
+          lastLoggedUserId.value = null;
+        }
+      } else {
+        console.debug("🔐 Login ya registrado en esta sesión, omitiendo auditoría", {
+          userId: user.userId,
+          storedLastLoggedUserId,
+        });
+      }
+
       return true;
     } catch (error) {
       console.error("Error al verificar autenticación:", error);
@@ -84,6 +181,8 @@ export const useAuth = () => {
       currentUser.value = null;
       userRole.value = "";
       userPermissions.value = [];
+      setLastLoggedUserId(null);
+      lastLoggedUserId.value = null;
       return false;
     }
   };
@@ -126,6 +225,40 @@ export const useAuth = () => {
 
   const logout = async () => {
     try {
+      // Obtener información del usuario antes de cerrar sesión
+      const userId = currentUser.value?.userId || "unknown";
+      const userEmail = currentUser.value?.signInDetails?.loginId || 
+                       currentUser.value?.username || 
+                       "unknown";
+
+      // Registrar auditoría de logout (en background, no bloquear)
+      console.log("🚪 Cerrando sesión, registrando auditoría...", { userId, userEmail });
+      
+      try {
+        const { useAudit } = await import("~/composables/useAudit");
+        const { logLogout } = useAudit();
+        
+        const logoutResult = await logLogout(userId, {
+          userRole: userRole.value,
+          userEmail,
+          userGroups: userGroups.value.map((g) => g.GroupName),
+          logoutMethod: "Manual",
+        });
+        
+        if (logoutResult.success) {
+          console.log("✅ Auditoría de logout registrada exitosamente:", logoutResult.logId);
+        } else {
+          console.warn("⚠️ Error al registrar auditoría de logout:", logoutResult.error);
+        }
+      } catch (auditError) {
+        // No bloquear logout si falla la auditoría
+        console.error("❌ Error al registrar auditoría de logout:", auditError);
+      }
+
+      // Limpiar estado de login registrado
+      setLastLoggedUserId(null);
+      lastLoggedUserId.value = null;
+
       const { signOut } = await import("aws-amplify/auth");
       await signOut();
 
