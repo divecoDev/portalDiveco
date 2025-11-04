@@ -58,9 +58,20 @@ export const useAuth = () => {
 
   const lastLoggedUserId = ref<string | null>(getLastLoggedUserId());
 
+  // Bandera para evitar ejecuciones concurrentes de checkAuth
+  let isCheckingAuth = false;
+
   // Métodos
   const checkAuth = async () => {
+    // Evitar ejecuciones concurrentes
+    if (isCheckingAuth) {
+      console.log("⏸️ checkAuth() ya está en ejecución, omitiendo...");
+      return;
+    }
+
+    isCheckingAuth = true;
     console.log("🔍 checkAuth() ejecutándose...");
+
     try {
       const user = await getCurrentUser();
       const previousUserId = currentUser.value?.userId;
@@ -112,33 +123,27 @@ export const useAuth = () => {
         }
       }
 
-      // Registrar auditoría de login si no se ha registrado para este userId en esta sesión
-      // Usar sessionStorage para evitar duplicados en recargas de página
+            // Registrar auditoría de login si no se ha registrado para este userId en esta sesión
+      // Usar sessionStorage para evitar duplicados en recargas de página o navegación
       const storedLastLoggedUserId = getLastLoggedUserId();
-      
-      // Verificar si es un login genuino
-      // Si es un nuevo login (usuario diferente o no había usuario previo) Y no hay userId almacenado
-      // O si el userId almacenado es diferente al actual
-      // También consideramos login si no había usuario previo en esta ejecución (nueva sesión/navegador)
-      const isDifferentUser = storedLastLoggedUserId && storedLastLoggedUserId !== user.userId;
+
+      // Verificar si es un login genuino:
+      // 1. Es el primer acceso (no hay userId almacenado en sessionStorage) - primera vez en esta sesión del navegador
+      // 2. Es un usuario diferente al almacenado - cambio de usuario
+      // NO registramos si:
+      // - Ya hay un userId almacenado que coincide con el actual (ya se registró el login en esta sesión)
       const isFirstAccess = !storedLastLoggedUserId;
-      const isNewUserSession = isNewLogin && !previousUserId; // Primer acceso en esta ejecución de la app
-      
-      // Registramos login si:
-      // 1. Es el primer acceso (no hay userId almacenado en sessionStorage)
-      // 2. Es un usuario diferente al almacenado
-      // 3. Es un nuevo login Y no había usuario previo en esta ejecución (nueva sesión/navegador)
-      //    Esto maneja el caso donde sessionStorage tiene un userId pero es de una sesión anterior
-      const shouldLogLogin = isFirstAccess || isDifferentUser || isNewUserSession;
+      const isDifferentUser = storedLastLoggedUserId && storedLastLoggedUserId !== user.userId;
+
+      // Solo registrar login si es primer acceso O cambio de usuario
+      // Esto evita registrar múltiples veces en refrescos o navegación
+      const shouldLogLogin = isFirstAccess || isDifferentUser;
 
       console.log("🔍 checkAuth() - Verificación de login para auditoría:");
       console.log("  - userId:", user.userId);
-      console.log("  - previousUserId:", previousUserId);
       console.log("  - storedLastLoggedUserId:", storedLastLoggedUserId);
-      console.log("  - isNewLogin:", isNewLogin);
-      console.log("  - isDifferentUser:", isDifferentUser);
       console.log("  - isFirstAccess:", isFirstAccess);
-      console.log("  - isNewUserSession:", isNewUserSession);
+      console.log("  - isDifferentUser:", isDifferentUser);
       console.log("  - shouldLogLogin:", shouldLogLogin);
       
       // Registrar auditoría de login si es necesario
@@ -218,6 +223,9 @@ export const useAuth = () => {
       setLastLoggedUserId(null);
       lastLoggedUserId.value = null;
       return false;
+    } finally {
+      // Resetear la bandera siempre, incluso si hay error
+      isCheckingAuth = false;
     }
   };
 

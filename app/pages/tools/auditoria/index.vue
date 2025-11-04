@@ -23,6 +23,21 @@
 
     <!-- Contenido principal -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <!-- Dashboard de Estadísticas -->
+      <div v-if="!loading && logs.length > 0" class="mb-8 space-y-6">
+        <!-- Alertas de Seguridad -->
+        <AuditSecurityAlerts :logs="logs" />
+
+        <!-- Resumen Ejecutivo -->
+        <AuditExecutiveSummary :logs="logs" :loading="loading" />
+
+        <!-- Tendencias y Adopción -->
+        <AuditAdoptionTrends :logs="logs" />
+
+        <!-- Compliance -->
+        <AuditCompliancePanel :logs="logs" />
+      </div>
+
       <!-- Filtros -->
       <AuditFilters
         v-model:search="filters.search"
@@ -102,6 +117,10 @@ import { useAudit } from "~/composables/useAudit";
 import type { AuditModule, AuditAction } from "~/domain/audit/types";
 import AuditFilters from "~/components/audit/AuditFilters.vue";
 import AuditLogList from "~/components/audit/AuditLogList.vue";
+import AuditSecurityAlerts from "~/components/audit/AuditSecurityAlerts.vue";
+import AuditExecutiveSummary from "~/components/audit/AuditExecutiveSummary.vue";
+import AuditAdoptionTrends from "~/components/audit/AuditAdoptionTrends.vue";
+import AuditCompliancePanel from "~/components/audit/AuditCompliancePanel.vue";
 
 useSeoMeta({
   title: "Auditoría - Portal Diveco",
