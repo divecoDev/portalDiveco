@@ -27,11 +27,15 @@ interface GenerateCsvResponse {
   error?: string;
 }
 
-// Función helper para convertir valores null a 0 en todas las propiedades
+// Función helper para convertir valores null a 0 en todas las propiedades y eliminar id_suic
 const normalizeNullToZero = (data: any[]): any[] => {
   return data.map(row => {
     const normalizedRow: any = {};
     for (const key in row) {
+      // Omitir id_suic de los CSVs
+      if (key === 'id_suic') {
+        continue;
+      }
       normalizedRow[key] = row[key] === null ? 0 : row[key];
     }
     return normalizedRow;
