@@ -258,8 +258,9 @@ const client = generateClient();
 const route = useRoute();
 const explosionId = route.params.id;
 
-// Composable de autenticación
+// Composables
 const { currentUser } = useAuth();
+const { logUpdate } = useAudit();
 
 // Meta tags para SEO
 useSeoMeta({
@@ -407,13 +408,38 @@ const updateExplosion = async () => {
   try {
     updating.value = true;
 
+    // Guardar datos antes de actualizar para auditoría
+    const oldData = {
+      version: explosion.value?.version,
+      descripcion: explosion.value?.descripcion,
+      status: explosion.value?.status,
+    };
+
     const updatedData = {
       id: explosionId,
       descripcion: formData.value.descripcion.trim(),
       version: String(formData.value.version),
     };
 
-    await client.models.Boom.update(updatedData);
+    const { data: updatedExplosion } = await client.models.Boom.update(updatedData);
+
+    // Registrar auditoría UPDATE
+    try {
+      await logUpdate(
+        "boom",
+        "Boom",
+        explosionId,
+        oldData,
+        updatedExplosion || updatedData,
+        {
+          version: updatedData.version,
+          descripcion: updatedData.descripcion,
+        }
+      );
+    } catch (auditError) {
+      console.warn("Error al registrar auditoría UPDATE:", auditError);
+      // No bloquear la actualización si falla la auditoría
+    }
 
     // Mostrar notificación de éxito
     useToast().add({

@@ -292,6 +292,9 @@ setBreadcrumbs([
 // Cliente de Amplify
 const client = generateClient();
 
+// Composables
+const { logAction } = useAudit();
+
 // Headers específicos de aprovisionamiento
 const headers = ref([
   'centro_id_origen',
@@ -531,6 +534,28 @@ const processAndSave = async () => {
     console.log('📥 Respuesta del servidor:', responseData);
 
     if (responseData?.success) {
+      // Registrar auditoría BULK_UPLOAD
+      try {
+        await logAction(
+          "BULK_UPLOAD",
+          "boom",
+          "Aprovisionamiento",
+          undefined,
+          undefined,
+          {
+            fileName: fileMetadata.value?.fileName || fileName.value,
+            totalRecords: parsedData.value.length,
+            insertedRecords: responseData.data.inserted || 0,
+            duplicateRecords: responseData.data.duplicates || 0,
+            fileSize: fileMetadata.value?.fileSize,
+            action: "BULK_CREATE",
+          }
+        );
+      } catch (auditError) {
+        console.warn("Error al registrar auditoría BULK_UPLOAD:", auditError);
+        // No bloquear la carga si falla la auditoría
+      }
+
       useToast().add({
         title: '✅ Carga masiva exitosa',
         description:

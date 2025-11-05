@@ -202,6 +202,9 @@ definePageMeta({
 // Cliente de Amplify
 const client = generateClient();
 
+// Composables
+const { logRead, logAction } = useAudit();
+
 // Obtener ID de la ruta
 const route = useRoute();
 const explosionId = route.params.id;
@@ -231,6 +234,36 @@ const fetchExplosion = async () => {
     loading.value = true;
     const { data } = await client.models.Boom.get({ id: explosionId });
     explosion.value = data;
+
+    // Registrar auditoría READ al acceder a documentos con datos del registro
+    if (data) {
+      try {
+        await logAction(
+          "READ",
+          "boom",
+          "Boom",
+          explosionId,
+          {
+            after: {
+              id: data.id,
+              version: data.version,
+              descripcion: data.descripcion,
+              status: data.status,
+              enableShowDocuments: data.enableShowDocuments,
+            },
+          },
+          {
+            version: data.version,
+            descripcion: data.descripcion,
+            action: "VIEW_DOCUMENTS",
+            enableShowDocuments: data.enableShowDocuments,
+          }
+        );
+      } catch (auditError) {
+        console.warn("Error al registrar auditoría READ documentos:", auditError);
+        // No bloquear la carga si falla la auditoría
+      }
+    }
   } catch (error) {
     console.error("Error al cargar explosión:", error);
     explosion.value = null;
@@ -240,12 +273,34 @@ const fetchExplosion = async () => {
 };
 
 // Función para descargar archivos desde CloudFront
-const downloadFile = (fileName) => {
+const downloadFile = async (fileName) => {
   try {
     // Construir la URL de CloudFront con el boom_id
     const cloudfrontUrl = `https://d1p0twkya81b3k.cloudfront.net/${explosionId}/${fileName}`;
     
     console.log(`📥 Descargando archivo: ${fileName} desde: ${cloudfrontUrl}`);
+    
+    // Registrar auditoría DOWNLOAD
+    try {
+      await logAction(
+        "DOWNLOAD",
+        "boom",
+        "Boom",
+        explosionId,
+        undefined,
+        {
+          fileName: fileName,
+          documentType: fileName.includes("PlanVentas") ? "PlanVentas" : "PlanProduccion",
+          explosionId: explosionId,
+          downloadSource: "cloudfront",
+          version: explosion.value?.version,
+          descripcion: explosion.value?.descripcion,
+        }
+      );
+    } catch (auditError) {
+      console.warn("Error al registrar auditoría DOWNLOAD:", auditError);
+      // No bloquear la descarga si falla la auditoría
+    }
     
     // Abrir la URL en una nueva pestaña para iniciar la descarga
     window.open(cloudfrontUrl, '_blank');

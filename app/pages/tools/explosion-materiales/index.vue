@@ -336,7 +336,7 @@ const client = generateClient();
 // Composables
 const { hasGroup } = useUserGroups();
 const toast = useToast();
-const { logDelete } = useAudit();
+const { logDelete, logRead, logAction } = useAudit();
 
 // Meta tags para SEO
 useSeoMeta({
@@ -422,6 +422,38 @@ const fetchExplosions = async () => {
 
     explosions.value = activeExplosions;
     
+    // Registrar auditoría LIST con información de los registros consultados
+    try {
+      await logAction(
+        "READ",
+        "boom",
+        "Boom",
+        undefined,
+        {
+          after: {
+            totalRecords: activeExplosions.length,
+            records: activeExplosions.map(exp => ({
+              id: exp.id,
+              version: exp.version,
+              descripcion: exp.descripcion,
+              status: exp.status,
+            })),
+          },
+        },
+        {
+          totalExplosions: activeExplosions.length,
+          filters: {
+            status: selectedStatus.value || null,
+            searchQuery: searchQuery.value || null,
+          },
+          recordIds: activeExplosions.map(exp => exp.id),
+        }
+      );
+    } catch (auditError) {
+      console.warn("Error al registrar auditoría LIST:", auditError);
+      // No bloquear la carga si falla la auditoría
+    }
+    
     // Debug: verificar si el campo enableShowDocuments está presente
     console.log('📊 Datos cargados:', explosions.value);
     if (explosions.value.length > 0) {
@@ -441,7 +473,36 @@ const fetchExplosions = async () => {
   }
 };
 
-const viewExplosion = (explosion) => {
+const viewExplosion = async (explosion) => {
+  // Registrar auditoría VIEW con datos del registro consultado
+  try {
+    await logAction(
+      "READ",
+      "boom",
+      "Boom",
+      explosion.id,
+      {
+        after: {
+          id: explosion.id,
+          version: explosion.version,
+          descripcion: explosion.descripcion,
+          status: explosion.status,
+          createdAt: explosion.createdAt,
+          username: explosion.username,
+        },
+      },
+      {
+        version: explosion.version,
+        descripcion: explosion.descripcion,
+        status: explosion.status,
+        action: "VIEW_FROM_LIST",
+      }
+    );
+  } catch (auditError) {
+    console.warn("Error al registrar auditoría VIEW:", auditError);
+    // No bloquear la navegación si falla la auditoría
+  }
+  
   navigateTo(`/tools/explosion-materiales/view/${explosion.id}`);
 };
 

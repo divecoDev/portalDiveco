@@ -29,6 +29,9 @@ const cargaInsumosStore = useCargaInsumosProcessStore();
 // Usar el composable para consultar datos existentes
 const { queryData, loading: dataLoading, error: dataError } = useCargaInsumosData();
 
+// Composables
+const { logAction } = useAudit();
+
 // Estado para controlar si se están cargando datos existentes
 const loadingExistingData = ref(false);
 
@@ -139,7 +142,7 @@ const handleCoberturaVersionValidationChanged = (isValid) => {
 };
 
 // Método para manejar metadatos de archivo actualizados
-const handleFileMetadataUpdated = (payload) => {
+const handleFileMetadataUpdated = async (payload) => {
   console.log(`🔍 DEBUG CargaInsumosProcess handleFileMetadataUpdated - Payload:`, payload);
   
   const { tipo, metadata } = payload;
@@ -167,6 +170,36 @@ const handleFileMetadataUpdated = (payload) => {
       cargaInsumosStore.cobertura.fileName, 
       metadata
     );
+  }
+
+  // Registrar auditoría de carga de archivo
+  if (metadata && props.explosion?.id) {
+    try {
+      const actionMap = {
+        planVentas: 'UPLOAD_PLAN_VENTAS',
+        existencias: 'UPLOAD_EXISTENCIAS',
+        cobertura: 'UPLOAD_COBERTURA',
+      };
+      
+      await logAction(
+        actionMap[tipo] || 'UPLOAD_FILE',
+        "boom",
+        "Boom",
+        props.explosion.id,
+        undefined,
+        {
+          fileName: metadata.fileName,
+          fileType: metadata.fileType,
+          fileSize: metadata.fileSize,
+          step: tipo,
+          s3Path: metadata.s3Path,
+          version: props.explosion.version,
+        }
+      );
+    } catch (auditError) {
+      console.warn("Error al registrar auditoría de carga de archivo:", auditError);
+      // No bloquear la operación si falla la auditoría
+    }
   }
 };
 

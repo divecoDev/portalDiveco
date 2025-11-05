@@ -162,6 +162,9 @@ const client = generateClient();
 // Composable de autenticación
 const { currentUser } = useAuth();
 
+// Composable de auditoría
+const { logCreate } = useAudit();
+
 // Meta tags para SEO
 useSeoMeta({
   title: "Nueva Explosión de Materiales - Portal Diveco",
@@ -297,7 +300,25 @@ const createExplosion = async () => {
       }), // Objeto JSON válido por defecto
     };
 
-    await client.models.Boom.create(explosionData);
+    const { data: createdExplosion } = await client.models.Boom.create(explosionData);
+
+    // Registrar auditoría
+    try {
+      await logCreate(
+        "boom",
+        "Boom",
+        createdExplosion?.id || "",
+        createdExplosion || explosionData,
+        {
+          version: explosionData.version,
+          descripcion: explosionData.descripcion,
+          status: explosionData.status,
+        }
+      );
+    } catch (auditError) {
+      console.warn("Error al registrar auditoría:", auditError);
+      // No bloquear la creación si falla la auditoría
+    }
 
     // Mostrar notificación de éxito
     useToast().add({
