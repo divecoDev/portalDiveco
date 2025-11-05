@@ -1,0 +1,11 @@
+{
+  "name": "generate-explosion-files",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "mssql": "^11.0.1",
+    "json-2-csv": "^5.5.9",
+    "@aws-sdk/client-s3": "^3.490.0"
+  }
+}
+
