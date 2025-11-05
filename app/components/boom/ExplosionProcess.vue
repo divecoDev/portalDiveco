@@ -254,7 +254,7 @@ const confirmAndExecuteExplosion = () => {
 const downloadFile = (fileName) => {
   try {
     // Construir la URL de CloudFront con el boom_id
-    const cloudfrontUrl = `https://d1p0twkya81b3k.cloudfront.net/${props.boomId}/${fileName}`;
+    const cloudfrontUrl = `https://d1p0twkya81b3k.cloudfront.net/${props.boomId}/${fileName}?v=${new Date().getTime()}`;
     
     console.log(`📥 Descargando archivo: ${fileName} desde: ${cloudfrontUrl}`);
     
