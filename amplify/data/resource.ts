@@ -187,6 +187,10 @@ const schema = a.schema({
       rpaStatus: a.string(), // Estados: 'pending', 'running', 'completed', 'error'
       rpaType: a.string(), // Tipo de RPA: 'bloqueo-sap', 'carga-plantilla'
       rpaLastUpdate: a.string(), // Timestamp de última actualización
+      // Campos de soft delete
+      deletedAt: a.string(), // Fecha/hora ISO de eliminación
+      deletedBy: a.string(), // ID del usuario que eliminó
+      deletionReason: a.string(), // Justificación de la eliminación
     })
     .authorization((allow) => [allow.publicApiKey()]),
 
