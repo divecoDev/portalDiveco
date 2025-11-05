@@ -15,6 +15,8 @@ import { runPipeline } from "../functions/boom/runPipeline/resource";
 import { BoomGetStatusPipeline } from "../functions/boom/GetStatusPipeline/resource";
 import { GetMaterialesSinAprovicionamiento } from "../functions/boom/GetMaterialesSinAprovicionamiento/resource";
 import { GetMaterialesSinCentroProduccion } from "../functions/boom/getMaterialesSinCentroProduccion/resource";
+import { validacionMaterialesResolver } from "../functions/validacionMaterialesResolver/resource";
+import { materialesPorCentroResolver } from "../functions/materialesPorCentroResolver/resource";
 import { aprovisionamiento } from "../functions/porcentajes-asignacion/resource";
 import { suicSaveBatch } from "../functions/suic/resource";
 import { suicGetSummary } from "../functions/suic/getSummary/resource";
@@ -22,6 +24,7 @@ import { runExplosionSuic } from "../functions/suic/runExplosion/resource";
 import { getMetaDiariaFinal } from "../functions/suic/getMetaDiariaFinal/resource";
 import { generateSociedadesCsv } from "../functions/suic/generateSociedadesCsv/resource";
 import { transferMetaDiariaFinal } from "../functions/suic/transferMetaDiariaFinal/resource";
+/* Functions Audit */
 
 const schema = a.schema({
   Todo: a
@@ -125,6 +128,36 @@ const schema = a.schema({
     })
     .secondaryIndexes((index) => [
       index("version") // Crear GSI para búsquedas por version
+    ])
+    .authorization((allow) => [allow.publicApiKey()]),
+
+  /**
+   * Módulo de Auditoría - Modelo AuditLog
+   * Registra todas las acciones de usuarios con bitácora detallada
+   */
+  AuditLog: a
+    .model({
+      userId: a.string().required(),
+      userEmail: a.string().required(),
+      userName: a.string(),
+      action: a.string().required(), // CREATE, UPDATE, DELETE, READ, LOGIN, LOGOUT, CONFIG_CHANGE
+      module: a.string().required(), // 'boom', 'suic', 'admin-users', etc.
+      entityType: a.string().required(), // Tipo de entidad auditada
+      entityId: a.string(), // ID de la entidad
+      changes: a.json(), // Estado antes/después completo
+      ipAddress: a.string(),
+      userAgent: a.string(),
+      deviceFingerprint: a.string(),
+      timestamp: a.string().required(),
+      metadata: a.json(), // JSON adicional con información extra
+    })
+    .secondaryIndexes((index) => [
+      index("userId"), // GSI para búsquedas por usuario
+      index("module"), // GSI para búsquedas por módulo
+      index("action"), // GSI para búsquedas por acción
+      index("timestamp"), // GSI para búsquedas por fecha
+      index("userId").sortKeys(["timestamp"]), // GSI compuesto para usuario + fecha
+      index("module").sortKeys(["timestamp"]), // GSI compuesto para módulo + fecha
     ])
     .authorization((allow) => [allow.publicApiKey()]),
 
@@ -255,6 +288,30 @@ const schema = a.schema({
     .handler(a.handler.function(GetMaterialesSinCentroProduccion)),
 
   /**
+   *  Validación de materiales desde MSSQL
+   */
+  getValidacionMateriales: a
+    .query()
+    .arguments({ version: a.string().required() })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(validacionMaterialesResolver)),
+
+  /**
+   *  Obtener materiales por centro desde MSSQL
+   */
+  getMaterialesPorCentro: a
+    .query()
+    .arguments({
+      page: a.integer(),
+      limit: a.integer(),
+      search: a.string(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(materialesPorCentroResolver)),
+
+  /**
    *  CRUD de Aprovisionamiento
    */
   aprovisionamiento: a
@@ -353,6 +410,7 @@ const schema = a.schema({
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(transferMetaDiariaFinal)),
+
 });
 
 export type Schema = ClientSchema<typeof schema>;

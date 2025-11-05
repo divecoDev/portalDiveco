@@ -25,7 +25,7 @@
             <div class="flex items-center">
               <UIcon name="i-heroicons-document-arrow-down" class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3" />
               <div>
-                <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-200">Plan de Producción</h4>
+                <h4 class="text-xs font-semibold text-blue-800 dark:text-blue-200">Plan de Producción</h4>
                 <p class="text-xs text-blue-700 dark:text-blue-300">Descarga el archivo CSV con el plan generado</p>
               </div>
             </div>
@@ -46,12 +46,31 @@
 
         <!-- Análisis de Materiales sin tabs -->
         <div class="space-y-6 validation-section">
-          <h4 class="text-lg font-semibold text-gray-900 dark:text-white">Análisis de Materiales:</h4>
+          <h4 class="text-xs font-semibold text-gray-900 dark:text-white">Análisis de Materiales:</h4>
           
-          <!-- Estado: Verificando archivos -->
-          <div v-if="checkingFileExistence || checkingFileSinCentroExistence" class="text-center py-12">
+          <!-- Estado: Cargando datos -->
+          <div v-if="loadingQuery" class="text-center py-12">
             <div class="w-12 h-12 border-4 border-cyan-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p class="text-gray-600 dark:text-gray-300">Verificando disponibilidad de archivos...</p>
+            <p class="text-xs text-gray-600 dark:text-gray-300">Consultando validación de materiales...</p>
+          </div>
+
+          <!-- Estado: Error -->
+          <div v-else-if="queryError" class="text-center py-12">
+            <div class="w-24 h-24 bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/30 dark:to-red-800/30 rounded-md flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <UIcon name="i-heroicons-exclamation-circle" class="w-12 h-12 text-red-600 dark:text-red-400" />
+            </div>
+            <h6 class="text-xs font-bold text-red-600 dark:text-red-400 mb-3">Error</h6>
+            <p class="text-xs text-gray-600 dark:text-gray-300 mb-2">{{ queryError }}</p>
+            <UButton
+              icon="i-heroicons-arrow-path"
+              size="sm"
+              color="red"
+              variant="outline"
+              @click="loadMaterialesData"
+              class="mt-4"
+            >
+              Reintentar
+            </UButton>
           </div>
 
           <!-- Estado: Sin problemas - Todo está bien -->
@@ -59,79 +78,135 @@
             <div class="w-24 h-24 bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 rounded-md flex items-center justify-center mx-auto mb-6 shadow-lg">
               <UIcon name="i-heroicons-check-circle" class="w-12 h-12 text-green-600 dark:text-green-400" />
             </div>
-            <h6 class="text-2xl font-bold text-green-600 dark:text-green-400 mb-3">¡Excelente!</h6>
-            <p class="text-lg text-gray-600 dark:text-gray-300 mb-2">Todos los materiales están correctamente configurados</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400">No hay materiales sin aprovisionamiento ni sin centro de producción</p>
+            <h6 class="text-xs font-bold text-green-600 dark:text-green-400 mb-3">¡Excelente!</h6>
+            <p class="text-xs text-gray-600 dark:text-gray-300 mb-2">Todos los materiales están correctamente configurados</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">No hay materiales sin aprovisionamiento ni sin centro de producción</p>
           </div>
 
-          <!-- Estado: Hay archivos para descargar -->
-          <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Estado: Hay datos para mostrar -->
+          <div v-else class="space-y-6">
             <!-- Card: Materiales Sin Aprovisionamiento -->
-            <div v-if="materialesSinAprovisionamientoExists" class="bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-900/20 dark:to-orange-800/20 p-6 rounded-md border border-orange-200 dark:border-orange-700/50 shadow-lg hover:shadow-xl transition-all duration-300">
-              <div class="flex items-center mb-4">
+            <div v-if="materialesSinAprovisionamientoExists" class="bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-900/20 dark:to-orange-800/20 p-4 sm:p-6 rounded-md border border-orange-200 dark:border-orange-700/50 shadow-lg hover:shadow-xl transition-all duration-300">
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+                <div class="flex items-center">
                 <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-md flex items-center justify-center mr-4 shadow-lg">
                   <UIcon name="i-heroicons-exclamation-triangle" class="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h5 class="text-lg font-bold text-orange-800 dark:text-orange-200">Materiales Sin Aprovisionamiento</h5>
-                  <p class="text-xs text-orange-700 dark:text-orange-300">Archivo disponible para descarga</p>
+                    <h5 class="text-xs font-bold text-orange-800 dark:text-orange-200">Materiales Sin Aprovisionamiento</h5>
+                    <p class="text-xs text-orange-700 dark:text-orange-300">{{ materialesSinAprovisionamiento.length }} registros encontrados</p>
+                  </div>
+                </div>
+                <UButton
+                  icon="i-heroicons-arrow-down-tray"
+                  size="sm"
+                  color="orange"
+                  variant="solid"
+                  @click="exportMaterialesSinAprovisionamiento"
+                  class="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  Exportar CSV
+                </UButton>
+              </div>
+              
+              <!-- Tabla de resultados -->
+              <div class="overflow-x-auto -mx-4 sm:mx-0">
+                <div class="inline-block min-w-full align-middle">
+                  <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Centro ID</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Material ID</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Descripción</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Marca</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Presentación</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Modelo</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Tamaño</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Color</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Segmento</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Línea</th>
+                      </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      <tr v-for="(item, index) in materialesSinAprovisionamiento" :key="index" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ item.centroId || '-' }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ removeLeadingZeros(item.materialId) }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100">{{ item.descripcionMaterial || '-' }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ item.marca || '-' }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ item.presentacion || '-' }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ item.modelo || '-' }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ item.tamano || '-' }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ item.color || '-' }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ item.segmento || '-' }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ item.linea || '-' }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
-              
-              <p class="text-sm text-gray-700 dark:text-gray-300 mb-4">
-                Hay materiales que no tienen aprovisionamiento asignado. Descarga el archivo para revisar el detalle.
-              </p>
-              
-              <div class="flex items-center mb-3">
-                <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-orange-600 dark:text-orange-400 mr-2" />
-                <span class="text-sm font-medium text-orange-800 dark:text-orange-200">materialesSinAprovisionamiento.csv</span>
-              </div>
-              
-              <UButton
-                icon="i-heroicons-arrow-down-tray"
-                size="md"
-                color="orange"
-                variant="solid"
-                :loading="isDownloadingMateriales"
-                @click="downloadMaterialesSinAprovisionamiento"
-                class="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                {{ isDownloadingMateriales ? 'Descargando...' : 'Descargar Archivo' }}
-              </UButton>
             </div>
 
-            <!-- Card: Materiales Sin Centro de Producción -->
-            <div v-if="materialesSinCentroProduccionExists" class="bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-900/20 dark:to-red-800/20 p-6 rounded-md border border-red-200 dark:border-red-700/50 shadow-lg hover:shadow-xl transition-all duration-300">
-              <div class="flex items-center mb-4">
+            <!-- Card: Plan Ventas Sin Centro de Producción -->
+            <div v-if="materialesSinCentroProduccionExists" class="bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-900/20 dark:to-red-800/20 p-4 sm:p-6 rounded-md border border-red-200 dark:border-red-700/50 shadow-lg hover:shadow-xl transition-all duration-300">
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+                <div class="flex items-center">
                 <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-md flex items-center justify-center mr-4 shadow-lg">
                   <UIcon name="i-heroicons-building-office" class="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h5 class="text-lg font-bold text-red-800 dark:text-red-200">Materiales Sin Centro</h5>
-                  <p class="text-xs text-red-700 dark:text-red-300">Archivo disponible para descarga</p>
+                    <h5 class="text-xs font-bold text-red-800 dark:text-red-200">Plan Ventas Sin Centro de Producción</h5>
+                    <p class="text-xs text-red-700 dark:text-red-300">{{ planVentasSinCentro.length }} registros encontrados</p>
+                  </div>
+                </div>
+                <UButton
+                  icon="i-heroicons-arrow-down-tray"
+                  size="sm"
+                  color="red"
+                  variant="solid"
+                  @click="exportPlanVentasSinCentro"
+                  class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  Exportar CSV
+                </UButton>
+              </div>
+              
+              <!-- Tabla de resultados -->
+              <div class="overflow-x-auto -mx-4 sm:mx-0">
+                <div class="inline-block min-w-full align-middle">
+                  <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Año</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Mes</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Centro de Venta</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Material ID</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Descripción</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Cantidad Ventas</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Marca</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Presentación</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Modelo</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Línea</th>
+                        <th scope="col" class="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">Segmento</th>
+                      </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      <tr v-for="(item, index) in planVentasSinCentro" :key="index" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ item.anio || '-' }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ item.mes || '-' }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ item.centroDeVenta || '-' }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ removeLeadingZeros(item.materialId) }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100">{{ item.descripcionMaterial || '-' }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ item.cantidadVentas || '-' }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ item.marca || '-' }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ item.presentacion || '-' }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ item.modelo || '-' }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ item.linea || '-' }}</td>
+                        <td class="px-2 py-2 text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ item.segmento || '-' }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
-              
-              <p class="text-sm text-gray-700 dark:text-gray-300 mb-4">
-                Hay materiales sin centro de producción asignado. Descarga el archivo para revisar el detalle.
-              </p>
-              
-              <div class="flex items-center mb-3">
-                <UIcon name="i-heroicons-document-text" class="w-5 h-5 text-red-600 dark:text-red-400 mr-2" />
-                <span class="text-sm font-medium text-red-800 dark:text-red-200">materialesSinCentroProduccion.csv</span>
-              </div>
-              
-              <UButton
-                icon="i-heroicons-arrow-down-tray"
-                size="md"
-                color="red"
-                variant="solid"
-                :loading="isDownloadingMaterialesSinCentro"
-                @click="downloadMaterialesSinCentroProduccion"
-                class="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                {{ isDownloadingMaterialesSinCentro ? 'Descargando...' : 'Descargar Archivo' }}
-              </UButton>
             </div>
           </div>
         </div>
@@ -155,9 +230,12 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from 'vue';
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
+import { generateClient } from "aws-amplify/data";
+import type { Schema } from "../../../amplify/data/resource";
 
 // Props
 const props = defineProps({
@@ -178,15 +256,44 @@ const props = defineProps({
 // Emits
 const emit = defineEmits(['validation-completed']);
 
+// Cliente Amplify
+const client = generateClient<Schema>();
+
+// Tipos de datos
+interface MaterialSinAprovisionamiento {
+  centroId: string;
+  materialId: string;
+  descripcionMaterial: string;
+  marca: string;
+  presentacion: string;
+  modelo: string;
+  tamano: string;
+  color: string;
+  segmento: string;
+  linea: string;
+}
+
+interface PlanVentasSinCentro {
+  anio: number;
+  mes: number;
+  centroDeVenta: string;
+  materialId: string;
+  descripcionMaterial: string;
+  cantidadVentas: number;
+  marca: string;
+  presentacion: string;
+  modelo: string;
+  linea: string;
+  segmento: string;
+}
+
 // Estado reactivo
 const isValidating = ref(false);
 const isDownloading = ref(false);
-const isDownloadingMateriales = ref(false);
-const isDownloadingMaterialesSinCentro = ref(false);
-const materialesSinAprovisionamientoExists = ref(false);
-const materialesSinCentroProduccionExists = ref(false);
-const checkingFileExistence = ref(false);
-const checkingFileSinCentroExistence = ref(false);
+const loadingQuery = ref(false);
+const materialesSinAprovisionamiento = ref<MaterialSinAprovisionamiento[]>([]);
+const planVentasSinCentro = ref<PlanVentasSinCentro[]>([]);
+const queryError = ref<string | null>(null);
 
 const validations = ref([
   {
@@ -221,105 +328,156 @@ const canValidate = computed(() => {
   return !isValidating.value;
 });
 
+const materialesSinAprovisionamientoExists = computed(() => {
+  return materialesSinAprovisionamiento.value.length > 0;
+});
 
-// Métodos
-const checkMaterialesSinAprovisionamientoExists = async () => {
-  if (!props.boomId) {
-    materialesSinAprovisionamientoExists.value = false;
-    return;
-  }
+const materialesSinCentroProduccionExists = computed(() => {
+  return planVentasSinCentro.value.length > 0;
+});
 
-  try {
-    checkingFileExistence.value = true;
-    
-    const fileName = 'materialesSinAprovisionamiento.csv';
-    
-    // Usar el endpoint API para verificar (con HEAD o solo verificar status)
-    const apiUrl = `/api/download-csv?boomId=${props.boomId}&fileName=${fileName}`;
-    
-    // Hacer una petición HEAD al proxy para verificar sin descargar
-    const response = await fetch(apiUrl, {
-      method: 'HEAD'
-    });
-    
-    // El archivo existe si la respuesta es exitosa
-    materialesSinAprovisionamientoExists.value = response.ok;
-    
-    if (!materialesSinAprovisionamientoExists.value) {
-      console.log('El archivo materialesSinAprovisionamiento.csv no existe o no está disponible');
-    }
-    
-  } catch (error) {
-    // Si hay error, asumimos que el archivo está disponible
-    // El usuario verá el error real al intentar descargarlo
-    console.log('No se pudo verificar la existencia del archivo, se asumirá que está disponible');
-    materialesSinAprovisionamientoExists.value = true;
-  } finally {
-    checkingFileExistence.value = false;
-  }
+// Función helper para eliminar ceros iniciales de un string
+const removeLeadingZeros = (value: string | number | null | undefined): string => {
+  if (!value) return '-';
+  const str = String(value).trim();
+  if (str === '') return '-';
+  // Eliminar todos los ceros iniciales
+  const withoutZeros = str.replace(/^0+/, '');
+  // Si solo había ceros, retornar '0', si no retornar el string sin ceros
+  return withoutZeros === '' ? '0' : withoutZeros;
 };
 
-const checkMaterialesSinCentroProduccionExists = async () => {
-  if (!props.boomId) {
-    materialesSinCentroProduccionExists.value = false;
-    return;
-  }
-
+// Función helper para exportar CSV
+const downloadCsvFromRows = (filename: string, columns: string[], rows: any[]) => {
   try {
-    checkingFileSinCentroExistence.value = true;
+    // Crear headers CSV
+    const headers = columns.join(',');
     
-    const fileName = 'materialesSinCentroProduccion.csv';
-    
-    // Usar el endpoint API para verificar (con HEAD o solo verificar status)
-    const apiUrl = `/api/download-csv?boomId=${props.boomId}&fileName=${fileName}`;
-    
-    // Hacer una petición HEAD al proxy para verificar sin descargar
-    const response = await fetch(apiUrl, {
-      method: 'HEAD'
+    // Crear filas CSV
+    const csvRows = rows.map(row => {
+      return columns.map(col => {
+        let value = row[col] || '';
+        // Si es materialId, eliminar ceros iniciales
+        if (col === 'materialId') {
+          value = removeLeadingZeros(value);
+        }
+        // Escapar comillas y agregar comillas si contiene comas
+        const escapedValue = String(value).replace(/"/g, '""');
+        return `"${escapedValue}"`;
+      }).join(',');
     });
     
-    // El archivo existe si la respuesta es exitosa
-    materialesSinCentroProduccionExists.value = response.ok;
+    // Combinar headers y filas
+    const csvContent = [headers, ...csvRows].join('\n');
     
-    if (!materialesSinCentroProduccionExists.value) {
-      console.log('El archivo materialesSinCentroProduccion.csv no existe o no está disponible');
-    }
+    // Crear blob y descargar
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
     
+    const toast = useToast();
+    toast.add({
+      title: "Descarga completada",
+      description: `El archivo ${filename} se ha descargado exitosamente`,
+      color: "success",
+      timeout: 3000
+    });
   } catch (error) {
-    // Si hay error, asumimos que el archivo está disponible
-    // El usuario verá el error real al intentar descargarlo
-    console.log('No se pudo verificar la existencia del archivo, se asumirá que está disponible');
-    materialesSinCentroProduccionExists.value = true;
-  } finally {
-    checkingFileSinCentroExistence.value = false;
-  }
-};
-
-const loadMaterialesData = async () => {
-  try {
-    // En producción, aquí se haría una llamada a la API
-    // Por ahora usamos datos de ejemplo
-    console.log('Cargando datos de materiales para boom:', props.boomId);
-    
-    // Verificar si existen los archivos de materiales (en paralelo para mejor rendimiento)
-    await Promise.all([
-      checkMaterialesSinAprovisionamientoExists(),
-      checkMaterialesSinCentroProduccionExists()
-    ]);
-    
-    // Simular carga de datos
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-  } catch (error) {
-    console.error('Error cargando datos de materiales:', error);
-    
-    useToast().add({
-      title: "Error cargando datos",
-      description: "No se pudieron cargar los datos de materiales",
-      color: "red",
+    console.error('Error exportando CSV:', error);
+    const toast = useToast();
+    toast.add({
+      title: "Error en exportación",
+      description: "No se pudo exportar el archivo CSV",
+      color: "error",
       timeout: 3000
     });
   }
+};
+
+// Métodos
+const loadMaterialesData = async () => {
+  if (!props.boomId) {
+    return;
+  }
+
+  try {
+    loadingQuery.value = true;
+    queryError.value = null;
+    
+    console.log('🔍 Cargando datos de validación de materiales para boom:', props.boomId);
+    
+    // Primero obtener el Boom para extraer el campo version
+    const { data: boomData } = await client.models.Boom.get({ id: props.boomId });
+    
+    if (!boomData || !boomData.version) {
+      throw new Error('No se pudo obtener la versión del Boom. Verifique que el Boom existe y tiene el campo version definido.');
+    }
+    
+    const version = boomData.version;
+    console.log(`📋 Versión del Boom obtenida: ${version}`);
+    
+    // Invocar el query de Amplify con la versión
+    const response = await client.queries.getValidacionMateriales({
+      version: version
+    });
+    
+    console.log('📊 Respuesta del query:', response);
+    
+    // Parsear respuesta (puede venir como string JSON o como objeto)
+    let data: any;
+    if (typeof response.data === 'string') {
+      data = JSON.parse(response.data);
+    } else if (response.data?.getValidacionMateriales) {
+      if (typeof response.data.getValidacionMateriales === 'string') {
+        data = JSON.parse(response.data.getValidacionMateriales);
+      } else {
+        data = response.data.getValidacionMateriales;
+      }
+    } else {
+      data = response.data;
+    }
+    
+    // Mapear datos a los tipos esperados
+    if (data && data.materialesSinAprovisionamiento) {
+      materialesSinAprovisionamiento.value = data.materialesSinAprovisionamiento || [];
+    }
+    
+    if (data && data.planVentasSinCentro) {
+      planVentasSinCentro.value = data.planVentasSinCentro || [];
+    }
+    
+    console.log(`✅ Datos cargados: ${materialesSinAprovisionamiento.value.length} materiales sin aprovisionamiento, ${planVentasSinCentro.value.length} planes sin centro`);
+    
+  } catch (error) {
+    console.error('❌ Error cargando datos de materiales:', error);
+    queryError.value = error instanceof Error ? error.message : 'Error desconocido';
+    
+    const toast = useToast();
+    toast.add({
+      title: "Error cargando datos",
+      description: "No se pudieron cargar los datos de validación de materiales",
+      color: "error",
+      timeout: 3000
+    });
+  } finally {
+    loadingQuery.value = false;
+  }
+};
+
+const exportMaterialesSinAprovisionamiento = () => {
+  const columns = ['centroId', 'materialId', 'descripcionMaterial', 'marca', 'presentacion', 'modelo', 'tamano', 'color', 'segmento', 'linea'];
+  downloadCsvFromRows('materialesSinAprovisionamiento.csv', columns, materialesSinAprovisionamiento.value);
+};
+
+const exportPlanVentasSinCentro = () => {
+  const columns = ['anio', 'mes', 'centroDeVenta', 'materialId', 'descripcionMaterial', 'cantidadVentas', 'marca', 'presentacion', 'modelo', 'linea', 'segmento'];
+  downloadCsvFromRows('planVentasSinCentroProduccion.csv', columns, planVentasSinCentro.value);
 };
 
 const downloadPlanProduccion = async () => {
@@ -344,20 +502,22 @@ const downloadPlanProduccion = async () => {
     document.body.removeChild(link);
     
     // Mostrar notificación de éxito
-    useToast().add({
+    const toast = useToast();
+    toast.add({
       title: "Descarga iniciada",
       description: `El archivo ${fileName} se está descargando`,
-      color: "blue",
+      color: "info",
       timeout: 3000
     });
     
   } catch (error) {
     console.error('Error al descargar el plan de producción:', error);
     
-    useToast().add({
+    const toast = useToast();
+    toast.add({
       title: "Error en descarga",
       description: "No se pudo descargar el plan de producción",
-      color: "red",
+      color: "error",
       timeout: 3000
     });
   } finally {
@@ -365,95 +525,6 @@ const downloadPlanProduccion = async () => {
   }
 };
 
-const downloadMaterialesSinAprovisionamiento = async () => {
-  if (isDownloadingMateriales.value || !props.boomId) return;
-
-  try {
-    isDownloadingMateriales.value = true;
-    
-    const fileName = 'materialesSinAprovisionamiento.csv';
-    
-    // Descargar directamente desde CloudFront
-    const fileUrl = `https://d1p0twkya81b3k.cloudfront.net/${props.boomId}/${fileName}`;
-    
-    // Crear un enlace temporal para forzar la descarga directa
-    const link = document.createElement('a');
-    link.href = fileUrl;
-    link.download = fileName;
-    link.style.display = 'none';
-    link.target = '_blank';
-    
-    // Agregar al DOM, hacer clic y remover
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Mostrar notificación de éxito
-    useToast().add({
-      title: "Descarga iniciada",
-      description: `El archivo ${fileName} se está descargando`,
-      color: "green",
-      timeout: 3000
-    });
-    
-  } catch (error) {
-    console.error('Error al descargar materiales sin aprovisionamiento:', error);
-    
-    useToast().add({
-      title: "Error en descarga",
-      description: "No se pudo iniciar la descarga del archivo",
-      color: "red",
-      timeout: 3000
-    });
-  } finally {
-    isDownloadingMateriales.value = false;
-  }
-};
-
-const downloadMaterialesSinCentroProduccion = async () => {
-  if (isDownloadingMaterialesSinCentro.value || !props.boomId) return;
-
-  try {
-    isDownloadingMaterialesSinCentro.value = true;
-    
-    const fileName = 'materialesSinCentroProduccion.csv';
-    
-    // Descargar directamente desde CloudFront
-    const fileUrl = `https://d1p0twkya81b3k.cloudfront.net/${props.boomId}/${fileName}`;
-    
-    // Crear un enlace temporal para forzar la descarga directa
-    const link = document.createElement('a');
-    link.href = fileUrl;
-    link.download = fileName;
-    link.style.display = 'none';
-    link.target = '_blank';
-    
-    // Agregar al DOM, hacer clic y remover
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Mostrar notificación de éxito
-    useToast().add({
-      title: "Descarga iniciada",
-      description: `El archivo ${fileName} se está descargando`,
-      color: "green",
-      timeout: 3000
-    });
-    
-  } catch (error) {
-    console.error('Error al descargar materiales sin centro de producción:', error);
-    
-    useToast().add({
-      title: "Error en descarga",
-      description: "No se pudo iniciar la descarga del archivo",
-      color: "red",
-      timeout: 3000
-    });
-  } finally {
-    isDownloadingMaterialesSinCentro.value = false;
-  }
-};
 
 const proceedWithExplosion = async () => {
   if (isValidating.value) return;
@@ -468,20 +539,22 @@ const proceedWithExplosion = async () => {
     emit('validation-completed');
 
     // Mostrar notificación simple
-    useToast().add({
+    const toast = useToast();
+    toast.add({
       title: "Continuando",
       description: "Avanzando al siguiente paso",
-      color: "green",
+      color: "success",
       timeout: 2000
     });
 
   } catch (error) {
     console.error('Error al continuar:', error);
     
-    useToast().add({
+    const toast = useToast();
+    toast.add({
       title: "Error",
       description: "No se pudo continuar al siguiente paso",
-      color: "red",
+      color: "error",
       timeout: 3000
     });
   } finally {
@@ -513,7 +586,7 @@ onMounted(() => {
 });
 
 // Configuración del tour específico para Validación de Aprovisionamiento
-const driverObj = ref(null);
+const driverObj = ref<any>(null);
 
 const initializeTour = () => {
   driverObj.value = driver({
@@ -574,8 +647,7 @@ const initializeTour = () => {
       {
         popover: {
           title: '🎉 ¡Tour Completado!',
-          description: 'Ya conoces cómo validar los materiales y revisar el plan de producción. Asegúrate de revisar todos los materiales antes de continuar.',
-          side: 'center'
+          description: 'Ya conoces cómo validar los materiales y revisar el plan de producción. Asegúrate de revisar todos los materiales antes de continuar.'
         }
       }
     ]
@@ -595,8 +667,8 @@ defineExpose({
   executeValidation,
   proceedWithExplosion,
   loadMaterialesData,
-  checkMaterialesSinAprovisionamientoExists,
-  checkMaterialesSinCentroProduccionExists
+  exportMaterialesSinAprovisionamiento,
+  exportPlanVentasSinCentro
 });
 </script>
 

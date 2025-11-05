@@ -72,20 +72,21 @@ export const handler = async (event: any): Promise<MetaDiariaFinalResponse> => {
       console.log(`📊 Conteo total: ${totalCount} registros`);
 
       // Consultar datos agregados por sociedad y mes
+      // Optimización: extracción de mes con operación matemática (más rápida que SUBSTRING+CAST para INT)
       const query = `
         SELECT
           Sociedad,
-          SUBSTRING(CAST(Fecha_Factura AS CHAR(8)), 5, 2) AS MesExtraido,
-          SUM(cant_factura) AS Total_Cantidad,
-          SUM(venta_neta) AS Total_Venta_Neta
+          LPAD(FLOOR((Fecha_Factura % 10000) / 100), 2, '0') AS MesExtraido,
+          SUM(Cant_Factura) AS Total_Cantidad,
+          SUM(Venta_Neta) AS Total_Venta_Neta
         FROM
           meta_diaria_final
         WHERE id_suic = ?
         GROUP BY
           Sociedad,
-          MesExtraido
+          FLOOR((Fecha_Factura % 10000) / 100)
         ORDER BY
-          Sociedad, MesExtraido
+          Sociedad, FLOOR((Fecha_Factura % 10000) / 100)
       `;
 
       console.log(`🔍 Ejecutando query agregada para SUIC: ${body.suicId}`);
@@ -94,9 +95,17 @@ export const handler = async (event: any): Promise<MetaDiariaFinalResponse> => {
 
       console.log(`✅ Datos obtenidos: ${data.length} registros agregados`);
 
-      // Generar resumen
-      const sociedades = [...new Set(data.map(row => row.Sociedad))].sort();
-      const meses = [...new Set(data.map(row => row.MesExtraido))].sort();
+      // Generar resumen optimizado (una sola pasada con Set)
+      const sociedadesSet = new Set<string>();
+      const mesesSet = new Set<string>();
+      
+      data.forEach(row => {
+        sociedadesSet.add(row.Sociedad);
+        mesesSet.add(row.MesExtraido);
+      });
+      
+      const sociedades = Array.from(sociedadesSet).sort();
+      const meses = Array.from(mesesSet).sort();
 
       return {
         success: true,

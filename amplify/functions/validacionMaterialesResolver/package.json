@@ -1,0 +1,10 @@
+{
+  "name": "validacion-materiales-resolver",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "mssql": "^11.0.1",
+    "@aws-sdk/client-dynamodb": "^3.896.0",
+    "@aws-sdk/lib-dynamodb": "^3.896.0"
+  }
+}

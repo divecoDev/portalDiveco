@@ -24,6 +24,16 @@
 
         <!-- Botones de acción -->
         <div class="flex items-center space-x-3">
+          <!-- Botón para materiales por centro - Solo para ADMIN y EXPLOSION -->
+          <NuxtLink v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')" to="/tools/explosion-materiales/materiales-por-centro">
+            <UButton
+              icon="i-heroicons-building-office-2"
+              class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
+            >
+              Materiales por Centro
+            </UButton>
+          </NuxtLink>
+
           <!-- Botón para porcentajes de asignación - Solo para ADMIN y EXPLOSION -->
           <NuxtLink v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')" to="/tools/explosion-materiales/porcentajes-asignacion">
             <UButton
