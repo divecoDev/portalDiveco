@@ -27,6 +27,17 @@ interface GenerateCsvResponse {
   error?: string;
 }
 
+// Función helper para convertir valores null a 0 en todas las propiedades
+const normalizeNullToZero = (data: any[]): any[] => {
+  return data.map(row => {
+    const normalizedRow: any = {};
+    for (const key in row) {
+      normalizedRow[key] = row[key] === null ? 0 : row[key];
+    }
+    return normalizedRow;
+  });
+};
+
 export const handler = async (event: any): Promise<GenerateCsvResponse> => {
   console.log('📊 Iniciando generación de CSVs por sociedad desde meta_diaria_final');
   console.log('📥 Evento recibido:', JSON.stringify(event, null, 2));
@@ -185,7 +196,8 @@ export const handler = async (event: any): Promise<GenerateCsvResponse> => {
               const s3Key = `suic/${body.suicId}/${fileName}`;
 
               try {
-                const csv = await json2csv(buffer, { excelBOM: true });
+                const normalizedBuffer = normalizeNullToZero(buffer);
+                const csv = await json2csv(normalizedBuffer, { excelBOM: true, prependHeader: false });
                 const uploadParams = {
                   Bucket: bucketName,
                   Key: s3Key,
@@ -227,7 +239,8 @@ export const handler = async (event: any): Promise<GenerateCsvResponse> => {
           const fileName = `${sociedad}_meta_diaria_final_part-${String(effectivePartIndex).padStart(2, '0')}-of-${String(totalParts).padStart(2, '0')}.csv`;
           const s3Key = `suic/${body.suicId}/${fileName}`;
           try {
-            const csv = await json2csv(buffer, { excelBOM: true });
+            const normalizedBuffer = normalizeNullToZero(buffer);
+            const csv = await json2csv(normalizedBuffer, { excelBOM: true, prependHeader: false });
             const uploadParams = {
               Bucket: bucketName,
               Key: s3Key,
