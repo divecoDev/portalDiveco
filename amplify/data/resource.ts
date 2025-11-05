@@ -125,6 +125,10 @@ const schema = a.schema({
       insumoExistenciasPath: a.string(),
       insumoCoberturaPath: a.string(),
       enableShowDocuments: a.boolean(),
+      // Campos de soft delete
+      deletedAt: a.string(), // Fecha/hora ISO de eliminación
+      deletedBy: a.string(), // ID del usuario que eliminó
+      deletionReason: a.string(), // Justificación de la eliminación
     })
     .secondaryIndexes((index) => [
       index("version") // Crear GSI para búsquedas por version
