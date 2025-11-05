@@ -430,14 +430,28 @@ const handleRetryCountry = async (paisCode) => {
 
 // Guardar datos en MySQL
 const handleSaveToMySQL = async () => {
+  // Hacer scroll hacia arriba para ver el inicio de la página
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  
   isSaving.value = true;
 
   try {
     // Cargar datos de IndexedDB
     const allData = await loadDataFromStorageAsync();
 
-    // Procesar cada país
-    for (const [paisCode, data] of Object.entries(allData)) {
+    // Ordenar países según el orden especificado: GT, SV, HN, NI, CR, PA
+    const countryOrder = ['GT', 'SV', 'HN', 'NI', 'CR', 'PA'];
+    const sortedEntries = Object.entries(allData).sort((a, b) => {
+      const indexA = countryOrder.indexOf(a[0]);
+      const indexB = countryOrder.indexOf(b[0]);
+      // Países no en la lista al final
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+      return indexA - indexB;
+    });
+
+    // Procesar cada país en el orden especificado
+    for (const [paisCode, data] of sortedEntries) {
       // Inicializar estado
       saveStates.value[paisCode] = {
         status: 'saving',

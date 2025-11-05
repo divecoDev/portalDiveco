@@ -310,6 +310,9 @@ definePageMeta({
 // Cliente de Amplify
 const client = generateClient();
 
+// Composables
+const { logCreate, logUpdate, logDelete, logAction } = useAudit();
+
 // Meta tags para SEO
 useSeoMeta({
   title: "Aprovisionamiento - Portal Diveco",
@@ -425,6 +428,25 @@ const deletePorcentaje = async (porcentaje) => {
       }
 
       if (responseData?.success) {
+        // Registrar auditoría DELETE
+        try {
+          await logDelete(
+            "boom",
+            "Aprovisionamiento",
+            `${porcentaje.centroIdOrigen}-${porcentaje.materialId}-${porcentaje.centroIdAprov}`,
+            porcentaje,
+            {
+              centroIdOrigen: porcentaje.centroIdOrigen,
+              materialId: porcentaje.materialId,
+              centroIdAprov: porcentaje.centroIdAprov,
+              porcentaje: porcentaje.porcentaje,
+            }
+          );
+        } catch (auditError) {
+          console.warn("Error al registrar auditoría DELETE:", auditError);
+          // No bloquear la eliminación si falla la auditoría
+        }
+
         await fetchPorcentajes();
         useToast().add({
         title: "Aprovisionamiento eliminado",
@@ -516,6 +538,9 @@ const saveEdit = async (porcentaje) => {
   try {
     updating.value = true;
     
+    // Guardar datos antes de actualizar para auditoría
+    const oldPorcentaje = parseFloat(porcentaje.porcentaje);
+    
     const { data } = await client.queries.aprovisionamiento({
       operation: "update",
       centroIdOrigen: porcentaje.centroIdOrigen,
@@ -543,6 +568,27 @@ const saveEdit = async (porcentaje) => {
       
       if (index !== -1) {
         porcentajes.value[index].porcentaje = newValue;
+      }
+
+      // Registrar auditoría UPDATE
+      try {
+        await logUpdate(
+          "boom",
+          "Aprovisionamiento",
+          `${porcentaje.centroIdOrigen}-${porcentaje.materialId}-${porcentaje.centroIdAprov}`,
+          { ...porcentaje, porcentaje: oldPorcentaje },
+          { ...porcentaje, porcentaje: newValue },
+          {
+            centroIdOrigen: porcentaje.centroIdOrigen,
+            materialId: porcentaje.materialId,
+            centroIdAprov: porcentaje.centroIdAprov,
+            oldPorcentaje: oldPorcentaje,
+            newPorcentaje: newValue,
+          }
+        );
+      } catch (auditError) {
+        console.warn("Error al registrar auditoría UPDATE:", auditError);
+        // No bloquear la actualización si falla la auditoría
       }
       
       useToast().add({
@@ -629,6 +675,24 @@ const deleteAllRecords = async () => {
       const deletedCount = responseData.data.deletedCount;
       
       console.log(`✅ Se eliminaron ${deletedCount} registros`);
+      
+      // Registrar auditoría DELETE_ALL
+      try {
+        await logAction(
+          "DELETE_ALL",
+          "boom",
+          "Aprovisionamiento",
+          undefined,
+          undefined,
+          {
+            deletedCount: deletedCount,
+            action: "BULK_DELETE",
+          }
+        );
+      } catch (auditError) {
+        console.warn("Error al registrar auditoría DELETE_ALL:", auditError);
+        // No bloquear la eliminación si falla la auditoría
+      }
       
       useToast().add({
         title: '🗑️ Eliminación masiva exitosa',
@@ -742,6 +806,25 @@ const downloadAllAsCSV = async () => {
       URL.revokeObjectURL(url);
       
       console.log(`✅ Archivo descargado: ${fileName}`);
+      
+      // Registrar auditoría DOWNLOAD_CSV
+      try {
+        await logAction(
+          "DOWNLOAD_CSV",
+          "boom",
+          "Aprovisionamiento",
+          undefined,
+          undefined,
+          {
+            fileName: fileName,
+            recordsCount: allData.length,
+            action: "EXPORT_CSV",
+          }
+        );
+      } catch (auditError) {
+        console.warn("Error al registrar auditoría DOWNLOAD_CSV:", auditError);
+        // No bloquear la descarga si falla la auditoría
+      }
       
       useToast().add({
         title: "Descarga exitosa",

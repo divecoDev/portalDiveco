@@ -28,6 +28,9 @@ const emit = defineEmits(['all-steps-completed']);
 // Usar el store de Carga de Insumos
 const cargaInsumosStore = useCargaInsumosProcessStore()
 
+// Composables
+const { logAction } = useAudit();
+
 // Estado para el proceso de guardado (usar el store)
 const isProcessing = computed(() => cargaInsumosStore.isProcessing)
 const processedSteps = computed(() => cargaInsumosStore.processedSteps)
@@ -125,6 +128,28 @@ const guardarDocumentos = async () => {
 
     if (result.success) {
       console.log('✅ Documentos guardados exitosamente');
+      
+      // Registrar auditoría SAVE_CARGA_INSUMOS
+      if (props.boomId) {
+        try {
+          await logAction(
+            "SAVE_CARGA_INSUMOS",
+            "boom",
+            "Boom",
+            props.boomId,
+            undefined,
+            {
+              planVentasRecords: props.planVentasData?.length || 0,
+              existenciasRecords: props.existenciasData?.length || 0,
+              coberturaRecords: props.coberturaData?.length || 0,
+              action: "SAVE_DOCUMENTS",
+            }
+          );
+        } catch (auditError) {
+          console.warn("Error al registrar auditoría SAVE_CARGA_INSUMOS:", auditError);
+          // No bloquear el guardado si falla la auditoría
+        }
+      }
       
       // Ejecutar pipeline de Azure Data Factory si hay boomId
       if (props.boomId) {

@@ -208,6 +208,24 @@
             ¿Estás seguro de que deseas eliminar la carga
             <span class="font-semibold text-gray-900 dark:text-white">{{ cargaToDelete?.descripcion }}</span>?
           </p>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Justificación de eliminación <span class="text-red-500">*</span>
+            </label>
+            <UTextarea
+              v-model="deletionReason"
+              placeholder="Ingresa la razón por la cual deseas eliminar esta carga (mínimo 10 caracteres)"
+              :rows="4"
+              :error="deletionReasonError"
+              class="w-full"
+            />
+            <p v-if="deletionReasonError" class="mt-1 text-sm text-red-600 dark:text-red-400">
+              {{ deletionReasonError }}
+            </p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Este campo es obligatorio y debe contener al menos 10 caracteres.
+            </p>
+          </div>
         </div>
       </template>
 
@@ -215,7 +233,7 @@
         <div class="flex justify-center space-x-3">
           <button
             type="button"
-            @click="showDeleteModal = false"
+            @click="closeDeleteModal"
             :disabled="deleting"
             class="rounded-md inline-flex items-center px-4 py-2 text-sm gap-2 shadow-lg bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-75 disabled:hover:from-gray-600 disabled:hover:to-gray-700 disabled:hover:scale-100 disabled:hover:shadow-lg"
           >
@@ -224,7 +242,7 @@
           <button
             type="button"
             @click="deleteCarga"
-            :disabled="deleting"
+            :disabled="deleting || !isDeletionReasonValid"
             class="rounded-md inline-flex items-center px-4 py-2 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-75 disabled:hover:from-cyan-500 disabled:hover:to-cyan-600 disabled:hover:scale-100 disabled:hover:shadow-lg"
           >
             <div
@@ -241,8 +259,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { generateClient } from "aws-amplify/data";
+import { getCurrentUser } from "aws-amplify/auth";
+import { useAudit } from "~/composables/useAudit";
 
 // Definir el layout y middleware
 definePageMeta({
@@ -269,6 +289,7 @@ setBreadcrumbs([
 ]);
 
 const toast = useToast();
+const { logDelete } = useAudit();
 
 // Estado reactivo
 const loading = ref(false);
@@ -278,8 +299,14 @@ const selectedType = ref("");
 const showDeleteModal = ref(false);
 const cargaToDelete = ref(null);
 const deleting = ref(false);
+const deletionReason = ref("");
+const deletionReasonError = ref("");
 
 // Computed
+const isDeletionReasonValid = computed(() => {
+  return deletionReason.value.trim().length >= 10;
+});
+
 const filteredCargas = computed(() => {
   let filtered = cargas.value;
 
@@ -315,8 +342,13 @@ const fetchCargas = async () => {
       return;
     }
 
+    // Filtrar registros eliminados (soft delete)
+    const activeCargas = (data || []).filter(
+      (carga) => !carga.deletedAt || carga.deletedAt === null || carga.deletedAt === undefined
+    );
+
     // Ordenar por fecha de creación descendente (más recientes primero)
-    cargas.value = (data || []).sort((a, b) => {
+    cargas.value = activeCargas.sort((a, b) => {
       const dateA = new Date(a.createdAt);
       const dateB = new Date(b.createdAt);
       return dateB - dateA;
@@ -335,26 +367,69 @@ const fetchCargas = async () => {
 
 const confirmDelete = (carga) => {
   cargaToDelete.value = carga;
+  deletionReason.value = "";
+  deletionReasonError.value = "";
   showDeleteModal.value = true;
+};
+
+const closeDeleteModal = () => {
+  showDeleteModal.value = false;
+  deletionReason.value = "";
+  deletionReasonError.value = "";
+  cargaToDelete.value = null;
 };
 
 const deleteCarga = async () => {
   if (!cargaToDelete.value) return;
 
+  // Validar justificación
+  if (!isDeletionReasonValid.value) {
+    deletionReasonError.value = "La justificación debe tener al menos 10 caracteres";
+    return;
+  }
+
   deleting.value = true;
+  deletionReasonError.value = "";
+
   try {
-    const { errors } = await client.models.SUIC.delete({
+    // Obtener usuario actual
+    const user = await getCurrentUser();
+    
+    // Realizar soft delete usando update
+    const now = new Date().toISOString();
+    const { data, errors } = await client.models.SUIC.update({
       id: cargaToDelete.value.id,
+      deletedAt: now,
+      deletedBy: user.userId,
+      deletionReason: deletionReason.value.trim(),
     });
 
     if (errors) {
-      console.error("Error deleting SUIC carga:", errors);
+      console.error("Error soft deleting SUIC carga:", errors);
       toast.add({
         title: "Error",
         description: "No se pudo eliminar la carga SUIC",
         color: "red",
       });
       return;
+    }
+
+    // Registrar en AuditLog
+    try {
+      await logDelete(
+        "suic",
+        "SUIC",
+        cargaToDelete.value.id,
+        cargaToDelete.value,
+        {
+          deletionReason: deletionReason.value.trim(),
+          deletedAt: now,
+          deletedBy: user.userId,
+        }
+      );
+    } catch (auditError) {
+      console.warn("Error al registrar auditoría:", auditError);
+      // No bloquear la eliminación si falla la auditoría
     }
 
     toast.add({
@@ -367,10 +442,9 @@ const deleteCarga = async () => {
     await fetchCargas();
 
     // Cerrar modal
-    showDeleteModal.value = false;
-    cargaToDelete.value = null;
+    closeDeleteModal();
   } catch (error) {
-    console.error("Error deleting SUIC carga:", error);
+    console.error("Error soft deleting SUIC carga:", error);
     toast.add({
       title: "Error",
       description: "No se pudo eliminar la carga SUIC",
@@ -398,6 +472,13 @@ const formatDate = (dateString) => {
     return "N/A";
   }
 };
+
+// Watch para limpiar error de validación cuando el usuario escribe
+watch(deletionReason, () => {
+  if (deletionReasonError.value && isDeletionReasonValid.value) {
+    deletionReasonError.value = "";
+  }
+});
 
 // Lifecycle
 onMounted(() => {

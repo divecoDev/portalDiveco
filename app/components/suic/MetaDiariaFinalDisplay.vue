@@ -58,7 +58,7 @@
           </div>
           <h4 class="text-lg font-bold text-gray-900 dark:text-white">Resumen General</h4>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
           <!-- Total Sociedades -->
           <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-cyan-100 dark:border-cyan-800">
             <div class="flex items-center space-x-2 mb-2">
@@ -93,6 +93,15 @@
               <p class="text-xs text-gray-600 dark:text-gray-400">Total Venta</p>
             </div>
             <p class="text-2xl font-bold text-cyan-600 dark:text-cyan-400">${{ formatCurrency(totalVenta) }}</p>
+          </div>
+
+          <!-- Total PPU -->
+          <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-cyan-100 dark:border-cyan-800">
+            <div class="flex items-center space-x-2 mb-2">
+              <UIcon name="i-heroicons-hashtag" class="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <p class="text-xs text-gray-600 dark:text-gray-400">Total PPU</p>
+            </div>
+            <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ formatPPU(totalVenta, totalCantidad) }}</p>
           </div>
         </div>
       </div>

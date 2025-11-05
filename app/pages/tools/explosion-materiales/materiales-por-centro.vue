@@ -303,6 +303,9 @@ definePageMeta({
 // Cliente de Amplify
 const client = generateClient();
 
+// Composables
+const { logAction } = useAudit();
+
 // Meta tags para SEO
 useSeoMeta({
   title: "Materiales por Centro - Portal Diveco",
@@ -441,6 +444,27 @@ const fetchMateriales = async () => {
       // Actualizar página actual si es diferente
       if (paginationInfo.value.page !== currentPage.value) {
         currentPage.value = paginationInfo.value.page;
+      }
+
+      // Registrar auditoría SEARCH
+      try {
+        await logAction(
+          "SEARCH_MATERIALS",
+          "boom",
+          "MaterialesPorCentro",
+          undefined,
+          undefined,
+          {
+            searchQuery: searchQuery.value.trim(),
+            resultsCount: materiales.value.length,
+            totalResults: paginationInfo.value.total,
+            page: currentPage.value,
+            pageSize: pageSize.value,
+          }
+        );
+      } catch (auditError) {
+        console.warn("Error al registrar auditoría SEARCH:", auditError);
+        // No bloquear la búsqueda si falla la auditoría
       }
     } else {
       console.warn('⚠️ Data es null o undefined');

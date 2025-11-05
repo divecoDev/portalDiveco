@@ -220,6 +220,9 @@ definePageMeta({
 // Cliente de Amplify
 const client = generateClient();
 
+// Composables
+const { logCreate } = useAudit();
+
 // Meta tags para SEO
 useSeoMeta({
   title: "Nuevo Aprovisionamiento - Portal Diveco",
@@ -335,6 +338,33 @@ const createPorcentaje = async () => {
     }
 
     if (responseData?.success) {
+      // Registrar auditoría CREATE
+      const entityId = `${formData.value.centroIdOrigen}-${formData.value.materialId}-${formData.value.centroIdAprov}`;
+      const newData = {
+        centroIdOrigen: parseInt(formData.value.centroIdOrigen),
+        materialId: parseInt(formData.value.materialId),
+        centroIdAprov: parseInt(formData.value.centroIdAprov),
+        porcentaje: parseFloat(formData.value.porcentaje),
+      };
+      
+      try {
+        await logCreate(
+          "boom",
+          "Aprovisionamiento",
+          entityId,
+          newData,
+          {
+            centroIdOrigen: newData.centroIdOrigen,
+            materialId: newData.materialId,
+            centroIdAprov: newData.centroIdAprov,
+            porcentaje: newData.porcentaje,
+          }
+        );
+      } catch (auditError) {
+        console.warn("Error al registrar auditoría CREATE:", auditError);
+        // No bloquear la creación si falla la auditoría
+      }
+
       // Mostrar notificación de éxito
       useToast().add({
         title: "Aprovisionamiento creado exitosamente",

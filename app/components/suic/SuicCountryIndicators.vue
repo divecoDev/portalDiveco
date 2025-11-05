@@ -137,6 +137,12 @@
                   <span class="text-xs font-semibold text-cyan-800">Guardando...</span>
                 </div>
                 
+                <!-- Estado Completado (guardado exitosamente pero aún no en MySQL) -->
+                <div v-else-if="saveStates[pais.code]?.status === 'saved'" class="flex items-center space-x-1.5 bg-emerald-200/80 backdrop-blur-sm px-3 py-1.5 rounded border border-emerald-300/50">
+                  <UIcon name="i-heroicons-check-circle" class="w-4 h-4 text-emerald-700" />
+                  <span class="text-xs font-semibold text-emerald-800">Completado</span>
+                </div>
+                
                 <!-- Estado Error -->
                 <div v-else-if="saveStates[pais.code]?.status === 'error'" class="flex items-center space-x-1.5 bg-cyan-200/80 backdrop-blur-sm px-3 py-1.5 rounded border border-cyan-300/50">
                   <UIcon name="i-heroicons-x-circle" class="w-4 h-4 text-cyan-700" />
@@ -345,7 +351,7 @@
         </div>
 
         <!-- Grid de totales -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
           <!-- Total Registros -->
           <div class="flex items-center space-x-3 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
             <div class="w-10 h-10 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg flex items-center justify-center">
@@ -382,6 +388,19 @@
                 ${{ totalSalesAllCountries.toLocaleString('en-US', { maximumFractionDigits: 0 }) }}
               </p>
               <p class="text-xs text-gray-600 dark:text-gray-400">ventas</p>
+            </div>
+          </div>
+
+          <!-- Total PPU -->
+          <div v-if="totalPPUAllCountries > 0" class="flex items-center space-x-3 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+              <UIcon name="i-heroicons-chart-bar" class="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div>
+              <p class="text-xl font-bold text-purple-700 dark:text-purple-400">
+                {{ formatNumberSafe(totalPPUAllCountries, 2) }}
+              </p>
+              <p class="text-xs text-gray-600 dark:text-gray-400">PPU</p>
             </div>
           </div>
         </div>
@@ -508,6 +527,16 @@ const totalSalesAllCountries = computed(() => {
   });
   
   return total;
+});
+
+// Total PPU (Precio Por Unidad) de todos los países
+const totalPPUAllCountries = computed(() => {
+  const totalSales = totalSalesAllCountries.value;
+  const totalUnits = totalUnitsAllCountries.value;
+  
+  if (totalUnits === 0 || totalSales === 0) return 0;
+  
+  return totalSales / totalUnits;
 });
 
 // Métodos para manejo de metadata de meses

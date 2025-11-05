@@ -254,8 +254,9 @@ import ExplosionProcess from "~/components/boom/ExplosionProcess.vue";
 // Cliente de Amplify
 const client = generateClient();
 
-// Composable para consultar datos de carga de insumos
+// Composables
 const { getDataByDocument, hasData } = useCargaInsumosData();
+const { logRead, logAction } = useAudit();
 
 const stepperItems = ref([
   {
@@ -348,6 +349,39 @@ const fetchExplosion = async () => {
 
     // Verificar si hay datos guardados para esta explosión
     await checkForSavedData();
+
+    // Registrar auditoría READ/VIEW con datos completos del registro
+    if (data) {
+      try {
+        await logAction(
+          "READ",
+          "boom",
+          "Boom",
+          explosionId,
+          {
+            after: {
+              id: data.id,
+              version: data.version,
+              descripcion: data.descripcion,
+              status: data.status,
+              createdAt: data.createdAt,
+              updatedAt: data.updatedAt,
+              username: data.username,
+              enableShowDocuments: data.enableShowDocuments,
+            },
+          },
+          {
+            version: data.version,
+            descripcion: data.descripcion,
+            status: data.status,
+            action: "VIEW_DETAIL",
+          }
+        );
+      } catch (auditError) {
+        console.warn("Error al registrar auditoría VIEW:", auditError);
+        // No bloquear la carga si falla la auditoría
+      }
+    }
   } catch (error) {
     console.error("Error al cargar explosión:", error);
     explosion.value = null;

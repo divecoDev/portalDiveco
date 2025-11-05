@@ -237,10 +237,95 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal de confirmación de eliminación -->
+  <Teleport to="body">
+    <UModal v-model:open="showDeleteModal">
+      <template #header>
+        <div class="bg-gradient-to-r from-cyan-500 to-cyan-600 px-6 py-4 rounded-t-lg" style="margin: -1.5rem -1.5rem -1.5rem; width: calc(100% + 3rem);">
+          <div class="flex items-center space-x-3">
+            <div
+              class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center"
+            >
+              <UIcon
+                name="i-heroicons-exclamation-triangle"
+                class="w-5 h-5 text-white"
+              />
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-white">
+                Confirmar Eliminación
+              </h3>
+              <p class="text-sm text-cyan-100">
+                Esta acción no se puede deshacer
+              </p>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <template #body>
+        <div class="space-y-4">
+          <p class="text-gray-600 dark:text-gray-300">
+            ¿Estás seguro de que deseas eliminar la explosión
+            <span class="font-semibold text-gray-900 dark:text-white">{{ explosionToDelete?.version }} - {{ explosionToDelete?.descripcion }}</span>?
+          </p>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Justificación de eliminación <span class="text-red-500">*</span>
+            </label>
+            <UTextarea
+              v-model="deletionReason"
+              placeholder="Ingresa la razón por la cual deseas eliminar esta explosión (mínimo 10 caracteres)"
+              :rows="4"
+              :error="deletionReasonError"
+              class="w-full"
+            />
+            <p v-if="deletionReasonError" class="mt-1 text-sm text-red-600 dark:text-red-400">
+              {{ deletionReasonError }}
+            </p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Este campo es obligatorio y debe contener al menos 10 caracteres.
+            </p>
+          </div>
+        </div>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-center space-x-3">
+          <button
+            type="button"
+            @click="closeDeleteModal"
+            :disabled="deleting"
+            class="rounded-md inline-flex items-center px-4 py-2 text-sm gap-2 shadow-lg bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-75 disabled:hover:from-gray-600 disabled:hover:to-gray-700 disabled:hover:scale-100 disabled:hover:shadow-lg"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            @click="confirmDeleteExplosion"
+            :disabled="deleting || !isDeletionReasonValid"
+            class="rounded-md inline-flex items-center px-4 py-2 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-75 disabled:hover:from-cyan-500 disabled:hover:to-cyan-600 disabled:hover:scale-100 disabled:hover:shadow-lg"
+          >
+            <div
+              v-if="deleting"
+              class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+            ></div>
+            <UIcon v-else name="i-heroicons-trash" class="w-4 h-4" />
+            {{ deleting ? "Eliminando..." : "Eliminar" }}
+          </button>
+        </div>
+      </template>
+    </UModal>
+  </Teleport>
 </template>
 
 <script setup>
+import { ref, computed, onMounted, watch } from "vue";
 import { generateClient } from "aws-amplify/data";
+import { getCurrentUser } from "aws-amplify/auth";
+import { useAudit } from "~/composables/useAudit";
+
 definePageMeta({
   middleware: ["auth-revisar-explosion"],
 });
@@ -250,6 +335,8 @@ const client = generateClient();
 
 // Composables
 const { hasGroup } = useUserGroups();
+const toast = useToast();
+const { logDelete, logRead, logAction } = useAudit();
 
 // Meta tags para SEO
 useSeoMeta({
@@ -270,6 +357,11 @@ const explosions = ref([]);
 const loading = ref(true);
 const searchQuery = ref("");
 const selectedStatus = ref("");
+const showDeleteModal = ref(false);
+const explosionToDelete = ref(null);
+const deleting = ref(false);
+const deletionReason = ref("");
+const deletionReasonError = ref("");
 
 // Opciones para filtros mejoradas
 const statusOptions = [
@@ -279,6 +371,11 @@ const statusOptions = [
   { label: "🟡 En Proceso", value: "EN_PROCESO" },
   { label: "🔵 Completado", value: "COMPLETADO" },
 ];
+
+// Computed
+const isDeletionReasonValid = computed(() => {
+  return deletionReason.value.trim().length >= 10;
+});
 
 // Computed para filtrar explosiones
 const filteredExplosions = computed(() => {
@@ -306,8 +403,56 @@ const filteredExplosions = computed(() => {
 const fetchExplosions = async () => {
   try {
     loading.value = true;
-    const { data } = await client.models.Boom.list();
-    explosions.value = data || [];
+    const { data, errors } = await client.models.Boom.list();
+
+    if (errors) {
+      console.error("Error fetching Boom explosions:", errors);
+      toast.add({
+        title: "Error",
+        description: "No se pudieron cargar los registros de explosiones",
+        color: "red",
+      });
+      return;
+    }
+
+    // Filtrar registros eliminados (soft delete)
+    const activeExplosions = (data || []).filter(
+      (explosion) => !explosion.deletedAt || explosion.deletedAt === null || explosion.deletedAt === undefined
+    );
+
+    explosions.value = activeExplosions;
+    
+    // Registrar auditoría LIST con información de los registros consultados
+    try {
+      await logAction(
+        "READ",
+        "boom",
+        "Boom",
+        undefined,
+        {
+          after: {
+            totalRecords: activeExplosions.length,
+            records: activeExplosions.map(exp => ({
+              id: exp.id,
+              version: exp.version,
+              descripcion: exp.descripcion,
+              status: exp.status,
+            })),
+          },
+        },
+        {
+          totalExplosions: activeExplosions.length,
+          filters: {
+            status: selectedStatus.value || null,
+            searchQuery: searchQuery.value || null,
+          },
+          recordIds: activeExplosions.map(exp => exp.id),
+        }
+      );
+    } catch (auditError) {
+      console.warn("Error al registrar auditoría LIST:", auditError);
+      // No bloquear la carga si falla la auditoría
+    }
     
     // Debug: verificar si el campo enableShowDocuments está presente
     console.log('📊 Datos cargados:', explosions.value);
@@ -317,13 +462,47 @@ const fetchExplosions = async () => {
     }
   } catch (error) {
     console.error("Error al cargar explosiones:", error);
+    toast.add({
+      title: "Error",
+      description: "No se pudieron cargar los registros de explosiones",
+      color: "red",
+    });
     explosions.value = [];
   } finally {
     loading.value = false;
   }
 };
 
-const viewExplosion = (explosion) => {
+const viewExplosion = async (explosion) => {
+  // Registrar auditoría VIEW con datos del registro consultado
+  try {
+    await logAction(
+      "READ",
+      "boom",
+      "Boom",
+      explosion.id,
+      {
+        after: {
+          id: explosion.id,
+          version: explosion.version,
+          descripcion: explosion.descripcion,
+          status: explosion.status,
+          createdAt: explosion.createdAt,
+          username: explosion.username,
+        },
+      },
+      {
+        version: explosion.version,
+        descripcion: explosion.descripcion,
+        status: explosion.status,
+        action: "VIEW_FROM_LIST",
+      }
+    );
+  } catch (auditError) {
+    console.warn("Error al registrar auditoría VIEW:", auditError);
+    // No bloquear la navegación si falla la auditoría
+  }
+  
   navigateTo(`/tools/explosion-materiales/view/${explosion.id}`);
 };
 
@@ -335,29 +514,93 @@ const editExplosion = (explosion) => {
   navigateTo(`/tools/explosion-materiales/edit/${explosion.id}`);
 };
 
-const deleteExplosion = async (explosion) => {
-  if (
-    confirm(
-      "¿Estás seguro de que deseas eliminar esta explosión de materiales?",
-    )
-  ) {
-    try {
-      await client.models.Boom.delete({ id: explosion.id });
-      await fetchExplosions();
+const deleteExplosion = (explosion) => {
+  explosionToDelete.value = explosion;
+  deletionReason.value = "";
+  deletionReasonError.value = "";
+  showDeleteModal.value = true;
+};
 
-      useToast().add({
-        title: "Explosión eliminada",
-        description: "La explosión de materiales se ha eliminado correctamente",
-        color: "green",
-      });
-    } catch (error) {
-      console.error("Error al eliminar explosión:", error);
-      useToast().add({
+const closeDeleteModal = () => {
+  showDeleteModal.value = false;
+  deletionReason.value = "";
+  deletionReasonError.value = "";
+  explosionToDelete.value = null;
+};
+
+const confirmDeleteExplosion = async () => {
+  if (!explosionToDelete.value) return;
+
+  // Validar justificación
+  if (!isDeletionReasonValid.value) {
+    deletionReasonError.value = "La justificación debe tener al menos 10 caracteres";
+    return;
+  }
+
+  deleting.value = true;
+  deletionReasonError.value = "";
+
+  try {
+    // Obtener usuario actual
+    const user = await getCurrentUser();
+    
+    // Realizar soft delete usando update
+    const now = new Date().toISOString();
+    const { data, errors } = await client.models.Boom.update({
+      id: explosionToDelete.value.id,
+      deletedAt: now,
+      deletedBy: user.userId,
+      deletionReason: deletionReason.value.trim(),
+    });
+
+    if (errors) {
+      console.error("Error soft deleting Boom explosion:", errors);
+      toast.add({
         title: "Error",
         description: "No se pudo eliminar la explosión de materiales",
         color: "red",
       });
+      return;
     }
+
+    // Registrar en AuditLog
+    try {
+      await logDelete(
+        "boom",
+        "Boom",
+        explosionToDelete.value.id,
+        explosionToDelete.value,
+        {
+          deletionReason: deletionReason.value.trim(),
+          deletedAt: now,
+          deletedBy: user.userId,
+        }
+      );
+    } catch (auditError) {
+      console.warn("Error al registrar auditoría:", auditError);
+      // No bloquear la eliminación si falla la auditoría
+    }
+
+    toast.add({
+      title: "Éxito",
+      description: "Explosión de materiales eliminada correctamente",
+      color: "green",
+    });
+
+    // Recargar la lista
+    await fetchExplosions();
+
+    // Cerrar modal
+    closeDeleteModal();
+  } catch (error) {
+    console.error("Error soft deleting Boom explosion:", error);
+    toast.add({
+      title: "Error",
+      description: "No se pudo eliminar la explosión de materiales",
+      color: "red",
+    });
+  } finally {
+    deleting.value = false;
   }
 };
 
@@ -403,6 +646,13 @@ const formatDate = (date) => {
     minute: "2-digit",
   });
 };
+
+// Watch para limpiar error de validación cuando el usuario escribe
+watch(deletionReason, () => {
+  if (deletionReasonError.value && isDeletionReasonValid.value) {
+    deletionReasonError.value = "";
+  }
+});
 
 // Cargar datos al montar el componente
 onMounted(() => {
