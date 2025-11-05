@@ -24,6 +24,7 @@ import { BoomGetStatusPipeline } from "./functions/boom/GetStatusPipeline/resour
 import { GetPlanProduccion } from "./functions/boom/GetPlanProduccion/resource";
 import { GetMaterialesSinAprovicionamiento } from "./functions/boom/GetMaterialesSinAprovicionamiento/resource";
 import { GetMaterialesSinCentroProduccion } from "./functions/boom/getMaterialesSinCentroProduccion/resource";
+import { generateExplosionFiles } from "./functions/boom/generateExplosionFiles/resource";
 import { validacionMaterialesResolver } from "./functions/validacionMaterialesResolver/resource";
 import { materialesPorCentroResolver } from "./functions/materialesPorCentroResolver/resource";
 import { boomFilesStore } from "./functions/boom/boomFilesStore.ts/resource";
@@ -54,6 +55,7 @@ export const backend = defineBackend({
   GetPlanProduccion,
   GetMaterialesSinAprovicionamiento,
   GetMaterialesSinCentroProduccion,
+  generateExplosionFiles,
   validacionMaterialesResolver,
   materialesPorCentroResolver,
   boomFilesStore,
@@ -262,6 +264,43 @@ const materialesPorCentroResolverPolicy = new iam.PolicyStatement({
   resources: ["*"],
 });
 materialesPorCentroResolverLambda.addToRolePolicy(materialesPorCentroResolverPolicy);
+
+// Permisos para generateExplosionFiles
+const generateExplosionFilesLambda = backend.generateExplosionFiles.resources.lambda;
+
+// Permisos S3 para generateExplosionFiles
+const generateExplosionFilesS3Policy = new iam.PolicyStatement({
+  actions: [
+    "s3:PutObject",
+    "s3:PutObjectAcl",
+    "s3:GetObject",
+    "s3:DeleteObject",
+    "s3:ListBucket"
+  ],
+  resources: [
+    "arn:aws:s3:::explosion-materiales-uts",
+    "arn:aws:s3:::explosion-materiales-uts/*"
+  ],
+});
+generateExplosionFilesLambda.addToRolePolicy(generateExplosionFilesS3Policy);
+
+// Permisos de red para conexión MSSQL y gestión manual de VPC
+const generateExplosionFilesNetworkPolicy = new iam.PolicyStatement({
+  actions: [
+    "ec2:CreateNetworkInterface",
+    "ec2:DescribeNetworkInterfaces",
+    "ec2:DeleteNetworkInterface",
+    "ec2:AttachNetworkInterface",
+    "ec2:DetachNetworkInterface",
+    "ec2:DescribeVpcs",
+    "ec2:DescribeSubnets",
+    "ec2:DescribeSecurityGroups",
+    "ec2:DescribeVpcAttribute",
+    "ec2:DescribeNetworkInterfaceAttribute",
+  ],
+  resources: ["*"],
+});
+generateExplosionFilesLambda.addToRolePolicy(generateExplosionFilesNetworkPolicy);
 
 /*
  * CREACION DE API REST

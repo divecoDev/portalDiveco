@@ -232,11 +232,109 @@ const explosionPollingInterval = ref(null);
 const reexecutingExplosion = ref(false);
 const enableShowDocuments = ref(false);
 const updatingDocuments = ref(false);
+const generatingFiles = ref(false);
 
 // Watcher para emitir cambios en el estado de carga
 watch(explosionInProgress, (newValue) => {
   emit('loading-state-changed', newValue);
 });
+
+// Función para generar archivos CSV desde MSSQL
+const generateExplosionFiles = async () => {
+  try {
+    generatingFiles.value = true;
+    
+    console.log('📊 Iniciando generación de archivos CSV desde MSSQL...');
+    console.log(`📋 boomId: ${props.boomId}, pversion: ${props.pversion}`);
+    
+    // Validar que pversion no esté vacío
+    if (!props.pversion || props.pversion.trim() === '') {
+      throw new Error('La versión del boom (pversion) no está definida. No se pueden generar los archivos CSV.');
+    }
+    
+    // Mostrar notificación de inicio
+    const generatingToast = useToast().add({
+      title: "Generando archivos CSV...",
+      description: "Ejecutando consultas a MSSQL y generando archivos. Esto puede tomar varios minutos.",
+      color: "blue",
+      timeout: 0 // No se cierra automáticamente
+    });
+    
+    // Llamar a la mutation generateExplosionFiles
+    const { data } = await client.mutations.generateExplosionFiles({
+      boomId: props.boomId,
+      pversion: props.pversion
+    });
+    
+    console.log('📋 Respuesta de generateExplosionFiles:', data);
+    
+    // Procesar la respuesta
+    let response = data?.generateExplosionFiles ?? data;
+    
+    if (typeof response === 'string') {
+      try {
+        response = JSON.parse(response);
+      } catch (e) {
+        console.warn('No se pudo parsear respuesta de generateExplosionFiles:', e);
+        throw new Error('Error al procesar la respuesta del servidor');
+      }
+    }
+    
+    // Cerrar toast de carga
+    useToast().remove(generatingToast.id);
+    
+    if (response?.success) {
+      const successCount = response.files?.filter((f) => f.success).length || 0;
+      const failedCount = response.files?.filter((f) => !f.success).length || 0;
+      
+      console.log(`✅ Archivos generados: ${successCount} exitosos, ${failedCount} fallaron`);
+      
+      if (failedCount === 0) {
+        useToast().add({
+          title: "¡Archivos generados exitosamente!",
+          description: `Se generaron ${successCount} archivos CSV correctamente.`,
+          color: "green",
+          timeout: 5000
+        });
+      } else {
+        useToast().add({
+          title: "Archivos generados con errores",
+          description: `${successCount} archivos generados exitosamente, ${failedCount} fallaron.`,
+          color: "orange",
+          timeout: 5000
+        });
+      }
+      
+      return true;
+    } else {
+      const errorMessage = response?.error || response?.message || 'Error desconocido al generar archivos';
+      console.error('❌ Error generando archivos:', errorMessage);
+      
+      useToast().add({
+        title: "Error generando archivos",
+        description: errorMessage,
+        color: "red",
+        timeout: 5000
+      });
+      
+      return false;
+    }
+    
+  } catch (error) {
+    console.error('❌ Error en generateExplosionFiles:', error);
+    
+    useToast().add({
+      title: "Error generando archivos",
+      description: error instanceof Error ? error.message : 'Error desconocido al generar archivos CSV',
+      color: "red",
+      timeout: 5000
+    });
+    
+    return false;
+  } finally {
+    generatingFiles.value = false;
+  }
+};
 
 // Métodos
 const confirmAndExecuteExplosion = () => {
@@ -254,7 +352,7 @@ const confirmAndExecuteExplosion = () => {
 const downloadFile = (fileName) => {
   try {
     // Construir la URL de CloudFront con el boom_id
-    const cloudfrontUrl = `https://d1p0twkya81b3k.cloudfront.net/${props.boomId}/${fileName}`;
+    const cloudfrontUrl = `https://d1p0twkya81b3k.cloudfront.net/${props.boomId}/${fileName}?v=${new Date().getTime()}`;
     
     console.log(`📥 Descargando archivo: ${fileName} desde: ${cloudfrontUrl}`);
     
@@ -698,18 +796,35 @@ const procesarEstadoPipeline = async (status, runId) => {
         console.warn('⚠️ No se pudo verificar/guardar runId:', error);
       }
       
-      // Actualizar Boom con estado completado
-      await actualizarBoomStatusExplosion('Completado');
+      // Generar archivos CSV desde MSSQL antes de marcar como completado
+      console.log('📊 Generando archivos CSV desde MSSQL...');
+      const filesGenerated = await generateExplosionFiles();
       
-      // Emitir evento de completado
-      emit('explosion-completed');
-      
-      useToast().add({
-        title: "¡Explosión completada!",
-        description: "La explosión de materiales se ha ejecutado exitosamente. Los resultados están listos.",
-        color: "green",
-        timeout: 5000
-      });
+      if (filesGenerated) {
+        // Actualizar Boom con estado completado solo si los archivos se generaron exitosamente
+        await actualizarBoomStatusExplosion('Completado');
+        
+        // Emitir evento de completado
+        emit('explosion-completed');
+        
+        useToast().add({
+          title: "¡Explosión completada!",
+          description: "La explosión de materiales se ha ejecutado exitosamente. Los archivos CSV están listos para descarga.",
+          color: "green",
+          timeout: 5000
+        });
+      } else {
+        // Si hubo errores generando archivos, marcar como error pero no completado
+        console.warn('⚠️ Error generando archivos CSV, no se marca como completado');
+        await actualizarBoomStatusExplosion('Error');
+        
+        useToast().add({
+          title: "Pipeline completado con errores",
+          description: "El pipeline terminó exitosamente, pero hubo errores al generar los archivos CSV. Puedes reintentar.",
+          color: "orange",
+          timeout: 5000
+        });
+      }
       break;
 
     case 'Failed':

@@ -15,6 +15,7 @@ import { runPipeline } from "../functions/boom/runPipeline/resource";
 import { BoomGetStatusPipeline } from "../functions/boom/GetStatusPipeline/resource";
 import { GetMaterialesSinAprovicionamiento } from "../functions/boom/GetMaterialesSinAprovicionamiento/resource";
 import { GetMaterialesSinCentroProduccion } from "../functions/boom/getMaterialesSinCentroProduccion/resource";
+import { generateExplosionFiles } from "../functions/boom/generateExplosionFiles/resource";
 import { validacionMaterialesResolver } from "../functions/validacionMaterialesResolver/resource";
 import { materialesPorCentroResolver } from "../functions/materialesPorCentroResolver/resource";
 import { aprovisionamiento } from "../functions/porcentajes-asignacion/resource";
@@ -274,6 +275,19 @@ const schema = a.schema({
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(BoomGetStatusPipeline)),
+
+  /**
+   *  Generar archivos CSV de explosión desde MSSQL
+   */
+  generateExplosionFiles: a
+    .mutation()
+    .arguments({
+      boomId: a.string().required(),
+      pversion: a.string().required(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(generateExplosionFiles)),
 
   /**
    *  Obtener materiales sin aprovicionamiento
