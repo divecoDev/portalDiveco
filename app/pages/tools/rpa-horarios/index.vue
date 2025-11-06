@@ -425,15 +425,12 @@ const deleteWindow = async () => {
     });
 
     // Log de auditoría
-    await logDelete({
-      module: "rpa-horarios",
-      entityType: "RpaExecutionWindow",
-      entityId: windowToDelete.value.id,
-      changes: {
-        before: windowToDelete.value,
-        after: null,
-      },
-    });
+    await logDelete(
+      "rpa-horarios",
+      "RpaExecutionWindow",
+      windowToDelete.value.id,
+      windowToDelete.value
+    );
 
     toast.add({
       title: "Éxito",

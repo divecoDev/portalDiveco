@@ -354,7 +354,7 @@ setBreadcrumbs([
 ]);
 
 const toast = useToast();
-const { logUpdate } = useAudit();
+const { logUpdate, logRead } = useAudit();
 
 // Días de la semana
 const daysOfWeek = [
@@ -518,6 +518,13 @@ const fetchWindow = async () => {
       daysOfWeek: data.daysOfWeek || [],
       isActive: data.isActive ?? true,
     };
+
+    // Log de auditoría READ
+    await logRead(
+      "rpa-horarios",
+      "RpaExecutionWindow",
+      data.id
+    );
   } catch (error) {
     console.error("Error fetching window:", error);
     toast.add({
@@ -568,15 +575,13 @@ const updateWindow = async () => {
     }
 
     // Log de auditoría
-    await logUpdate({
-      module: "rpa-horarios",
-      entityType: "RpaExecutionWindow",
-      entityId: windowId,
-      changes: {
-        before: beforeState,
-        after: data,
-      },
-    });
+    await logUpdate(
+      "rpa-horarios",
+      "RpaExecutionWindow",
+      windowId,
+      beforeState,
+      data
+    );
 
     toast.add({
       title: "Éxito",

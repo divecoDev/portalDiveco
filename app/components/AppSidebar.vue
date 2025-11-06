@@ -63,7 +63,11 @@
         style="height: calc(100vh - 4rem)"
       >
         <!-- Navegación principal -->
-        <nav class="flex-1 px-3 py-4 space-y-2 overflow-y-auto min-h-0">
+        <nav 
+          class="flex-1 px-3 py-4 space-y-2 overflow-y-auto min-h-0"
+          role="navigation"
+          aria-label="Navegación principal"
+        >
           <!-- Indicador de carga para permisos -->
           <div v-if="isLoadingGroups" class="mb-6 px-3">
             <div class="flex items-center space-x-3 text-cyan-200">
@@ -82,18 +86,29 @@
           >
             <!-- Título de la sección -->
             <Transition name="section-fade" mode="out-in">
-              <h3
+              <div
                 v-if="!isCompact"
                 key="section-title"
-                class="px-3 text-xs font-semibold text-cyan-200 uppercase tracking-wider mb-2 transition-all duration-300"
+                class="px-3 mb-3 mt-4 first:mt-0 transition-all duration-300"
               >
-                {{ section.title }}
-              </h3>
+                <div class="flex items-center space-x-2">
+                  <UIcon
+                    v-if="section.icon"
+                    :name="section.icon"
+                    class="h-4 w-4 text-cyan-300"
+                  />
+                  <h3 class="text-xs font-semibold text-cyan-200 uppercase tracking-wider">
+                    {{ section.title }}
+                  </h3>
+                </div>
+                <!-- Separador visual -->
+                <div class="mt-2 h-px bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent"></div>
+              </div>
               <!-- Separador en modo compacto -->
               <div
                 v-else
                 key="section-divider"
-                class="mx-3 mb-2 border-t border-cyan-400/30 transition-all duration-300 transform scale-x-0 animate-scale-x"
+                class="mx-3 mb-3 mt-4 first:mt-0 border-t border-cyan-400/30 transition-all duration-300 transform scale-x-0 animate-scale-x"
               ></div>
             </Transition>
 
@@ -169,6 +184,8 @@
                   ]"
                   @click="handleLinkClick"
                   :title="isCompact ? item.name : ''"
+                  :aria-label="item.name"
+                  :aria-current="isActiveRoute(item.href) ? 'page' : undefined"
                 >
                   <UIcon
                     :name="item.icon"
@@ -502,11 +519,86 @@ watch(userRole, (newRole) => {
   userProfile.value.role = newRole;
 });
 
+// Configuración de herramientas - Centralizada para mejor mantenibilidad
+const toolConfig = {
+  corporate: [
+    {
+      name: "Contraseñas SAP",
+      href: "/tools/contrasenias-sap",
+      icon: "i-heroicons-key",
+      badge: "Nuevo",
+      badgeColor: "green",
+      requiredGroups: ["ADMIN", "SAP-USER-ADMIN"],
+    },
+    {
+      name: "Explosión",
+      href: "/tools/explosion-materiales",
+      icon: "i-heroicons-squares-2x2",
+      badge: (hasGroup) => {
+        if (hasGroup("REVISAR-EXPLOSION") && !hasGroup("EXPLOSION") && !hasGroup("ADMIN")) {
+          return { text: "Solo Lectura", color: "purple" };
+        }
+        return { text: "Nuevo", color: "blue" };
+      },
+      requiredGroups: ["EXPLOSION", "REVISAR-EXPLOSION", "ADMIN"],
+    },
+    {
+      name: "SUIC",
+      href: "/tools/suic",
+      icon: "i-heroicons-chart-bar",
+      badge: "Nuevo",
+      badgeColor: "green",
+      requiredGroups: ["ADMINISTRAR-SUIC", "ADMIN"],
+    },
+  ],
+  administrative: [
+    {
+      name: "Auditoría",
+      href: "/tools/auditoria",
+      icon: "i-heroicons-document-text",
+      badge: "Nuevo",
+      badgeColor: "cyan",
+      requiredGroups: ["ADMIN", "AUDITORIA"],
+    },
+    {
+      name: "Horarios RPA",
+      href: "/tools/rpa-horarios",
+      icon: "i-heroicons-clock",
+      badge: "Nuevo",
+      badgeColor: "cyan",
+      requiredGroups: ["ADMINISTRAR-RPA-HORARIOS", "ADMIN"],
+    },
+    {
+      name: "Gestión de Usuarios",
+      href: "/admin/users",
+      icon: "i-heroicons-user-group",
+      requiredGroups: ["ADMIN"],
+    },
+  ],
+};
+
+// Función helper para verificar si el usuario tiene acceso a una herramienta
+const hasAccessToTool = (requiredGroups: string[]): boolean => {
+  return requiredGroups.some((group) => hasGroup(group));
+};
+
+// Función helper para obtener el badge de una herramienta
+const getToolBadge = (tool: any) => {
+  if (typeof tool.badge === "function") {
+    return tool.badge(hasGroup);
+  }
+  if (tool.badge) {
+    return { text: tool.badge, color: tool.badgeColor || "blue" };
+  }
+  return null;
+};
+
 // Secciones de navegación
 const navigationSections = computed(() => {
   const sections = [
     {
       title: "Principal",
+      icon: "i-heroicons-home",
       items: [
         {
           name: "Inicio",
@@ -517,117 +609,49 @@ const navigationSections = computed(() => {
     },
   ];
 
-  // Solo mostrar "Contraseñas SAP" si el usuario es ADMIN o SAP-USER-ADMIN
-  if (hasGroup("ADMIN") || hasGroup("SAP-USER-ADMIN")) {
+  // ============================================
+  // HERRAMIENTAS CORPORATIVAS
+  // ============================================
+  const corporateTools = toolConfig.corporate
+    .filter((tool) => hasAccessToTool(tool.requiredGroups))
+    .map((tool) => {
+      const badge = getToolBadge(tool);
+      return {
+        name: tool.name,
+        href: tool.href,
+        icon: tool.icon,
+        ...(badge && { badge: badge.text, badgeColor: badge.color }),
+      };
+    });
+
+  if (corporateTools.length > 0) {
     sections.push({
       title: "Herramientas",
-      items: [
-        {
-          name: "Contraseñas SAP",
-          href: "/tools/contrasenias-sap",
-          icon: "i-heroicons-key",
-          badge: "Nuevo",
-          badgeColor: "green",
-        },
-      ],
+      icon: "i-heroicons-wrench-screwdriver",
+      items: corporateTools,
     });
   }
 
-  // Agregar "Explosión de Materiales" para EXPLOSION, REVISAR-EXPLOSION o ADMIN
-  if (hasGroup("EXPLOSION") || hasGroup("REVISAR-EXPLOSION") || hasGroup("ADMIN")) {
-    const toolsSection = sections.find((s) => s.title === "Herramientas");
-    const explosionItem = {
-      name: "Explosión",
-      href: "/tools/explosion-materiales",
-      icon: "i-heroicons-squares-2x2",
-      badge: (hasGroup("REVISAR-EXPLOSION") && !hasGroup("EXPLOSION") && !hasGroup("ADMIN")) ? "Solo Lectura" : "Nuevo",
-      badgeColor: (hasGroup("REVISAR-EXPLOSION") && !hasGroup("EXPLOSION") && !hasGroup("ADMIN")) ? "purple" : "blue",
-    };
+  // ============================================
+  // HERRAMIENTAS ADMINISTRATIVAS
+  // ============================================
+  const adminTools = toolConfig.administrative
+    .filter((tool) => hasAccessToTool(tool.requiredGroups))
+    .map((tool) => {
+      const badge = getToolBadge(tool);
+      return {
+        name: tool.name,
+        href: tool.href,
+        icon: tool.icon,
+        ...(badge && { badge: badge.text, badgeColor: badge.color }),
+      };
+    });
 
-    if (toolsSection) {
-      toolsSection.items.push(explosionItem);
-    } else {
-      sections.push({
-        title: "Herramientas",
-        items: [explosionItem],
-      });
-    }
-  }
-
-  // Agregar "SUIC" para ADMINISTRAR-SUIC o ADMIN
-  if (hasGroup("ADMINISTRAR-SUIC") || hasGroup("ADMIN")) {
-    const toolsSection = sections.find((s) => s.title === "Herramientas");
-    const suicItem = {
-      name: "SUIC",
-      href: "/tools/suic",
-      icon: "i-heroicons-chart-bar",
-      badge: "Nuevo",
-      badgeColor: "green",
-    };
-
-    if (toolsSection) {
-      toolsSection.items.push(suicItem);
-    } else {
-      sections.push({
-        title: "Herramientas",
-        items: [suicItem],
-      });
-    }
-  }
-
-  // Agregar "Auditoría" para ADMIN y AUDITORIA
-  if (hasGroup("ADMIN") || hasGroup("AUDITORIA")) {
-    const toolsSection = sections.find((s) => s.title === "Herramientas");
-    const auditItem = {
-      name: "Auditoría",
-      href: "/tools/auditoria",
-      icon: "i-heroicons-document-text",
-      badge: "Nuevo",
-      badgeColor: "cyan",
-    };
-
-    if (toolsSection) {
-      toolsSection.items.push(auditItem);
-    } else {
-      sections.push({
-        title: "Herramientas",
-        items: [auditItem],
-      });
-    }
-  }
-
-  // Agregar "Horarios RPA" para ADMINISTRAR-RPA-HORARIOS o ADMIN
-  if (hasGroup("ADMINISTRAR-RPA-HORARIOS") || hasGroup("ADMIN")) {
-    const toolsSection = sections.find((s) => s.title === "Herramientas");
-    const rpaHorariosItem = {
-      name: "Horarios RPA",
-      href: "/tools/rpa-horarios",
-      icon: "i-heroicons-clock",
-      badge: "Nuevo",
-      badgeColor: "cyan",
-    };
-
-    if (toolsSection) {
-      toolsSection.items.push(rpaHorariosItem);
-    } else {
-      sections.push({
-        title: "Herramientas",
-        items: [rpaHorariosItem],
-      });
-    }
-  }
-
-  // Solo mostrar la sección de administración si el usuario es ADMIN
-  if (hasGroup("ADMIN")) {
+  if (adminTools.length > 0) {
     sections.push({
       title: "Administración",
-      items: [
-        {
-          name: "Gestión de Usuarios",
-          href: "/admin/users",
-          icon: "i-heroicons-user-group",
-        },
-      ],
+      icon: "i-heroicons-cog-6-tooth",
+      items: adminTools,
     });
   }
 

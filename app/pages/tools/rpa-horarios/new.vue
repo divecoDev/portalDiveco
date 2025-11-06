@@ -498,14 +498,12 @@ const createWindow = async () => {
     }
 
     // Log de auditoría
-    await logCreate({
-      module: "rpa-horarios",
-      entityType: "RpaExecutionWindow",
-      entityId: data.id,
-      changes: {
-        after: data,
-      },
-    });
+    await logCreate(
+      "rpa-horarios",
+      "RpaExecutionWindow",
+      data.id,
+      data
+    );
 
     toast.add({
       title: "Éxito",
