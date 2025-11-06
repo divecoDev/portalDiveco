@@ -2,11 +2,12 @@ import { defineEventHandler, readBody, createError } from "h3";
 import { Amplify } from "aws-amplify";
 import outputs from "../../../amplify_outputs.json";
 import { generateClient } from "aws-amplify/data";
+import type { Schema } from "../../../amplify/data/resource";
 
 // Configurar Amplify para el servidor
 Amplify.configure(outputs);
 
-const client = generateClient();
+const client = generateClient<Schema>();
 
 interface WebhookPayload {
   suicId: string;
@@ -62,6 +63,57 @@ export default defineEventHandler(async (event) => {
     });
 
     console.log(`✅ Estado actualizado para SUIC ${suicRecord.id}: ${newStatus}`);
+
+    // Enviar email de notificación de forma asíncrona (no bloquea la respuesta)
+    // Enviar emails a createdBy y rpaExecutedBy si son diferentes
+    const recipients: string[] = [];
+    
+    // Agregar createdBy si existe
+    if (suicRecord.createdBy) {
+      recipients.push(suicRecord.createdBy);
+    }
+    
+    // Agregar rpaExecutedBy si existe y es diferente de createdBy
+    if (suicRecord.rpaExecutedBy && 
+        suicRecord.rpaExecutedBy !== suicRecord.createdBy) {
+      recipients.push(suicRecord.rpaExecutedBy);
+    }
+
+    // Enviar emails a cada destinatario único
+    if (recipients.length > 0) {
+      const emailPayloadBase = {
+        suicId: suicRecord.id,
+        status: newStatus,
+        rpaType: suicRecord.rpaType || "unknown",
+        descripcion: suicRecord.descripcion || "",
+        rpaLastUpdate: new Date().toISOString(),
+      };
+
+      recipients.forEach((recipient) => {
+        try {
+          const emailPayload = {
+            ...emailPayloadBase,
+            to: recipient,
+          };
+
+          console.log(`📧 Invocando mutation de Amplify para enviar email a: ${recipient}`);
+
+          // Invocar mutation de Amplify de forma asíncrona (no esperamos la respuesta)
+          // Usar .catch() para no bloquear la respuesta del webhook
+          (client.mutations as any).sendRpaStatusEmail(emailPayload).catch((error: any) => {
+            // Loggear error pero no fallar el webhook
+            console.error(`❌ Error invocando mutation de email para ${recipient}:`, error);
+            console.error("❌ Detalles del error:", JSON.stringify(error, null, 2));
+          });
+        } catch (error: any) {
+          // Loggear error pero no fallar el webhook
+          console.error(`❌ Error preparando envío de email para ${recipient}:`, error);
+          console.error("❌ Stack trace:", error.stack);
+        }
+      });
+    } else {
+      console.warn("⚠️ No se encontraron destinatarios (createdBy o rpaExecutedBy) en el registro SUIC, no se enviará email");
+    }
 
     // Retornar confirmación
     return {

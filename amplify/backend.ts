@@ -31,6 +31,7 @@ import { boomFilesStore } from "./functions/boom/boomFilesStore.ts/resource";
 import { suicSaveBatch } from "./functions/suic/resource";
 import {generateSociedadesCsv} from "./functions/suic/generateSociedadesCsv/resource";
 import { transferMetaDiariaFinal } from "./functions/suic/transferMetaDiariaFinal/resource";
+import { sendRpaStatusEmail } from "./functions/send-rpa-status-email/resource";
 /* Functions Audit */
 /**
  * Configuración del backend de Amplify
@@ -62,6 +63,7 @@ export const backend = defineBackend({
   suicSaveBatch,
   generateSociedadesCsv,
   transferMetaDiariaFinal,
+  sendRpaStatusEmail,
 });
 
 const resetPasswordLambda = backend.resetPassword.resources.lambda;
@@ -301,6 +303,18 @@ const generateExplosionFilesNetworkPolicy = new iam.PolicyStatement({
   resources: ["*"],
 });
 generateExplosionFilesLambda.addToRolePolicy(generateExplosionFilesNetworkPolicy);
+
+// Permisos para sendRpaStatusEmail - SES
+// El email de remitente está hardcodeado en el handler como portal_diveco@camasolympia.com
+const sendRpaStatusEmailLambda = backend.sendRpaStatusEmail.resources.lambda;
+const sendRpaStatusEmailSESPolicy = new iam.PolicyStatement({
+  actions: [
+    "ses:SendEmail",
+    "ses:SendRawEmail",
+  ],
+  resources: ["*"],
+});
+sendRpaStatusEmailLambda.addToRolePolicy(sendRpaStatusEmailSESPolicy);
 
 /*
  * CREACION DE API REST

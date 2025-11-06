@@ -1,0 +1,9 @@
+{
+  "name": "send-rpa-status-email",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-ses": "^3.873.0"
+  }
+}
+

@@ -131,6 +131,7 @@ import { useSubscriptionManager } from "~/composables/useSubscriptionManager";
 import { ref, watch, onMounted, onUnmounted } from "vue";
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "~/amplify/data/resource";
+import { fetchUserAttributes } from "aws-amplify/auth";
 
 const props = defineProps({
   suicId: {
@@ -298,16 +299,22 @@ const generarCsvsPorSociedad = async () => {
     csvState.value = 'success';
     csvFiles.value = result.files || [];
 
-    // Guardar paths en el modelo SUIC (campo csvFilesPath)
+    // Guardar paths en el modelo SUIC (campo csvFilesPath) y rpaExecutedBy
     try {
+      // Obtener el email del usuario actual
+      const attributes = await fetchUserAttributes();
+      const userEmail = attributes.email;
+      
       const csvFilesPathAsString = JSON.stringify(csvFiles.value || []);
       await dataClient.models.SUIC.update({
         id: props.suicId,
-        csvFilesPath: csvFilesPathAsString
+        csvFilesPath: csvFilesPathAsString,
+        rpaExecutedBy: userEmail
       });
-      console.log('💾 csvFilesPath actualizado en modelo SUIC');
+      console.log('💾 csvFilesPath y rpaExecutedBy actualizados en modelo SUIC');
+      console.log('👤 Usuario que ejecutó el RPA:', userEmail);
     } catch (e) {
-      console.error('❌ Error actualizando csvFilesPath en SUIC:', e);
+      console.error('❌ Error actualizando csvFilesPath y rpaExecutedBy en SUIC:', e);
     }
 
     useToast().add({

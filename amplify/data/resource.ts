@@ -25,6 +25,7 @@ import { runExplosionSuic } from "../functions/suic/runExplosion/resource";
 import { getMetaDiariaFinal } from "../functions/suic/getMetaDiariaFinal/resource";
 import { generateSociedadesCsv } from "../functions/suic/generateSociedadesCsv/resource";
 import { transferMetaDiariaFinal } from "../functions/suic/transferMetaDiariaFinal/resource";
+import { sendRpaStatusEmail } from "../functions/send-rpa-status-email/resource";
 /* Functions Audit */
 
 const schema = a.schema({
@@ -185,6 +186,7 @@ const schema = a.schema({
       filesPath: a.json(),
       csvFilesPath: a.json(),
       createdBy: a.string(),
+      rpaExecutedBy: a.string(), // Email del usuario que ejecutó el RPA (botón "Guardar")
       type: a.string(), //
       explosionRunId: a.string(),
       explosionStatus: a.string(), // 'Pendiente', 'En Proceso', 'Completado', 'Error'
@@ -432,6 +434,23 @@ const schema = a.schema({
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(transferMetaDiariaFinal)),
+
+  /**
+   *  SUIC - Enviar email de notificación cuando cambia el estado de RPA
+   */
+  sendRpaStatusEmail: a
+    .mutation()
+    .arguments({
+      to: a.string().required(),
+      suicId: a.string().required(),
+      status: a.string().required(),
+      rpaType: a.string().required(),
+      descripcion: a.string(),
+      rpaLastUpdate: a.string().required(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(sendRpaStatusEmail)),
 
 });
 
