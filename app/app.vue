@@ -4,6 +4,10 @@ import "@aws-amplify/ui-vue/styles.css";
 import { onMounted, h, defineComponent } from "vue";
 
 import { signInWithRedirect } from "aws-amplify/auth";
+import { useSubscriptionManager } from "~/composables/useSubscriptionManager";
+
+// Inicializar gestor global de suscripciones
+useSubscriptionManager();
 
 import { I18n } from "aws-amplify/utils";
 import { translations } from "@aws-amplify/ui-vue";

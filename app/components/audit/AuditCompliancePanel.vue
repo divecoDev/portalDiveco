@@ -187,3 +187,4 @@ const getModuleBarColor = (index: number) => {
   return colors[index % colors.length];
 };
 </script>
+

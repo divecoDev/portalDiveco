@@ -9,7 +9,7 @@ Amplify.configure(outputs);
 const client = generateClient();
 
 interface WebhookPayload {
-  executionId: string;
+  suicId: string;
   status: "completed" | "error";
 }
 
@@ -18,10 +18,10 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event) as WebhookPayload;
 
     // Validar payload
-    if (!body.executionId) {
+    if (!body.suicId) {
       throw createError({
         statusCode: 400,
-        statusMessage: "executionId es requerido",
+        statusMessage: "suicId es requerido",
       });
     }
 
@@ -32,24 +32,26 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    console.log(`📥 Webhook recibido - executionId: ${body.executionId}, status: ${body.status}`);
+    console.log(`📥 Webhook recibido - suicId: ${body.suicId}, status: ${body.status}`);
 
     // Buscar el registro SUIC que tiene este executionId
     const { data: suicRecords } = await (client.models as any).SUIC.list({
       filter: {
-        rpaExecutionId: { eq: body.executionId },
+        id: { eq: body.suicId },
       },
     });
 
     if (!suicRecords || suicRecords.length === 0) {
-      console.warn(`⚠️ No se encontró registro SUIC con executionId: ${body.executionId}`);
+      console.warn(`⚠️ No se encontró registro SUIC con suicId: ${body.suicId}`);
       throw createError({
         statusCode: 404,
-        statusMessage: `No se encontró ejecución con executionId: ${body.executionId}`,
+        statusMessage: `No se encontró ejecución con suicId: ${body.suicId}`,
       });
     }
 
     // Actualizar el estado del SUIC
+    // Esta actualización disparará automáticamente las suscripciones en tiempo real
+    // de los clientes que estén escuchando cambios en este registro SUIC
     const suicRecord = suicRecords[0];
     const newStatus = body.status === "completed" ? "completed" : "error";
 
@@ -65,7 +67,7 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       message: "Estado actualizado correctamente",
-      executionId: body.executionId,
+      suicId: body.suicId,
       status: newStatus,
     };
   } catch (error: any) {
