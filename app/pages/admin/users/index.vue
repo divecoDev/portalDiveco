@@ -143,7 +143,7 @@
                     variant="ghost"
                     color="cyan"
                     size="sm"
-                    @click="adminUserGlobalSignOut(user.Username)"
+                    @click="adminUserGlobalSignOut(user)"
                     title="Cerrar sesión"
                     class="hover:text-red-500 cursor-pointer"
                   />
@@ -206,8 +206,10 @@
 import { ref, computed, onMounted } from "vue";
 import { generateClient } from "aws-amplify/api";
 import UserGroupsModal from "~/components/UserGroupsModal.vue";
+import { useAudit } from "~/composables/useAudit";
 
 const client = generateClient();
+const { logAction } = useAudit();
 
 // Definir el layout y middleware
 definePageMeta({
@@ -396,9 +398,25 @@ const getUsers = async () => {
   }
 };
 
-const adminUserGlobalSignOut = async (userId) => {
-  const response = await client.queries.AdminUserGlobalSignOut({ userId });
-  return response;
+const adminUserGlobalSignOut = async (user) => {
+  try {
+    const response = await client.queries.AdminUserGlobalSignOut({ userId: user.Username });
+    
+    // Log de auditoría
+    await logAction(
+      "CONFIG_CHANGE",
+      "admin-users",
+      "User",
+      user.Username,
+      undefined,
+      { action: "GLOBAL_SIGNOUT", userId: user.Username, email: user.email }
+    );
+    
+    return response;
+  } catch (error) {
+    console.error("Error al cerrar sesión global del usuario:", error);
+    throw error;
+  }
 };
 </script>
 
