@@ -596,6 +596,27 @@ const navigationSections = computed(() => {
     }
   }
 
+  // Agregar "Horarios RPA" para ADMINISTRAR-RPA-HORARIOS o ADMIN
+  if (hasGroup("ADMINISTRAR-RPA-HORARIOS") || hasGroup("ADMIN")) {
+    const toolsSection = sections.find((s) => s.title === "Herramientas");
+    const rpaHorariosItem = {
+      name: "Horarios RPA",
+      href: "/tools/rpa-horarios",
+      icon: "i-heroicons-clock",
+      badge: "Nuevo",
+      badgeColor: "cyan",
+    };
+
+    if (toolsSection) {
+      toolsSection.items.push(rpaHorariosItem);
+    } else {
+      sections.push({
+        title: "Herramientas",
+        items: [rpaHorariosItem],
+      });
+    }
+  }
+
   // Solo mostrar la sección de administración si el usuario es ADMIN
   if (hasGroup("ADMIN")) {
     sections.push({
