@@ -74,15 +74,64 @@
         </div>
       </div>
     </div>
+
+    <!-- Estado de Procesamiento RPA -->
+    <div v-if="rpaProcessing" class="mb-6">
+      <div 
+        class="p-4 bg-white dark:bg-gray-800 border-2 rounded-lg transition-all duration-300"
+        :class="getRpaProcessingCardClass()"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3 flex-1">
+            <div 
+              class="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+              :class="getRpaProcessingIconClass()"
+            >
+              <div v-if="rpaProcessingStatus === 'processing'" class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <UIcon v-else-if="rpaProcessingStatus === 'completed'" name="i-heroicons-check-circle" class="w-6 h-6 text-white" />
+              <UIcon v-else-if="rpaProcessingStatus === 'error'" name="i-heroicons-exclamation-circle" class="w-6 h-6 text-white" />
+              <UIcon v-else name="i-heroicons-cpu-chip" class="w-6 h-6 text-white" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">
+                Procesamiento RPA
+              </h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                <span v-if="rpaProcessingStatus === 'processing'">
+                  El proceso está en ejecución. Te notificaremos por email cuando termine.
+                </span>
+                <span v-else-if="rpaProcessingStatus === 'completed'" class="text-green-600 dark:text-green-400">
+                  Proceso completado exitosamente.
+                </span>
+                <span v-else-if="rpaProcessingStatus === 'error'" class="text-red-600 dark:text-red-400 font-semibold">
+                  El proceso ha fallado. Por favor, revisa los detalles o contacta al administrador.
+                </span>
+                <span v-else>
+                  Iniciando proceso...
+                </span>
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2 ml-4">
+            <span class="text-xs font-medium" :class="getRpaProcessingStatusTextClass()">
+              {{ getRpaProcessingStatusText() }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { executeRPA } from "~/services/rpa-service";
 import { useRpaStatus } from "~/composables/useRpaStatus";
 import { useSuicSociedadesCsv } from "~/composables/useSuicSociedadesCsv";
-import { watch } from "vue";
+import { useSubscriptionManager } from "~/composables/useSubscriptionManager";
+import { ref, watch, onMounted, onUnmounted } from "vue";
 import { generateClient } from "aws-amplify/data";
+import type { Schema } from "~/amplify/data/resource";
+import { fetchUserAttributes } from "aws-amplify/auth";
 
 const props = defineProps({
   suicId: {
@@ -101,9 +150,20 @@ const csvGenerating = ref(false);
 const csvState = ref(null); // null, 'running', 'success', 'error'
 const csvFiles = ref([]);
 
+// Estados para procesamiento RPA
+const rpaProcessing = ref(false);
+const rpaProcessingStatus = ref(null); // null, 'processing', 'completed', 'error'
+let rpaSubscription = null;
+let rpaSubscriptionTimeout = null; // Timeout para cerrar suscripción después de inactividad
+const SUBSCRIPTION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutos de inactividad antes de cerrar
+const SUBSCRIPTION_ID = `rpa-${props.suicId}`; // ID único para esta suscripción
+
+// Gestor global de suscripciones
+const { registerSubscription, unregisterSubscription } = useSubscriptionManager();
+
 // Composable para generar CSVs
 const { generateSociedadesCsv } = useSuicSociedadesCsv();
-const dataClient = generateClient();
+const dataClient = generateClient<Schema>();
 
 // Composable para monitorear estado del RPA
 const {
@@ -239,16 +299,22 @@ const generarCsvsPorSociedad = async () => {
     csvState.value = 'success';
     csvFiles.value = result.files || [];
 
-    // Guardar paths en el modelo SUIC (campo csvFilesPath)
+    // Guardar paths en el modelo SUIC (campo csvFilesPath) y rpaExecutedBy
     try {
+      // Obtener el email del usuario actual
+      const attributes = await fetchUserAttributes();
+      const userEmail = attributes.email;
+      
       const csvFilesPathAsString = JSON.stringify(csvFiles.value || []);
       await dataClient.models.SUIC.update({
         id: props.suicId,
-        csvFilesPath: csvFilesPathAsString
+        csvFilesPath: csvFilesPathAsString,
+        rpaExecutedBy: userEmail
       });
-      console.log('💾 csvFilesPath actualizado en modelo SUIC');
+      console.log('💾 csvFilesPath y rpaExecutedBy actualizados en modelo SUIC');
+      console.log('👤 Usuario que ejecutó el RPA:', userEmail);
     } catch (e) {
-      console.error('❌ Error actualizando csvFilesPath en SUIC:', e);
+      console.error('❌ Error actualizando csvFilesPath y rpaExecutedBy en SUIC:', e);
     }
 
     useToast().add({
@@ -300,6 +366,19 @@ const generarCsvsPorSociedad = async () => {
         color: 'green'
       });
       console.log('🚀 RPA Operación 2 enviado exitosamente');
+
+      // Iniciar monitoreo del proceso RPA
+      rpaProcessing.value = true;
+      rpaProcessingStatus.value = 'processing';
+      
+      // Iniciar suscripción si no está activa
+      startRpaSubscription();
+
+      useToast().add({
+        title: 'Proceso iniciado',
+        description: 'Te notificaremos por email cuando el proceso termine',
+        color: 'blue'
+      });
     } catch (rpaErr) {
       console.error('❌ Error enviando RPA Operación 2:', rpaErr);
       useToast().add({
@@ -426,6 +505,215 @@ const ejecutarTodosRPA = async () => {
   }
 };
 
+// Función para detener el monitoreo del RPA
+const stopRpaMonitoring = () => {
+  if (rpaSubscription) {
+    console.log('🔕 Cerrando suscripción RPA para ahorrar costos');
+    rpaSubscription.unsubscribe();
+    rpaSubscription = null;
+    // Desregistrar del gestor global
+    unregisterSubscription(SUBSCRIPTION_ID);
+  }
+  if (rpaSubscriptionTimeout) {
+    clearTimeout(rpaSubscriptionTimeout);
+    rpaSubscriptionTimeout = null;
+  }
+};
+
+// Función para programar el cierre automático de la suscripción después de inactividad
+const scheduleSubscriptionClose = () => {
+  // Limpiar timeout anterior si existe
+  if (rpaSubscriptionTimeout) {
+    clearTimeout(rpaSubscriptionTimeout);
+  }
+
+  // Solo cerrar si el proceso está en estado final (completed o error)
+  if (rpaProcessingStatus.value === 'completed' || rpaProcessingStatus.value === 'error') {
+    console.log(`⏰ Programando cierre de suscripción en ${SUBSCRIPTION_TIMEOUT_MS / 1000 / 60} minutos para ahorrar costos`);
+    
+    rpaSubscriptionTimeout = setTimeout(() => {
+      console.log('⏰ Timeout alcanzado: Cerrando suscripción para ahorrar costos');
+      stopRpaMonitoring();
+      
+      useToast().add({
+        title: 'Monitoreo pausado',
+        description: 'La suscripción se cerró automáticamente para optimizar costos. Se reabrirá si el estado cambia.',
+        color: 'blue',
+        timeout: 5000
+      });
+    }, SUBSCRIPTION_TIMEOUT_MS);
+  }
+};
+
+// Función para iniciar suscripción en tiempo real
+const startRpaSubscription = () => {
+  // Evitar crear múltiples suscripciones
+  if (rpaSubscription) {
+    console.log('⚠️ Suscripción RPA ya está activa');
+    return;
+  }
+
+  try {
+    console.log('🔔 Iniciando suscripción en tiempo real para SUIC:', props.suicId);
+    
+    // Suscripción según la documentación de Amplify Gen 2
+    // onUpdate() recibe directamente el objeto del modelo actualizado
+    rpaSubscription = dataClient.models.SUIC.onUpdate({
+      filter: { id: { eq: props.suicId } }
+    }).subscribe({
+      next: (data) => {
+        console.log('📨 Actualización recibida del SUIC:', data);
+        console.log('📨 Tipo de data:', typeof data);
+        console.log('📨 Data completo:', JSON.stringify(data, null, 2));
+        
+        // Según la documentación, data es directamente el objeto del modelo
+        // con todas sus propiedades, incluyendo rpaStatus
+        const rpaStatusValue = data?.rpaStatus;
+        
+        console.log('📨 rpaStatusValue:', rpaStatusValue);
+        
+        // IMPORTANTE: Seguimos escuchando cambios, pero programamos cierre automático para optimizar costos
+        if (rpaStatusValue === 'completed' && rpaProcessingStatus.value !== 'completed') {
+          console.log('✅ Suscripción: Proceso completado detectado');
+          rpaProcessingStatus.value = 'completed';
+          rpaProcessing.value = true;
+          
+          useToast().add({
+            title: 'Proceso completado',
+            description: 'El RPA ha finalizado exitosamente',
+            color: 'green'
+          });
+          
+          // Programar cierre automático después de 5 minutos de inactividad para ahorrar costos
+          scheduleSubscriptionClose();
+        } else if (rpaStatusValue === 'error' && rpaProcessingStatus.value !== 'error') {
+          console.log('❌ Suscripción: Proceso con error detectado');
+          rpaProcessingStatus.value = 'error';
+          rpaProcessing.value = true;
+          
+          useToast().add({
+            title: 'Proceso fallido',
+            description: 'El RPA terminó con errores. Por favor, revisa los detalles o contacta al administrador.',
+            color: 'red',
+            timeout: 8000
+          });
+          
+          // Programar cierre automático después de 5 minutos de inactividad para ahorrar costos
+          scheduleSubscriptionClose();
+        } else if (rpaStatusValue === 'running' || rpaStatusValue === 'pending') {
+          console.log('🔄 Suscripción: Proceso en ejecución detectado');
+          // Cancelar timeout si el proceso vuelve a ejecutarse
+          if (rpaSubscriptionTimeout) {
+            clearTimeout(rpaSubscriptionTimeout);
+            rpaSubscriptionTimeout = null;
+            console.log('⏰ Cancelando cierre automático - proceso en ejecución');
+          }
+          // Mantener estado de procesamiento si aún está corriendo
+          if (rpaProcessingStatus.value !== 'processing') {
+            rpaProcessingStatus.value = 'processing';
+            rpaProcessing.value = true;
+          }
+        } else {
+          console.log('⚠️ Suscripción: rpaStatusValue no reconocido o sin cambio:', rpaStatusValue);
+          console.log('⚠️ Suscripción: Estado actual en UI:', rpaProcessingStatus.value);
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error en suscripción RPA:', error);
+        console.error('❌ Detalles del error:', JSON.stringify(error, null, 2));
+        useToast().add({
+          title: 'Error en suscripción',
+          description: 'No se pudo conectar al servicio en tiempo real',
+          color: 'red'
+        });
+      }
+    });
+    
+    // Registrar suscripción en el gestor global para limpieza al cerrar sesión
+    registerSubscription(SUBSCRIPTION_ID, rpaSubscription, 'EjecutarRPA');
+    
+    console.log('✅ Suscripción RPA iniciada correctamente');
+  } catch (err) {
+    console.error('❌ Error iniciando suscripción RPA:', err);
+  }
+};
+
+// Función para verificar y reconectar suscripción si es necesario
+const checkAndReconnectSubscription = async () => {
+  // Si hay un proceso en ejecución o estado final, verificar si la suscripción sigue activa
+  if (rpaProcessing.value && !rpaSubscription) {
+    console.log('🔄 Suscripción perdida detectada, reconectando...');
+    
+    // Verificar estado actual en BD
+    try {
+      const { data: suicRecord } = await dataClient.models.SUIC.get({ id: props.suicId });
+      
+      if (suicRecord) {
+        const currentStatus = suicRecord.rpaStatus;
+        
+        // Si el proceso está en ejecución o hay un estado final, reconectar
+        if (currentStatus === 'running' || currentStatus === 'pending' || 
+            currentStatus === 'completed' || currentStatus === 'error') {
+          console.log(`🔄 Estado actual: ${currentStatus}, reconectando suscripción...`);
+          startRpaSubscription();
+          
+          // Actualizar estado en UI
+          if (currentStatus === 'completed') {
+            rpaProcessingStatus.value = 'completed';
+          } else if (currentStatus === 'error') {
+            rpaProcessingStatus.value = 'error';
+          } else {
+            rpaProcessingStatus.value = 'processing';
+          }
+        }
+      }
+    } catch (err) {
+      console.error('❌ Error verificando estado para reconexión:', err);
+    }
+  }
+};
+
+// Métodos auxiliares para UI de procesamiento RPA
+const getRpaProcessingStatusText = () => {
+  switch (rpaProcessingStatus.value) {
+    case 'processing': return 'Procesando...';
+    case 'completed': return 'Completado';
+    case 'error': return 'Error';
+    default: return 'Iniciando...';
+  }
+};
+
+const getRpaProcessingStatusTextClass = () => {
+  switch (rpaProcessingStatus.value) {
+    case 'processing': return 'text-cyan-600 dark:text-cyan-400';
+    case 'completed': return 'text-green-600 dark:text-green-400';
+    case 'error': return 'text-red-600 dark:text-red-400';
+    default: return 'text-gray-500 dark:text-gray-400';
+  }
+};
+
+const getRpaProcessingIconClass = () => {
+  switch (rpaProcessingStatus.value) {
+    case 'processing': return 'bg-cyan-500 dark:bg-cyan-600';
+    case 'completed': return 'bg-green-500 dark:bg-green-600';
+    case 'error': return 'bg-red-500 dark:bg-red-600';
+    default: return 'bg-gray-400 dark:bg-gray-500';
+  }
+};
+
+const getRpaProcessingCardClass = () => {
+  switch (rpaProcessingStatus.value) {
+    case 'processing': 
+      return 'border-cyan-400 dark:border-cyan-600 bg-cyan-50/50 dark:bg-cyan-900/10';
+    case 'completed': 
+      return 'border-green-400 dark:border-green-600 bg-green-50/50 dark:bg-green-900/10';
+    case 'error': 
+      return 'border-red-400 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10';
+    default: 
+      return 'border-gray-300 dark:border-gray-600';
+  }
+};
+
 // Lifecycle
 onMounted(async () => {
   console.log('Componente EjecutarRPA montado para SUIC:', props.suicId);
@@ -434,6 +722,46 @@ onMounted(async () => {
   try {
     await checkRpaStatus();
     updateRpaStatesFromStatus();
+    
+    // Verificar si hay un proceso RPA en ejecución o si ya terminó
+    console.log('🔍 Verificando estado inicial del SUIC:', props.suicId);
+    const { data: suicRecord } = await dataClient.models.SUIC.get({ id: props.suicId });
+    
+    if (suicRecord) {
+      console.log('🔍 Estado inicial del SUIC:', suicRecord.rpaStatus);
+      
+      if (suicRecord.rpaStatus === 'running' || suicRecord.rpaStatus === 'pending') {
+        console.log('🔄 Estado en ejecución detectado, iniciando monitoreo');
+        rpaProcessing.value = true;
+        rpaProcessingStatus.value = 'processing';
+        startRpaSubscription();
+      } else if (suicRecord.rpaStatus === 'error') {
+        console.log('❌ Estado de error detectado inicialmente');
+        rpaProcessing.value = true;
+        rpaProcessingStatus.value = 'error';
+        useToast().add({
+          title: 'Proceso fallido',
+          description: 'El RPA terminó con errores. Por favor, revisa los detalles.',
+          color: 'red'
+        });
+        // Iniciar monitoreo por si el estado cambia
+        startRpaSubscription();
+        // Programar cierre automático después de 5 minutos para ahorrar costos
+        scheduleSubscriptionClose();
+      } else if (suicRecord.rpaStatus === 'completed') {
+        console.log('✅ Estado completado detectado inicialmente');
+        rpaProcessing.value = true;
+        rpaProcessingStatus.value = 'completed';
+        // Iniciar monitoreo por si el estado cambia
+        startRpaSubscription();
+        // Programar cierre automático después de 5 minutos para ahorrar costos
+        scheduleSubscriptionClose();
+      } else {
+        console.log('⚠️ Estado desconocido o null:', suicRecord.rpaStatus);
+      }
+    } else {
+      console.log('⚠️ No se encontró registro SUIC');
+    }
     
     // Si hay un RPA en ejecución, iniciar polling
     if (statusData.value.status === 'running' || statusData.value.status === 'pending') {
@@ -444,9 +772,24 @@ onMounted(async () => {
   }
 });
 
-// Limpiar polling al desmontar
+// Escuchar eventos de verificación de suscripciones (cuando la ventana vuelve a estar visible)
+onMounted(() => {
+  const handleSubscriptionsCheck = () => {
+    console.log('🔍 Verificación de suscripciones solicitada');
+    checkAndReconnectSubscription();
+  };
+
+  window.addEventListener('subscriptions-check-needed', handleSubscriptionsCheck);
+
+  return () => {
+    window.removeEventListener('subscriptions-check-needed', handleSubscriptionsCheck);
+  };
+});
+
+// Limpiar polling y suscripción al desmontar
 onUnmounted(() => {
   stopPolling();
+  stopRpaMonitoring();
 });
 </script>
 

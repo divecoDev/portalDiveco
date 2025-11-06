@@ -12,7 +12,10 @@
     "cy:run": "cypress run",
     "cy:run:headed": "cypress run --headed",
     "cy:e2e": "start-server-and-test dev http://localhost:3000 cy:run",
-    "cy:e2e:open": "start-server-and-test dev http://localhost:3000 cy:open"
+    "cy:e2e:open": "start-server-and-test dev http://localhost:3000 cy:open",
+    "test:unit": "vitest run test/unit",
+    "test:unit:watch": "vitest watch test/unit",
+    "test:unit:ui": "vitest --ui"
   },
   "dependencies": {
     "@aws-amplify/ui-vue": "^4.3.3",
