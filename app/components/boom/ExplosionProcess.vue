@@ -20,7 +20,7 @@
       <!-- Botón de ejecución o estado en progreso -->
       <div v-if="!isCompleted">
         
-        <!-- Estado en progreso -->
+        <!-- Estado en progreso del pipeline -->
         <div v-if="explosionInProgress" class="space-y-4 explosion-progress-section">
           <div class="w-20 h-20 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-xl animate-pulse mx-auto">
             <div class="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -32,6 +32,22 @@
             </h4>
             <p class="text-sm text-blue-600 dark:text-blue-400">
               La explosión de materiales se está ejecutando. Esto puede tomar varios minutos.
+            </p>
+          </div>
+        </div>
+
+        <!-- Estado procesando documentos CSV -->
+        <div v-else-if="generatingFiles" class="space-y-4 generating-files-section">
+          <div class="w-20 h-20 bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-full flex items-center justify-center shadow-xl animate-pulse mx-auto">
+            <div class="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          
+          <div class="bg-gradient-to-br from-cyan-50 to-cyan-100/50 dark:from-cyan-900/20 dark:to-cyan-800/20 p-4 rounded-lg border border-cyan-200 dark:border-cyan-700/50 max-w-md mx-auto">
+            <h4 class="text-lg font-semibold text-cyan-700 dark:text-cyan-300 mb-2">
+              Procesando Documentos
+            </h4>
+            <p class="text-sm text-cyan-600 dark:text-cyan-400">
+              Procesando documentos. Generando archivos CSV. Esto puede tomar varios minutos.
             </p>
           </div>
         </div>
@@ -254,8 +270,8 @@ const generateExplosionFiles = async () => {
     
     // Mostrar notificación de inicio
     const generatingToast = useToast().add({
-      title: "Generando archivos CSV...",
-      description: "Ejecutando consultas a MSSQL y generando archivos. Esto puede tomar varios minutos.",
+      title: "Procesando documentos...",
+      description: "Generando archivos CSV. Esto puede tomar varios minutos.",
       color: "blue",
       timeout: 0 // No se cierra automáticamente
     });
@@ -782,6 +798,9 @@ const procesarEstadoPipeline = async (status, runId) => {
     case 'Succeeded':
       console.log('✅ Pipeline completado exitosamente');
       
+      // Asegurar que explosionInProgress esté en false para mostrar estado de procesando documentos
+      explosionInProgress.value = false;
+      
       // Asegurar que el runId esté guardado antes de marcar como completado
       try {
         const { data: currentData } = await client.models.Boom.get({ id: props.explosionId });
@@ -796,7 +815,7 @@ const procesarEstadoPipeline = async (status, runId) => {
         console.warn('⚠️ No se pudo verificar/guardar runId:', error);
       }
       
-      // Generar archivos CSV desde MSSQL antes de marcar como completado
+      // Generar archivos CSV antes de marcar como completado
       console.log('📊 Generando archivos CSV desde MSSQL...');
       const filesGenerated = await generateExplosionFiles();
       
