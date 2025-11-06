@@ -87,6 +87,8 @@ export default defineEventHandler(async (event) => {
         rpaType: suicRecord.rpaType || "unknown",
         descripcion: suicRecord.descripcion || "",
         rpaLastUpdate: new Date().toISOString(),
+        createdBy: suicRecord.createdBy || undefined,
+        rpaExecutedBy: suicRecord.rpaExecutedBy || undefined,
       };
 
       recipients.forEach((recipient) => {

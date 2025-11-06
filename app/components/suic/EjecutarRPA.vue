@@ -29,53 +29,77 @@
       </div>
     </div>
 
-    <!-- Botón de Generar CSVs por Sociedad -->
-    <div class="mb-6">
+    <!-- Botón Principal: Guardar SUIC -->
+    <div class="mb-8">
       <div 
-        class="p-4 bg-white dark:bg-gray-800 border-2 rounded-lg transition-all duration-300"
+        class="relative overflow-hidden bg-gradient-to-br from-cyan-50 to-cyan-100/50 dark:from-cyan-900/20 dark:to-cyan-800/20 rounded-xl shadow-xl border-2 transition-all duration-300"
         :class="getCsvCardClass()"
       >
-        <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-3 flex-1">
-            <div 
-              class="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
-              :class="getCsvIconClass()"
-            >
-              <UIcon name="i-heroicons-document-arrow-down" class="w-6 h-6 text-white" />
-            </div>
+        <!-- Fondo con patrón sutil -->
+        <div class="absolute inset-0 opacity-5">
+          <div class="absolute inset-0" style="background-image: radial-gradient(circle at 2px 2px, cyan 1px, transparent 0); background-size: 24px 24px;"></div>
+        </div>
+        
+        <div class="relative p-6">
+          <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <!-- Información y Descripción -->
             <div class="flex-1 min-w-0">
-              <h3 class="text-base font-semibold text-gray-900 dark:text-white">
-                Guardar SUIC 
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                Guardar SUIC
               </h3>
-              
-            </div>
-          </div>
-          <div class="flex items-center space-x-3 ml-4">
-            <!-- Estado del proceso -->
-            <div class="text-right">
-              <div class="flex items-center space-x-2">
-                <div v-if="csvGenerating" class="w-5 h-5 border-2 border-cyan-600 border-t-transparent rounded-full animate-spin"></div>
-                <UIcon v-else-if="csvState === 'success'" name="i-heroicons-check-circle" class="w-5 h-5 text-green-600 dark:text-green-400" />
-                <UIcon v-else-if="csvState === 'error'" name="i-heroicons-exclamation-circle" class="w-5 h-5 text-red-600 dark:text-red-400" />
-                <span class="text-xs font-medium" :class="getCsvStatusTextClass()">
+              <p class="text-sm text-gray-600 dark:text-gray-300">
+                Genera los archivos CSV por sociedad y ejecuta el proceso automatizado
+              </p>
+              <!-- Estado del proceso -->
+              <div v-if="csvState !== null" class="mt-3 flex items-center space-x-2">
+                <div v-if="csvGenerating" class="w-4 h-4 border-2 border-cyan-600 border-t-transparent rounded-full animate-spin"></div>
+                <UIcon v-else-if="csvState === 'success'" name="i-heroicons-check-circle" class="w-4 h-4 text-green-600 dark:text-green-400" />
+                <UIcon v-else-if="csvState === 'error'" name="i-heroicons-exclamation-circle" class="w-4 h-4 text-red-600 dark:text-red-400" />
+                <span class="text-sm font-medium" :class="getCsvStatusTextClass()">
                   {{ getCsvStatusText() }}
                 </span>
               </div>
             </div>
-            <button
-              @click="generarCsvsPorSociedad"
-              :disabled="csvGenerating || csvState === 'success'"
-              class="px-4 py-2 text-sm rounded-md font-semibold transition-all duration-300"
-              :class="getCsvButtonClass()"
-            >
-              {{ getCsvButtonText() }}
-            </button>
+            
+            <!-- Botón Principal Destacado -->
+            <div class="flex-shrink-0">
+              <button
+                @click="generarCsvsPorSociedad"
+                :disabled="csvGenerating || csvState === 'success'"
+                class="group relative px-8 py-4 text-base font-bold rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 disabled:transform-none disabled:cursor-not-allowed disabled:hover:scale-100 disabled:opacity-75 min-w-[180px]"
+                :class="getCsvButtonClass()"
+              >
+                <!-- Efecto de brillo en hover -->
+                <span class="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></span>
+                
+                <!-- Contenido del botón -->
+                <span class="relative flex items-center justify-center space-x-3">
+                  <div v-if="csvGenerating" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <UIcon 
+                    v-else-if="csvState === 'success'" 
+                    name="i-heroicons-check-circle" 
+                    class="w-5 h-5"
+                  />
+                  <UIcon 
+                    v-else-if="csvState === 'error'" 
+                    name="i-heroicons-arrow-path" 
+                    class="w-5 h-5"
+                  />
+                  <UIcon 
+                    v-else 
+                    name="i-heroicons-arrow-down-tray" 
+                    class="w-5 h-5"
+                  />
+                  <span>{{ getCsvButtonText() }}</span>
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Estado de Procesamiento RPA -->
+    <!-- Estado de Procesamiento de la SUIC -->
     <div v-if="rpaProcessing" class="mb-6">
       <div 
         class="p-4 bg-white dark:bg-gray-800 border-2 rounded-lg transition-all duration-300"
@@ -94,17 +118,17 @@
             </div>
             <div class="flex-1 min-w-0">
               <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">
-                Procesamiento RPA
+                Estado de la SUIC
               </h3>
               <p class="text-sm text-gray-600 dark:text-gray-400">
                 <span v-if="rpaProcessingStatus === 'processing'">
-                  El proceso está en ejecución. Te notificaremos por email cuando termine.
+                  La SUIC está en proceso. Te notificaremos por email cuando termine.
                 </span>
                 <span v-else-if="rpaProcessingStatus === 'completed'" class="text-green-600 dark:text-green-400">
-                  Proceso completado exitosamente.
+                  La SUIC se procesó correctamente.
                 </span>
                 <span v-else-if="rpaProcessingStatus === 'error'" class="text-red-600 dark:text-red-400 font-semibold">
-                  El proceso ha fallado. Por favor, revisa los detalles o contacta al administrador.
+                  Error al procesar la SUIC. Por favor, revisa los detalles o contacta al administrador.
                 </span>
                 <span v-else>
                   Iniciando proceso...
@@ -155,7 +179,7 @@ const rpaProcessing = ref(false);
 const rpaProcessingStatus = ref(null); // null, 'processing', 'completed', 'error'
 let rpaSubscription = null;
 let rpaSubscriptionTimeout = null; // Timeout para cerrar suscripción después de inactividad
-const SUBSCRIPTION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutos de inactividad antes de cerrar
+const SUBSCRIPTION_TIMEOUT_MS = 5 * 60 * 60 * 1000; // 5 horas - tiempo de espera para cierre automático cuando hay error
 const SUBSCRIPTION_ID = `rpa-${props.suicId}`; // ID único para esta suscripción
 
 // Gestor global de suscripciones
@@ -227,31 +251,32 @@ const getCsvStatusTextClass = () => {
 
 const getCsvButtonText = () => {
   switch (csvState.value) {
-    case 'running': return 'Cargando...';
+    case 'running': return 'Guardando...';
     case 'success': return 'Completado';
-    default: return 'Guardar';
+    case 'error': return 'Reintentar';
+    default: return 'Guardar SUIC';
   }
 };
 
 const getCsvButtonClass = () => {
   switch (csvState.value) {
     case 'running':
-      return 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 cursor-wait';
+      return 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white cursor-wait shadow-lg shadow-cyan-500/50';
     case 'success':
-      return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 cursor-not-allowed';
+      return 'bg-gradient-to-r from-green-500 to-green-600 text-white cursor-not-allowed shadow-lg shadow-green-500/50';
     case 'error':
-      return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/40';
+      return 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 cursor-pointer shadow-lg shadow-red-500/50';
     default:
-      return 'bg-cyan-500 text-white hover:bg-cyan-600 cursor-pointer';
+      return 'bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white cursor-pointer shadow-lg shadow-cyan-500/50 hover:shadow-xl hover:shadow-cyan-500/60';
   }
 };
 
 const getCsvIconClass = () => {
   switch (csvState.value) {
-    case 'running': return 'bg-cyan-500 dark:bg-cyan-600';
-    case 'success': return 'bg-green-500 dark:bg-green-600';
-    case 'error': return 'bg-red-500 dark:bg-red-600';
-    default: return 'bg-cyan-400 dark:bg-cyan-500';
+    case 'running': return 'bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-lg shadow-cyan-500/50';
+    case 'success': return 'bg-gradient-to-br from-green-500 to-green-600 shadow-lg shadow-green-500/50';
+    case 'error': return 'bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-red-500/50';
+    default: return 'bg-gradient-to-br from-cyan-500 to-cyan-600 shadow-lg shadow-cyan-500/50';
   }
 };
 
@@ -264,7 +289,7 @@ const getCsvCardClass = () => {
     case 'error': 
       return 'border-red-400 dark:border-red-600 bg-red-50/50 dark:bg-red-900/10';
     default: 
-      return 'border-gray-300 dark:border-gray-600';
+      return 'border-cyan-400 dark:border-cyan-500 border-2 shadow-lg shadow-cyan-500/10';
   }
 };
 
@@ -361,8 +386,8 @@ const generarCsvsPorSociedad = async () => {
       }
 
       useToast().add({
-        title: 'RPA disparado',
-        description: 'Se envió la ejecución del RPA (Operación 2)',
+        title: 'Procesamiento iniciado',
+        description: 'La SUIC está siendo procesada. Te notificaremos por email cuando termine.',
         color: 'green'
       });
       console.log('🚀 RPA Operación 2 enviado exitosamente');
@@ -373,17 +398,11 @@ const generarCsvsPorSociedad = async () => {
       
       // Iniciar suscripción si no está activa
       startRpaSubscription();
-
-      useToast().add({
-        title: 'Proceso iniciado',
-        description: 'Te notificaremos por email cuando el proceso termine',
-        color: 'blue'
-      });
     } catch (rpaErr) {
       console.error('❌ Error enviando RPA Operación 2:', rpaErr);
       useToast().add({
-        title: 'Error enviando RPA',
-        description: rpaErr instanceof Error ? rpaErr.message : 'Error desconocido',
+        title: 'Error al procesar la SUIC',
+        description: rpaErr instanceof Error ? rpaErr.message : 'Error desconocido al iniciar el procesamiento',
         color: 'red'
       });
     }
@@ -525,24 +544,38 @@ const scheduleSubscriptionClose = () => {
   // Limpiar timeout anterior si existe
   if (rpaSubscriptionTimeout) {
     clearTimeout(rpaSubscriptionTimeout);
+    rpaSubscriptionTimeout = null;
   }
 
-  // Solo cerrar si el proceso está en estado final (completed o error)
-  if (rpaProcessingStatus.value === 'completed' || rpaProcessingStatus.value === 'error') {
-    console.log(`⏰ Programando cierre de suscripción en ${SUBSCRIPTION_TIMEOUT_MS / 1000 / 60} minutos para ahorrar costos`);
+  // Si el proceso está completado, cerrar inmediatamente
+  if (rpaProcessingStatus.value === 'completed') {
+    console.log('✅ Proceso completado: Cerrando suscripción inmediatamente');
+    stopRpaMonitoring();
+    
+    useToast().add({
+      title: 'Monitoreo finalizado',
+      description: 'El proceso se completó exitosamente. La suscripción se cerró automáticamente.',
+      color: 'green',
+      timeout: 5000
+    });
+  } 
+  // Si el proceso tiene error, esperar 5 horas para dar tiempo de respuesta
+  else if (rpaProcessingStatus.value === 'error') {
+    console.log(`⏰ Proceso con error: Programando cierre de suscripción en ${SUBSCRIPTION_TIMEOUT_MS / 1000 / 60 / 60} horas para dar tiempo de respuesta`);
     
     rpaSubscriptionTimeout = setTimeout(() => {
-      console.log('⏰ Timeout alcanzado: Cerrando suscripción para ahorrar costos');
+      console.log('⏰ Timeout alcanzado: Cerrando suscripción después de error');
       stopRpaMonitoring();
       
       useToast().add({
         title: 'Monitoreo pausado',
-        description: 'La suscripción se cerró automáticamente para optimizar costos. Se reabrirá si el estado cambia.',
+        description: 'La suscripción se cerró automáticamente después de 5 horas. Se reabrirá si el estado cambia.',
         color: 'blue',
         timeout: 5000
       });
     }, SUBSCRIPTION_TIMEOUT_MS);
   }
+  // Si el proceso está en ejecución, no cerrar (mantener suscripción activa)
 };
 
 // Función para iniciar suscripción en tiempo real
@@ -579,12 +612,12 @@ const startRpaSubscription = () => {
           rpaProcessing.value = true;
           
           useToast().add({
-            title: 'Proceso completado',
-            description: 'El RPA ha finalizado exitosamente',
+            title: 'SUIC procesada correctamente',
+            description: 'La SUIC se procesó exitosamente',
             color: 'green'
           });
           
-          // Programar cierre automático después de 5 minutos de inactividad para ahorrar costos
+          // Cerrar suscripción inmediatamente al completar
           scheduleSubscriptionClose();
         } else if (rpaStatusValue === 'error' && rpaProcessingStatus.value !== 'error') {
           console.log('❌ Suscripción: Proceso con error detectado');
@@ -592,13 +625,13 @@ const startRpaSubscription = () => {
           rpaProcessing.value = true;
           
           useToast().add({
-            title: 'Proceso fallido',
-            description: 'El RPA terminó con errores. Por favor, revisa los detalles o contacta al administrador.',
+            title: 'Error al procesar la SUIC',
+            description: 'La SUIC terminó con errores. Por favor, revisa los detalles o contacta al administrador.',
             color: 'red',
             timeout: 8000
           });
           
-          // Programar cierre automático después de 5 minutos de inactividad para ahorrar costos
+          // Programar cierre automático después de 5 horas para dar tiempo de respuesta
           scheduleSubscriptionClose();
         } else if (rpaStatusValue === 'running' || rpaStatusValue === 'pending') {
           console.log('🔄 Suscripción: Proceso en ejecución detectado');
@@ -673,7 +706,7 @@ const checkAndReconnectSubscription = async () => {
   }
 };
 
-// Métodos auxiliares para UI de procesamiento RPA
+// Métodos auxiliares para UI de procesamiento del SUIC
 const getRpaProcessingStatusText = () => {
   switch (rpaProcessingStatus.value) {
     case 'processing': return 'Procesando...';
@@ -740,13 +773,13 @@ onMounted(async () => {
         rpaProcessing.value = true;
         rpaProcessingStatus.value = 'error';
         useToast().add({
-          title: 'Proceso fallido',
-          description: 'El RPA terminó con errores. Por favor, revisa los detalles.',
+          title: 'Error al procesar la SUIC',
+          description: 'La SUIC terminó con errores. Por favor, revisa los detalles.',
           color: 'red'
         });
         // Iniciar monitoreo por si el estado cambia
         startRpaSubscription();
-        // Programar cierre automático después de 5 minutos para ahorrar costos
+        // Programar cierre automático después de 5 horas para dar tiempo de respuesta
         scheduleSubscriptionClose();
       } else if (suicRecord.rpaStatus === 'completed') {
         console.log('✅ Estado completado detectado inicialmente');
@@ -754,7 +787,7 @@ onMounted(async () => {
         rpaProcessingStatus.value = 'completed';
         // Iniciar monitoreo por si el estado cambia
         startRpaSubscription();
-        // Programar cierre automático después de 5 minutos para ahorrar costos
+        // Cerrar suscripción inmediatamente al completar
         scheduleSubscriptionClose();
       } else {
         console.log('⚠️ Estado desconocido o null:', suicRecord.rpaStatus);
