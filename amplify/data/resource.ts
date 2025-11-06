@@ -447,6 +447,8 @@ const schema = a.schema({
       rpaType: a.string().required(),
       descripcion: a.string(),
       rpaLastUpdate: a.string().required(),
+      createdBy: a.string(),
+      rpaExecutedBy: a.string(),
     })
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])

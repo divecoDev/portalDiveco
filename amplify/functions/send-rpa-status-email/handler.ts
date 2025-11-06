@@ -13,6 +13,8 @@ interface EmailPayload {
   rpaType: string;
   descripcion?: string;
   rpaLastUpdate: string;
+  createdBy?: string;
+  rpaExecutedBy?: string;
 }
 
 interface EmailResponse {
@@ -25,7 +27,7 @@ interface EmailResponse {
  * Genera la plantilla HTML del email
  */
 function generateEmailTemplate(payload: EmailPayload): string {
-  const { suicId, status, descripcion, rpaLastUpdate } = payload;
+  const { suicId, status, descripcion, rpaLastUpdate, createdBy, rpaExecutedBy } = payload;
   
   const isCompleted = status === "completed";
   const statusText = isCompleted ? "Completado" : "Error";
@@ -108,6 +110,18 @@ function generateEmailTemplate(payload: EmailPayload): string {
                     <td style="padding: 12px 0; color: #6b7280; font-weight: 600; width: 35%; vertical-align: top;">Fecha y Hora:</td>
                     <td style="padding: 12px 0; color: #111827; font-size: 15px;">${formattedDate}</td>
                   </tr>
+                  ${createdBy ? `
+                  <tr>
+                    <td style="padding: 12px 0; color: #6b7280; font-weight: 600; width: 35%; vertical-align: top;">Creado por:</td>
+                    <td style="padding: 12px 0; color: #111827; font-size: 15px;">${createdBy}</td>
+                  </tr>
+                  ` : ""}
+                  ${rpaExecutedBy ? `
+                  <tr>
+                    <td style="padding: 12px 0; color: #6b7280; font-weight: 600; width: 35%; vertical-align: top;">Ejecutado por:</td>
+                    <td style="padding: 12px 0; color: #111827; font-size: 15px;">${rpaExecutedBy}</td>
+                  </tr>
+                  ` : ""}
                 </table>
               </div>
 
@@ -222,7 +236,7 @@ export const handler = async (event: any): Promise<EmailResponse> => {
             Charset: "UTF-8",
           },
           Text: {
-            Data: `Portal Diveco - Notificación de Procesamiento SUIC\n\n${payload.descripcion ? `Descripción: ${payload.descripcion}\n` : ""}Estado: ${statusText}\nFecha: ${new Date(payload.rpaLastUpdate).toLocaleString("es-GT")}\n\n${payload.status === "completed" ? "La SUIC ha sido procesada exitosamente." : "La SUIC ha finalizado con errores."}\n\nVer SUIC: https://portal.grupodiveco.com/tools/suic/view/${payload.suicId}`,
+            Data: `Portal Diveco - Notificación de Procesamiento SUIC\n\n${payload.descripcion ? `Descripción: ${payload.descripcion}\n` : ""}Estado: ${statusText}\nFecha: ${new Date(payload.rpaLastUpdate).toLocaleString("es-GT")}\n${payload.createdBy ? `Creado por: ${payload.createdBy}\n` : ""}${payload.rpaExecutedBy ? `Ejecutado por: ${payload.rpaExecutedBy}\n` : ""}\n${payload.status === "completed" ? "La SUIC ha sido procesada exitosamente." : "La SUIC ha finalizado con errores."}\n\nVer SUIC: https://portal.grupodiveco.com/tools/suic/view/${payload.suicId}`,
             Charset: "UTF-8",
           },
         },
