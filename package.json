@@ -59,6 +59,7 @@
     "cypress": "^15.2.0",
     "esbuild": "^0.25.8",
     "happy-dom": "^18.0.1",
+    "patch-package": "^8.0.1",
     "prettier": "3.6.2",
     "start-server-and-test": "^2.1.2",
     "tsx": "^4.20.3",
