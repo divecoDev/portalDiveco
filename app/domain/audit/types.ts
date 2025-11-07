@@ -24,6 +24,7 @@ export type AuditModule =
   | "admin-users"
   | "carga-insumos"
   | "aprovisionamiento"
+  | "rpa-horarios"
   | "audit"
   | "system";
 

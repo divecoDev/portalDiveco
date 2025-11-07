@@ -228,9 +228,11 @@
 import { ref, watch, onMounted } from "vue";
 import { generateClient } from "aws-amplify/api";
 import { useUserGroups } from "~/composables/useUserGroups";
+import { useAudit } from "~/composables/useAudit";
 
 const client = generateClient();
 const { userGroups: currentUserGroups, fetchUserGroups } = useUserGroups();
+const { logUpdate } = useAudit();
 
 // Props
 const props = defineProps({
@@ -339,6 +341,10 @@ const assignUserToGroup = async (groupName) => {
 
   try {
     loadingGroups.value.add(groupName);
+    
+    // Capturar estado antes de la asignación
+    const groupsBefore = selectedUserGroups.value.map(g => g.GroupName);
+
     const request = await client.queries.AssignUserToGroup({
       userId: props.user.Username,
       groupName: groupName,
@@ -347,6 +353,29 @@ const assignUserToGroup = async (groupName) => {
     const response = JSON.parse(request.data);
     // Recargar grupos del usuario seleccionado para actualizar la UI
     await loadSelectedUserGroups();
+    
+    // Capturar estado después de la asignación
+    const groupsAfter = selectedUserGroups.value.map(g => g.GroupName);
+
+    // Log de auditoría
+    await logUpdate(
+      "admin-users",
+      "UserGroup",
+      `${props.user.Username}-${groupName}`,
+      { 
+        userId: props.user.Username,
+        email: props.user.email,
+        groupsBefore: groupsBefore,
+        groupName: null
+      },
+      { 
+        userId: props.user.Username,
+        email: props.user.email,
+        groupsAfter: groupsAfter,
+        groupName: groupName,
+        action: "ASSIGNED"
+      }
+    );
   } catch (error) {
     console.error("Error al asignar usuario al grupo:", error);
   } finally {
@@ -359,6 +388,10 @@ const removeUserFromGroup = async (groupName) => {
 
   try {
     loadingGroups.value.add(groupName);
+    
+    // Capturar estado antes de la remoción
+    const groupsBefore = selectedUserGroups.value.map(g => g.GroupName);
+
     const request = await client.queries.RemoveUserFromGroup({
       userId: props.user.Username,
       groupName: groupName,
@@ -368,6 +401,29 @@ const removeUserFromGroup = async (groupName) => {
 
     // Recargar grupos del usuario seleccionado para actualizar la UI
     await loadSelectedUserGroups();
+
+    // Capturar estado después de la remoción
+    const groupsAfter = selectedUserGroups.value.map(g => g.GroupName);
+
+    // Log de auditoría
+    await logUpdate(
+      "admin-users",
+      "UserGroup",
+      `${props.user.Username}-${groupName}`,
+      { 
+        userId: props.user.Username,
+        email: props.user.email,
+        groupsBefore: groupsBefore,
+        groupName: groupName
+      },
+      { 
+        userId: props.user.Username,
+        email: props.user.email,
+        groupsAfter: groupsAfter,
+        groupName: null,
+        action: "REMOVED"
+      }
+    );
 
     // Mostrar mensaje de éxito (opcional)
   } catch (error) {

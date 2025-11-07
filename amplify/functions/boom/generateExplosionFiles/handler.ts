@@ -71,6 +71,7 @@ export const handler = async (event: any): Promise<GenerateExplosionFilesRespons
     password: mssqlPassword,
     server: mssqlServer,
     database: mssqlDatabase,
+    requestTimeout: 120000,
     options: {
       encrypt: true,
     },

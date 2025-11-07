@@ -69,6 +69,14 @@ export const ROLES: Record<string, RoleConfig> = {
     color: "emerald",
     icon: "i-heroicons-chart-bar",
   },
+  ADMINISTRAR_RPA_HORARIOS: {
+    name: "ADMINISTRAR-RPA-HORARIOS",
+    displayName: "Administrador Horarios RPA",
+    description: "Acceso completo a la gestión de ventanas de ejecución de RPA",
+    permissions: ["administrar_rpa_horarios"],
+    color: "cyan",
+    icon: "i-heroicons-clock",
+  },
 };
 
 // Definición de permisos disponibles
@@ -140,6 +148,16 @@ export const PERMISSIONS: Record<string, PermissionConfig> = {
       "/tools/suic/new",
       "/tools/suic/view/:id",
       "/tools/suic/edit/:id"
+    ],
+  },
+  administrar_rpa_horarios: {
+    name: "administrar_rpa_horarios",
+    displayName: "Administrar Horarios RPA",
+    description: "Permite gestionar ventanas de ejecución de RPA y horarios de bloqueo",
+    routes: [
+      "/tools/rpa-horarios",
+      "/tools/rpa-horarios/new",
+      "/tools/rpa-horarios/edit/:id",
     ],
   },
   view_audit: {

@@ -26,6 +26,7 @@ import { getMetaDiariaFinal } from "../functions/suic/getMetaDiariaFinal/resourc
 import { generateSociedadesCsv } from "../functions/suic/generateSociedadesCsv/resource";
 import { transferMetaDiariaFinal } from "../functions/suic/transferMetaDiariaFinal/resource";
 import { sendRpaStatusEmail } from "../functions/send-rpa-status-email/resource";
+import { rpaRestrictionCheck } from "../functions/rpa-restriction-check/resource";
 /* Functions Audit */
 
 const schema = a.schema({
@@ -453,6 +454,31 @@ const schema = a.schema({
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
     .handler(a.handler.function(sendRpaStatusEmail)),
+
+  /**
+   * Módulo de Horarios RPA - Ventanas de Ejecución
+   * Define períodos de bloqueo durante los cuales otras herramientas deben ser restringidas
+   */
+  RpaExecutionWindow: a
+    .model({
+      name: a.string().required(),
+      description: a.string(),
+      startTime: a.string().required(), // Formato HH:MM (ej: "22:00")
+      endTime: a.string().required(), // Formato HH:MM (ej: "06:00")
+      timezone: a.string().required().default("America/Guatemala"), // Zona horaria IANA
+      daysOfWeek: a.string().array().required(), // Array de días: ["MONDAY", "TUESDAY", etc.]
+      isActive: a.boolean().required().default(true),
+    })
+    .authorization((allow) => [allow.publicApiKey()]),
+
+  /**
+   * Verificar estado de restricción del sistema por ventanas de ejecución RPA
+   */
+  getSystemRestrictionStatus: a
+    .query()
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(rpaRestrictionCheck)),
 
 });
 
