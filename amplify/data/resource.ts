@@ -15,7 +15,8 @@ import { runPipeline } from "../functions/boom/runPipeline/resource";
 import { BoomGetStatusPipeline } from "../functions/boom/GetStatusPipeline/resource";
 import { GetMaterialesSinAprovicionamiento } from "../functions/boom/GetMaterialesSinAprovicionamiento/resource";
 import { GetMaterialesSinCentroProduccion } from "../functions/boom/getMaterialesSinCentroProduccion/resource";
-import { generateExplosionFiles } from "../functions/boom/generateExplosionFiles/resource";
+import { generateExplosionFile } from "../functions/boom/generateExplosionFiles/resource";
+import { getExplosionGenerationStatus } from "../functions/boom/getExplosionGenerationStatus/resource";
 import { validacionMaterialesResolver } from "../functions/validacionMaterialesResolver/resource";
 import { materialesPorCentroResolver } from "../functions/materialesPorCentroResolver/resource";
 import { aprovisionamiento } from "../functions/porcentajes-asignacion/resource";
@@ -128,6 +129,7 @@ const schema = a.schema({
       insumoExistenciasPath: a.string(),
       insumoCoberturaPath: a.string(),
       enableShowDocuments: a.boolean(),
+      explosionFilesStatus: a.json(), // Estado de generación de archivos CSV de explosión
       // Campos de soft delete
       deletedAt: a.string(), // Fecha/hora ISO de eliminación
       deletedBy: a.string(), // ID del usuario que eliminó
@@ -282,15 +284,26 @@ const schema = a.schema({
   /**
    *  Generar archivos CSV de explosión desde MSSQL
    */
-  generateExplosionFiles: a
+  generateExplosionFile: a
     .mutation()
+    .arguments({
+      boomId: a.string().required(),
+      pversion: a.string().required(),
+      fileType: a.string().required(),
+    })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(generateExplosionFile)),
+
+  getExplosionGenerationStatus: a
+    .query()
     .arguments({
       boomId: a.string().required(),
       pversion: a.string().required(),
     })
     .returns(a.json())
     .authorization((allow) => [allow.publicApiKey()])
-    .handler(a.handler.function(generateExplosionFiles)),
+    .handler(a.handler.function(getExplosionGenerationStatus)),
 
   /**
    *  Obtener materiales sin aprovicionamiento

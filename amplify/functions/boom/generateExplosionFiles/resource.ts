@@ -1,6 +1,6 @@
 import { defineFunction } from "@aws-amplify/backend";
 
-export const generateExplosionFiles = defineFunction({
+export const generateExplosionFile = defineFunction({
   name: "generateExplosionFiles",
   entry: "./handler.ts",
   timeoutSeconds: 900, // 15 minutos - las consultas pueden tardar varios minutos
