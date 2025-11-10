@@ -88,7 +88,7 @@
             <div class="flex-shrink-0">
               <button
                 @click="generarCsvsPorSociedad"
-                :disabled="csvGenerating || csvState === 'success' || !isStep2Completed"
+                :disabled="csvGenerating || csvState === 'success' || !isStep2Completed || rpaProcessing"
                 class="group relative px-8 py-4 text-base font-bold rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 disabled:transform-none disabled:cursor-not-allowed disabled:hover:scale-100 disabled:opacity-75 min-w-[180px]"
                 :class="getCsvButtonClass()"
               >
@@ -496,6 +496,13 @@ const generarCsvsPorSociedad = async () => {
       });
       console.log('🚀 RPA Operación 2 enviado exitosamente');
 
+      // Actualizar rpaStatus en BD a 'running' inmediatamente
+      await dataClient.models.SUIC.update({
+        id: props.suicId,
+        rpaStatus: 'running'
+      });
+      console.log('💾 rpaStatus actualizado a "running" en BD');
+
       // Iniciar monitoreo del proceso RPA
       rpaProcessing.value = true;
       rpaProcessingStatus.value = 'processing';
@@ -504,6 +511,15 @@ const generarCsvsPorSociedad = async () => {
       startRpaSubscription();
     } catch (rpaErr) {
       console.error('❌ Error enviando RPA Operación 2:', rpaErr);
+      
+      // Actualizar rpaStatus a 'error' en BD
+      await dataClient.models.SUIC.update({
+        id: props.suicId,
+        rpaStatus: 'error'
+      });
+      
+      await persistStep3Status('error', 'Error al iniciar RPA');
+      
       toast.add({
         title: 'Error al procesar la SUIC',
         description: rpaErr instanceof Error ? rpaErr.message : 'Error desconocido al iniciar el procesamiento',
