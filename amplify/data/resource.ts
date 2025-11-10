@@ -27,7 +27,6 @@ import { getMetaDiariaFinal } from "../functions/suic/getMetaDiariaFinal/resourc
 import { generateSociedadesCsv } from "../functions/suic/generateSociedadesCsv/resource";
 import { transferMetaDiariaFinal } from "../functions/suic/transferMetaDiariaFinal/resource";
 import { sendRpaStatusEmail } from "../functions/send-rpa-status-email/resource";
-import { rpaRestrictionCheck } from "../functions/rpa-restriction-check/resource";
 /* Functions Audit */
 
 const schema = a.schema({
@@ -486,14 +485,6 @@ const schema = a.schema({
     })
     .authorization((allow) => [allow.publicApiKey()]),
 
-  /**
-   * Verificar estado de restricción del sistema por ventanas de ejecución RPA
-   */
-  getSystemRestrictionStatus: a
-    .query()
-    .returns(a.json())
-    .authorization((allow) => [allow.publicApiKey()])
-    .handler(a.handler.function(rpaRestrictionCheck)),
 
 });
 

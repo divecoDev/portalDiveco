@@ -29,8 +29,31 @@
       </div>
     </div>
 
+    <!-- RPA Restriction Warning -->
+    <div v-if="isRestricted && getActiveWindow" class="mb-6">
+      <div class="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border-2 border-orange-500 dark:border-orange-400">
+        <div class="flex items-start space-x-3">
+          <UIcon name="i-heroicons-lock-closed" class="w-6 h-6 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+          <div class="flex-1">
+            <p class="text-sm font-semibold text-orange-800 dark:text-orange-200 mb-1">
+              Guardar SUIC temporalmente deshabilitado
+            </p>
+            <p class="text-xs text-orange-700 dark:text-orange-300">
+              <span class="font-medium">RPA en ejecución:</span> {{ getActiveWindow.name }}
+            </p>
+            <p class="text-xs text-orange-700 dark:text-orange-300 mt-1">
+              <span class="font-medium">Horario:</span> {{ getActiveWindow.startTime }} - {{ getActiveWindow.endTime }} ({{ getActiveWindow.timezone }})
+            </p>
+            <p class="text-xs text-orange-600 dark:text-orange-400 mt-2 italic">
+              ⏰ Estará disponible nuevamente después de las {{ getActiveWindow.endTime }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Botón Principal: Guardar SUIC -->
-    <div class="mb-8">
+    <div v-if="!isRestricted" class="mb-8">
       <div 
         class="relative overflow-hidden bg-gradient-to-br from-cyan-50 to-cyan-100/50 dark:from-cyan-900/20 dark:to-cyan-800/20 rounded-xl shadow-xl border-2 transition-all duration-300"
         :class="getCsvCardClass()"
@@ -144,6 +167,21 @@
         </div>
       </div>
     </div>
+
+    <!-- Botón para ver horarios RPA -->
+    <div class="mt-6 flex justify-center">
+      <button
+        @click="showRpaSchedulesModal = true"
+        type="button"
+        class="rounded-md inline-flex items-center px-4 py-2 text-sm gap-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium transition-all duration-300 cursor-pointer"
+      >
+        <UIcon name="i-heroicons-clock" class="w-4 h-4" />
+        Ver Horarios de RPA
+      </button>
+    </div>
+
+    <!-- Modal de horarios RPA -->
+    <RpaSchedulesModal v-model:open="showRpaSchedulesModal" />
   </div>
 </template>
 
@@ -152,12 +190,14 @@ import { executeRPA } from "~/services/rpa-service";
 import { useRpaStatus } from "~/composables/useRpaStatus";
 import { useSuicSociedadesCsv } from "~/composables/useSuicSociedadesCsv";
 import { useSubscriptionManager } from "~/composables/useSubscriptionManager";
+import { useRpaRestriction } from "~/composables/useRpaRestriction";
 import { ref, watch, computed, onMounted, onUnmounted } from "vue";
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "~/amplify/data/resource";
 import { fetchUserAttributes } from "aws-amplify/auth";
 import { useToast } from "#imports";
 import { createDefaultSuicFlowState, parseSuicFlowState, useSuicFlowState, type SuicFlowState, type SuicStepStatus } from "~/composables/useSuicFlowState";
+import RpaSchedulesModal from "~/components/rpa/RpaSchedulesModal.vue";
 
 const props = defineProps({
   suicId: {
@@ -225,6 +265,15 @@ const {
   stopPolling,
   checkRpaStatus,
 } = useRpaStatus(props.suicId, false);
+
+// RPA Restriction
+const { 
+  isRestricted, 
+  getActiveWindow, 
+  checkRestrictionStatus,
+  loading: loadingRestriction 
+} = useRpaRestriction();
+const showRpaSchedulesModal = ref(false);
 
 // Estados de los dos RPAs individuales (mapeados desde el estado global)
 const rpaStates = ref({
@@ -870,6 +919,17 @@ onMounted(async () => {
     }
   } catch (err) {
     console.error('Error verificando estado inicial del RPA:', err);
+  }
+
+  // Verificar restricciones de RPA
+  console.log('🔒 Verificando restricciones de RPA en EjecutarRPA');
+  try {
+    const status = await checkRestrictionStatus();
+    console.log('📊 Estado de restricción recibido:', status);
+    console.log('📊 isRestricted.value:', isRestricted.value);
+    console.log('📊 getActiveWindow.value:', getActiveWindow.value);
+  } catch (error) {
+    console.error('❌ Error verificando restricciones:', error);
   }
 });
 
