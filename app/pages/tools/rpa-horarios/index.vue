@@ -158,7 +158,7 @@
             <!-- Días de la semana -->
             <div class="flex flex-wrap gap-2 mb-3">
               <span
-                v-for="day in window.daysOfWeek"
+                v-for="day in sortDays(window.daysOfWeek)"
                 :key="day"
                 class="px-2 py-1 bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300 rounded-md text-xs font-medium"
               >
@@ -322,6 +322,17 @@ const dayNames = {
   SUNDAY: "Domingo",
 };
 
+// Orden de días de la semana (lunes a domingo)
+const dayOrder = [
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+  "SUNDAY",
+];
+
 // Computed
 const filteredWindows = computed(() => {
   let filtered = windows.value;
@@ -347,6 +358,15 @@ const filteredWindows = computed(() => {
 // Métodos
 const getDayName = (day) => {
   return dayNames[day] || day;
+};
+
+const sortDays = (days) => {
+  if (!days || !Array.isArray(days)) return [];
+  return [...days].sort((a, b) => {
+    const indexA = dayOrder.indexOf(a);
+    const indexB = dayOrder.indexOf(b);
+    return indexA - indexB;
+  });
 };
 
 const formatDate = (dateString) => {

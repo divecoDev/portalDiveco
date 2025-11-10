@@ -27,7 +27,6 @@ import { getMetaDiariaFinal } from "../functions/suic/getMetaDiariaFinal/resourc
 import { generateSociedadesCsv } from "../functions/suic/generateSociedadesCsv/resource";
 import { transferMetaDiariaFinal } from "../functions/suic/transferMetaDiariaFinal/resource";
 import { sendRpaStatusEmail } from "../functions/send-rpa-status-email/resource";
-import { rpaRestrictionCheck } from "../functions/rpa-restriction-check/resource";
 /* Functions Audit */
 
 const schema = a.schema({
@@ -197,6 +196,8 @@ const schema = a.schema({
       rpaStatus: a.string(), // Estados: 'pending', 'running', 'completed', 'error'
       rpaType: a.string(), // Tipo de RPA: 'bloqueo-sap', 'carga-plantilla'
       rpaLastUpdate: a.string(), // Timestamp de última actualización
+      flowState: a.json(),
+      currentStep: a.integer(),
       // Campos de soft delete
       deletedAt: a.string(), // Fecha/hora ISO de eliminación
       deletedBy: a.string(), // ID del usuario que eliminó
@@ -484,14 +485,6 @@ const schema = a.schema({
     })
     .authorization((allow) => [allow.publicApiKey()]),
 
-  /**
-   * Verificar estado de restricción del sistema por ventanas de ejecución RPA
-   */
-  getSystemRestrictionStatus: a
-    .query()
-    .returns(a.json())
-    .authorization((allow) => [allow.publicApiKey()])
-    .handler(a.handler.function(rpaRestrictionCheck)),
 
 });
 

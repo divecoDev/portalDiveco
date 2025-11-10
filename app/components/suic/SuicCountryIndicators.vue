@@ -6,7 +6,7 @@
         Datos Cargados por País
       </h3>
       <button
-        v-if="hasData"
+        v-if="hasData && !disableActions"
         @click="$emit('clear-all')"
         class="rounded-md inline-flex items-center px-4 py-2 text-sm gap-2 shadow-lg bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
       >
@@ -308,7 +308,7 @@
 
         <!-- Sección de Acciones: Botones (solo para datos locales) -->
         <div class="flex-shrink-0">
-          <div v-if="!mysqlCounts[pais.code] && loadedCounts[pais.code]" class="flex space-x-2 p-4">
+          <div v-if="!mysqlCounts[pais.code] && loadedCounts[pais.code] && !disableActions" class="flex space-x-2 p-4">
             <!-- Botón limpiar -->
             <button
               v-if="!saveStates[pais.code] || saveStates[pais.code].status !== 'saving'"
@@ -434,6 +434,10 @@ const props = defineProps({
   mysqlCounts: {
     type: Object,
     default: () => ({})
+  },
+  disableActions: {
+    type: Boolean,
+    default: false
   }
 });
 

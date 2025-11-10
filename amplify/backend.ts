@@ -33,7 +33,6 @@ import { suicSaveBatch } from "./functions/suic/resource";
 import {generateSociedadesCsv} from "./functions/suic/generateSociedadesCsv/resource";
 import { transferMetaDiariaFinal } from "./functions/suic/transferMetaDiariaFinal/resource";
 import { sendRpaStatusEmail } from "./functions/send-rpa-status-email/resource";
-import { rpaRestrictionCheck } from "./functions/rpa-restriction-check/resource";
 /* Functions Audit */
 /**
  * Configuración del backend de Amplify
@@ -67,7 +66,6 @@ export const backend = defineBackend({
   generateSociedadesCsv,
   transferMetaDiariaFinal,
   sendRpaStatusEmail,
-  rpaRestrictionCheck,
 });
 
 const resetPasswordLambda = backend.resetPassword.resources.lambda;

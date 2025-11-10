@@ -271,7 +271,7 @@
 
             <!-- Mensajes de error generales -->
             <div
-              v-if="Object.keys(errors).length > 0"
+              v-if="hasErrors"
               class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4"
             >
               <div class="flex items-center">
@@ -467,6 +467,10 @@ const isFormValid = computed(() => {
     formData.value.timezone &&
     formData.value.daysOfWeek.length > 0
   );
+});
+
+const hasErrors = computed(() => {
+  return Object.values(errors.value).some((error) => error && error.length > 0);
 });
 
 // Limpiar errores cuando cambian los campos

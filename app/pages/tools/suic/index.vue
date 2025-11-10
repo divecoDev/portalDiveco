@@ -1,10 +1,11 @@
 <template>
-  <div class="0">
+  <div class="0" id="suic-list-view">
     <!-- Header de la página integrado -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6">
       <div class="flex items-center justify-between">
         <div>
           <h1
+            id="suic-list-header"
             class="text-4xl font-bold text-gray-900 dark:text-white flex items-center"
           >
             <div
@@ -23,15 +24,29 @@
         </div>
 
         <!-- Botón para crear nueva carga -->
-        <NuxtLink to="/tools/suic/new">
+        <div class="flex items-center space-x-3" id="suic-list-actions">
           <button
+            id="suic-list-tour-trigger"
             type="button"
-            class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
+            :disabled="loading"
+            class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
+            @click="startTour"
           >
-            <UIcon name="i-heroicons-plus" class="w-5 h-5" />
-            Nueva Carga
+            <UIcon name="i-heroicons-information-circle" class="w-5 h-5" />
+            Tour
           </button>
-        </NuxtLink>
+
+          <NuxtLink to="/tools/suic/new">
+            <button
+              id="suic-list-create-button"
+              type="button"
+              class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
+            >
+              <UIcon name="i-heroicons-plus" class="w-5 h-5" />
+              Nueva Carga
+            </button>
+          </NuxtLink>
+        </div>
       </div>
     </div>
 
@@ -39,6 +54,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <!-- Filtros y búsqueda compactos -->
       <div
+        id="suic-list-filters"
         class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-md shadow-lg border border-cyan-200/30 dark:border-cyan-700/30 p-4 mb-6"
       >
         <div class="flex flex-col sm:flex-row gap-3">
@@ -80,11 +96,12 @@
       </div>
 
       <!-- Lista de cargas SUIC -->
-      <div v-else-if="filteredCargas.length > 0" class="space-y-3">
+      <div v-else-if="filteredCargas.length > 0" class="space-y-3" id="suic-list-cards">
         <div
           v-for="carga in filteredCargas"
           :key="carga.id"
           class="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-md shadow-lg border border-cyan-200/20 dark:border-cyan-700/20 hover:shadow-xl hover:border-cyan-300/40 dark:hover:border-cyan-600/40 transition-all duration-300 hover:-translate-y-1"
+          :id="`suic-card-${carga.id}`"
         >
           <div class="p-5">
             <!-- Header del card -->
@@ -115,7 +132,7 @@
               </div>
 
               <!-- Botones de acción -->
-              <div class="flex items-center space-x-2">
+              <div class="flex items-center space-x-2 suic-card-actions">
                 <NuxtLink :to="`/tools/suic/view/${carga.id}`">
                   <UButton
                     icon="i-heroicons-eye"
@@ -132,6 +149,7 @@
                   variant="ghost"
                   class="hover:bg-red-50 dark:hover:bg-red-900/20"
                   @click="confirmDelete(carga)"
+                  :id="`delete-action-${carga.id}`"
                 />
               </div>
             </div>
@@ -148,7 +166,7 @@
       </div>
 
       <!-- Estado vacío -->
-      <div v-else class="text-center py-16">
+      <div v-else class="text-center py-16" id="suic-empty-state">
         <div
           class="w-32 h-32 bg-gradient-to-br from-cyan-100 to-cyan-200 dark:from-cyan-900/30 dark:to-cyan-800/30 rounded-md flex items-center justify-center mx-auto mb-8 shadow-lg"
         >
@@ -259,10 +277,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch, onBeforeUnmount } from "vue";
 import { generateClient } from "aws-amplify/data";
 import { getCurrentUser } from "aws-amplify/auth";
 import { useAudit } from "~/composables/useAudit";
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
 
 // Definir el layout y middleware
 definePageMeta({
@@ -301,6 +321,7 @@ const cargaToDelete = ref(null);
 const deleting = ref(false);
 const deletionReason = ref("");
 const deletionReasonError = ref("");
+const driverObj = ref(null);
 
 // Computed
 const isDeletionReasonValid = computed(() => {
@@ -324,6 +345,23 @@ const filteredCargas = computed(() => {
   }
 
   return filtered;
+});
+
+const hasData = computed(() => filteredCargas.value.length > 0);
+const firstCardSelector = computed(() => {
+  if (!hasData.value) {
+    return null;
+  }
+
+  return `#suic-card-${filteredCargas.value[0].id}`;
+});
+
+const firstDeleteSelector = computed(() => {
+  if (!hasData.value) {
+    return null;
+  }
+
+  return `#delete-action-${filteredCargas.value[0].id}`;
 });
 
 // Métodos
@@ -473,6 +511,116 @@ const formatDate = (dateString) => {
   }
 };
 
+const initializeTour = () => {
+  if (driverObj.value) {
+    driverObj.value.destroy();
+  }
+
+  const steps = [
+    {
+      element: "#suic-list-header",
+      popover: {
+        title: "📊 Panel SUIC",
+        description:
+          "Este encabezado te recuerda dónde estás y centraliza el acceso a las acciones para trabajar con SUIC.",
+        side: "bottom",
+        align: "start",
+      },
+    },
+    {
+      element: "#suic-list-actions",
+      popover: {
+        title: "⚙️ Acciones principales",
+        description:
+          "Desde aquí puedes crear una nueva carga o iniciar nuevamente este tour cuando necesites una guía rápida.",
+        side: "left",
+        align: "center",
+      },
+    },
+    {
+      element: "#suic-list-filters",
+      popover: {
+        title: "🔍 Filtros inteligentes",
+        description:
+          "Busca por descripción o filtra por tipo para encontrar rápidamente la carga que necesitas gestionar.",
+        side: "bottom",
+        align: "center",
+      },
+    },
+  ];
+
+  if (hasData.value && firstCardSelector.value) {
+    steps.push(
+      {
+        element: firstCardSelector.value,
+        popover: {
+          title: "🗂️ Tarjeta de carga",
+          description:
+            "Cada tarjeta resume los datos esenciales de una carga SUIC, incluyendo autor y tipo.",
+          side: "top",
+          align: "center",
+        },
+      },
+      {
+        element: `${firstCardSelector.value} .suic-card-actions`,
+        popover: {
+          title: "👁️ Ver detalles",
+          description:
+            "Accede a la vista detallada con el ícono de ojo o gestiona la eliminación con el ícono de papelera.",
+          side: "left",
+          align: "center",
+        },
+      },
+      {
+        element: firstDeleteSelector.value,
+        popover: {
+          title: "🗑️ Eliminar carga",
+          description:
+            "Al eliminar se solicitará una justificación y se registrará en auditoría para mantener el control.",
+          side: "left",
+          align: "center",
+        },
+      }
+    );
+  } else {
+    steps.push({
+      element: "#suic-empty-state",
+      popover: {
+        title: "✨ Estado inicial",
+        description:
+          "Cuando no existen cargas activas verás este recordatorio, con acceso directo para crear la primera.",
+        side: "top",
+        align: "center",
+      },
+    });
+  }
+
+  steps.push({
+    popover: {
+      title: "🎉 Tour completado",
+      description:
+        "Listo. Ya conoces los elementos principales para listar y administrar las cargas SUIC.",
+      side: "center",
+    },
+  });
+
+  driverObj.value = driver({
+    showProgress: true,
+    allowClose: true,
+    popoverClass: "driver-popover-custom",
+    steps,
+  });
+};
+
+const startTour = () => {
+  if (loading.value) {
+    return;
+  }
+
+  initializeTour();
+  driverObj.value?.drive();
+};
+
 // Watch para limpiar error de validación cuando el usuario escribe
 watch(deletionReason, () => {
   if (deletionReasonError.value && isDeletionReasonValid.value) {
@@ -484,9 +632,77 @@ watch(deletionReason, () => {
 onMounted(() => {
   fetchCargas();
 });
+
+onBeforeUnmount(() => {
+  driverObj.value?.destroy();
+  driverObj.value = null;
+});
 </script>
 
-<style scoped>
-/* Animaciones personalizadas si es necesario */
+<style>
+.driver-popover-custom {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  border: 2px solid #0891b2;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(8, 145, 178, 0.35);
+}
+
+.driver-popover-custom .driver-popover-title {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.driver-popover-custom .driver-popover-description {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.driver-popover-custom .driver-popover-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.driver-popover-custom .driver-popover-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.driver-popover-custom .driver-popover-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.driver-popover-custom .driver-popover-btn.driver-popover-btn-primary {
+  background: rgba(255, 255, 255, 0.92);
+  color: #0e7490;
+  border-color: rgba(255, 255, 255, 0.92);
+}
+
+.driver-popover-custom .driver-popover-btn.driver-popover-btn-primary:hover {
+  background: #ffffff;
+  color: #155e75;
+}
+
+.driver-popover-custom .driver-popover-progress-bar {
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+  height: 4px;
+}
+
+.driver-popover-custom .driver-popover-progress-bar-fill {
+  background: #ffffff;
+  border-radius: 4px;
+}
+
+.driver-popover-custom .driver-popover-close-btn {
+  color: rgba(255, 255, 255, 0.7);
+}
 </style>
 

@@ -29,8 +29,31 @@
       </div>
     </div>
 
+    <!-- RPA Restriction Warning -->
+    <div v-if="isRestricted && getActiveWindow" class="mb-6">
+      <div class="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border-2 border-orange-500 dark:border-orange-400">
+        <div class="flex items-start space-x-3">
+          <UIcon name="i-heroicons-lock-closed" class="w-6 h-6 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+          <div class="flex-1">
+            <p class="text-sm font-semibold text-orange-800 dark:text-orange-200 mb-1">
+              Guardar SUIC temporalmente deshabilitado
+            </p>
+            <p class="text-xs text-orange-700 dark:text-orange-300">
+              <span class="font-medium">RPA en ejecución:</span> {{ getActiveWindow.name }}
+            </p>
+            <p class="text-xs text-orange-700 dark:text-orange-300 mt-1">
+              <span class="font-medium">Horario:</span> {{ getActiveWindow.startTime }} - {{ getActiveWindow.endTime }} ({{ getActiveWindow.timezone }})
+            </p>
+            <p class="text-xs text-orange-600 dark:text-orange-400 mt-2 italic">
+              ⏰ Estará disponible nuevamente después de las {{ getActiveWindow.endTime }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Botón Principal: Guardar SUIC -->
-    <div class="mb-8">
+    <div v-if="!isRestricted" class="mb-8">
       <div 
         class="relative overflow-hidden bg-gradient-to-br from-cyan-50 to-cyan-100/50 dark:from-cyan-900/20 dark:to-cyan-800/20 rounded-xl shadow-xl border-2 transition-all duration-300"
         :class="getCsvCardClass()"
@@ -65,7 +88,7 @@
             <div class="flex-shrink-0">
               <button
                 @click="generarCsvsPorSociedad"
-                :disabled="csvGenerating || csvState === 'success'"
+                :disabled="csvGenerating || csvState === 'success' || !isStep2Completed"
                 class="group relative px-8 py-4 text-base font-bold rounded-xl transition-all duration-300 transform hover:scale-105 active:scale-95 disabled:transform-none disabled:cursor-not-allowed disabled:hover:scale-100 disabled:opacity-75 min-w-[180px]"
                 :class="getCsvButtonClass()"
               >
@@ -144,6 +167,21 @@
         </div>
       </div>
     </div>
+
+    <!-- Botón para ver horarios RPA -->
+    <div class="mt-6 flex justify-center">
+      <button
+        @click="showRpaSchedulesModal = true"
+        type="button"
+        class="rounded-md inline-flex items-center px-4 py-2 text-sm gap-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium transition-all duration-300 cursor-pointer"
+      >
+        <UIcon name="i-heroicons-clock" class="w-4 h-4" />
+        Ver Horarios de RPA
+      </button>
+    </div>
+
+    <!-- Modal de horarios RPA -->
+    <RpaSchedulesModal v-model:open="showRpaSchedulesModal" />
   </div>
 </template>
 
@@ -152,10 +190,14 @@ import { executeRPA } from "~/services/rpa-service";
 import { useRpaStatus } from "~/composables/useRpaStatus";
 import { useSuicSociedadesCsv } from "~/composables/useSuicSociedadesCsv";
 import { useSubscriptionManager } from "~/composables/useSubscriptionManager";
-import { ref, watch, onMounted, onUnmounted } from "vue";
+import { useRpaRestriction } from "~/composables/useRpaRestriction";
+import { ref, watch, computed, onMounted, onUnmounted } from "vue";
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "~/amplify/data/resource";
 import { fetchUserAttributes } from "aws-amplify/auth";
+import { useToast } from "#imports";
+import { createDefaultSuicFlowState, parseSuicFlowState, useSuicFlowState, type SuicFlowState, type SuicStepStatus } from "~/composables/useSuicFlowState";
+import RpaSchedulesModal from "~/components/rpa/RpaSchedulesModal.vue";
 
 const props = defineProps({
   suicId: {
@@ -188,6 +230,32 @@ const { registerSubscription, unregisterSubscription } = useSubscriptionManager(
 // Composable para generar CSVs
 const { generateSociedadesCsv } = useSuicSociedadesCsv();
 const dataClient = generateClient<Schema>();
+const { updateSuicFlowState } = useSuicFlowState();
+const flowState = ref<SuicFlowState>(createDefaultSuicFlowState());
+let lastPersistedStep3Status: SuicStepStatus | null = flowState.value.step3.status;
+const isStep2Completed = computed(() => flowState.value.step2.status === 'completed');
+const toast = useToast();
+
+const persistStep3Status = async (status: SuicStepStatus, message?: string | null) => {
+  const normalizedMessage = message ?? null;
+
+  if (
+    lastPersistedStep3Status === status &&
+    flowState.value.step3.message === normalizedMessage
+  ) {
+    return;
+  }
+
+  try {
+    const updatedState = await updateSuicFlowState(props.suicId, {
+      step3: { status, message: normalizedMessage }
+    });
+    flowState.value = updatedState;
+    lastPersistedStep3Status = updatedState.step3.status;
+  } catch (error) {
+    console.error('❌ Error actualizando estado del paso 3 en SUIC:', error);
+  }
+};
 
 // Composable para monitorear estado del RPA
 const {
@@ -197,6 +265,15 @@ const {
   stopPolling,
   checkRpaStatus,
 } = useRpaStatus(props.suicId, false);
+
+// RPA Restriction
+const { 
+  isRestricted, 
+  getActiveWindow, 
+  checkRestrictionStatus,
+  loading: loadingRestriction 
+} = useRpaRestriction();
+const showRpaSchedulesModal = ref(false);
 
 // Estados de los dos RPAs individuales (mapeados desde el estado global)
 const rpaStates = ref({
@@ -228,6 +305,23 @@ watch(
     updateRpaStatesFromStatus();
   },
   { deep: true }
+);
+
+watch(
+  () => rpaProcessingStatus.value,
+  async (status) => {
+    if (!status) {
+      return;
+    }
+
+    if (status === 'processing') {
+      await persistStep3Status('processing', 'Procesando SUIC con RPA');
+    } else if (status === 'completed') {
+      await persistStep3Status('completed', 'Proceso RPA finalizado');
+    } else if (status === 'error') {
+      await persistStep3Status('error', 'Error en procesamiento RPA');
+    }
+  }
 );
 
 // Métodos auxiliares para UI de CSVs
@@ -296,10 +390,19 @@ const getCsvCardClass = () => {
 // Generar CSVs por sociedad
 const generarCsvsPorSociedad = async () => {
   if (!props.suicId) {
-    useToast().add({
+    toast.add({
       title: 'Error',
       description: 'Falta el ID del SUIC',
       color: 'red'
+    });
+    return;
+  }
+
+  if (!isStep2Completed.value) {
+    toast.add({
+      title: 'Paso pendiente',
+      description: 'Genera la SUIC en el paso anterior antes de guardar.',
+      color: 'yellow'
     });
     return;
   }
@@ -308,8 +411,9 @@ const generarCsvsPorSociedad = async () => {
     csvGenerating.value = true;
     csvState.value = 'running';
     csvFiles.value = [];
+    await persistStep3Status('processing', 'Generando archivos CSV para RPA');
 
-    useToast().add({
+    toast.add({
       title: 'Generando CSVs',
       description: 'Generando archivos CSV por sociedad...',
       color: 'blue'
@@ -342,7 +446,7 @@ const generarCsvsPorSociedad = async () => {
       console.error('❌ Error actualizando csvFilesPath y rpaExecutedBy en SUIC:', e);
     }
 
-    useToast().add({
+    toast.add({
       title: 'CSVs generados exitosamente',
       description: `Se generaron ${result.totalSocieties} archivos CSV`,
       color: 'green'
@@ -385,7 +489,7 @@ const generarCsvsPorSociedad = async () => {
         throw new Error(`RPA API respondió ${response.status}: ${text}`);
       }
 
-      useToast().add({
+      toast.add({
         title: 'Procesamiento iniciado',
         description: 'La SUIC está siendo procesada. Te notificaremos por email cuando termine.',
         color: 'green'
@@ -400,7 +504,7 @@ const generarCsvsPorSociedad = async () => {
       startRpaSubscription();
     } catch (rpaErr) {
       console.error('❌ Error enviando RPA Operación 2:', rpaErr);
-      useToast().add({
+      toast.add({
         title: 'Error al procesar la SUIC',
         description: rpaErr instanceof Error ? rpaErr.message : 'Error desconocido al iniciar el procesamiento',
         color: 'red'
@@ -410,8 +514,12 @@ const generarCsvsPorSociedad = async () => {
   } catch (err) {
     console.error('❌ Error generando CSVs:', err);
     csvState.value = 'error';
+    await persistStep3Status(
+      'error',
+      err instanceof Error ? err.message : 'Error generando archivos CSV'
+    );
 
-    useToast().add({
+    toast.add({
       title: 'Error generando CSVs',
       description: err.message || 'Error desconocido',
       color: 'red'
@@ -424,7 +532,7 @@ const generarCsvsPorSociedad = async () => {
 // Ejecutar RPA individual
 const ejecutarRPAIndividual = async (rpaKey) => {
   if (!props.suicId) {
-    useToast().add({
+    toast.add({
       title: 'Error',
       description: 'Falta el ID del SUIC',
       color: 'red'
@@ -441,7 +549,7 @@ const ejecutarRPAIndividual = async (rpaKey) => {
     // Actualizar estado local inicialmente
     rpaStates.value[rpaKey] = 'running';
 
-    useToast().add({
+    toast.add({
       title: 'Iniciando RPA',
       description: `${rpaNames[rpaKey]} ha comenzado`,
       color: 'blue'
@@ -466,7 +574,7 @@ const ejecutarRPAIndividual = async (rpaKey) => {
     console.error(`❌ Error ejecutando RPA ${rpaKey}:`, err);
     rpaStates.value[rpaKey] = 'error';
 
-    useToast().add({
+    toast.add({
       title: 'Error en RPA',
       description: err.message || 'Error desconocido',
       color: 'red'
@@ -479,7 +587,7 @@ const ejecutarRPAIndividual = async (rpaKey) => {
 // Ejecutar todos los RPAs secuencialmente
 const ejecutarTodosRPA = async () => {
   if (!props.suicId) {
-    useToast().add({
+    toast.add({
       title: 'Error',
       description: 'Falta el ID del SUIC',
       color: 'red'
@@ -490,7 +598,7 @@ const ejecutarTodosRPA = async () => {
   try {
     isProcessing.value = true;
 
-    useToast().add({
+    toast.add({
       title: 'Iniciando RPAs',
       description: 'Ejecutando todos los procesos automatizados',
       color: 'blue'
@@ -506,7 +614,7 @@ const ejecutarTodosRPA = async () => {
       await ejecutarRPAIndividual('carga-plantilla');
     }
 
-    useToast().add({
+    toast.add({
       title: 'Proceso completado',
       description: 'Todos los RPAs se ejecutaron exitosamente',
       color: 'green'
@@ -514,7 +622,7 @@ const ejecutarTodosRPA = async () => {
 
   } catch (err) {
     console.error('Error ejecutando todos los RPAs:', err);
-    useToast().add({
+    toast.add({
       title: 'Error',
       description: err.message,
       color: 'red'
@@ -552,7 +660,7 @@ const scheduleSubscriptionClose = () => {
     console.log('✅ Proceso completado: Cerrando suscripción inmediatamente');
     stopRpaMonitoring();
     
-    useToast().add({
+    toast.add({
       title: 'Monitoreo finalizado',
       description: 'El proceso se completó exitosamente. La suscripción se cerró automáticamente.',
       color: 'green',
@@ -567,7 +675,7 @@ const scheduleSubscriptionClose = () => {
       console.log('⏰ Timeout alcanzado: Cerrando suscripción después de error');
       stopRpaMonitoring();
       
-      useToast().add({
+      toast.add({
         title: 'Monitoreo pausado',
         description: 'La suscripción se cerró automáticamente después de 5 horas. Se reabrirá si el estado cambia.',
         color: 'blue',
@@ -594,10 +702,13 @@ const startRpaSubscription = () => {
     rpaSubscription = dataClient.models.SUIC.onUpdate({
       filter: { id: { eq: props.suicId } }
     }).subscribe({
-      next: (data) => {
+      next: async (data) => {
         console.log('📨 Actualización recibida del SUIC:', data);
         console.log('📨 Tipo de data:', typeof data);
         console.log('📨 Data completo:', JSON.stringify(data, null, 2));
+
+        flowState.value = parseSuicFlowState((data as any)?.flowState);
+        lastPersistedStep3Status = flowState.value.step3.status;
         
         // Según la documentación, data es directamente el objeto del modelo
         // con todas sus propiedades, incluyendo rpaStatus
@@ -611,7 +722,7 @@ const startRpaSubscription = () => {
           rpaProcessingStatus.value = 'completed';
           rpaProcessing.value = true;
           
-          useToast().add({
+          toast.add({
             title: 'SUIC procesada correctamente',
             description: 'La SUIC se procesó exitosamente',
             color: 'green'
@@ -624,7 +735,7 @@ const startRpaSubscription = () => {
           rpaProcessingStatus.value = 'error';
           rpaProcessing.value = true;
           
-          useToast().add({
+          toast.add({
             title: 'Error al procesar la SUIC',
             description: 'La SUIC terminó con errores. Por favor, revisa los detalles o contacta al administrador.',
             color: 'red',
@@ -654,7 +765,7 @@ const startRpaSubscription = () => {
       error: (error) => {
         console.error('❌ Error en suscripción RPA:', error);
         console.error('❌ Detalles del error:', JSON.stringify(error, null, 2));
-        useToast().add({
+        toast.add({
           title: 'Error en suscripción',
           description: 'No se pudo conectar al servicio en tiempo real',
           color: 'red'
@@ -683,6 +794,9 @@ const checkAndReconnectSubscription = async () => {
       
       if (suicRecord) {
         const currentStatus = suicRecord.rpaStatus;
+        const normalizedFlowState = parseSuicFlowState(suicRecord.flowState);
+        flowState.value = normalizedFlowState;
+        lastPersistedStep3Status = normalizedFlowState.step3.status;
         
         // Si el proceso está en ejecución o hay un estado final, reconectar
         if (currentStatus === 'running' || currentStatus === 'pending' || 
@@ -762,6 +876,9 @@ onMounted(async () => {
     
     if (suicRecord) {
       console.log('🔍 Estado inicial del SUIC:', suicRecord.rpaStatus);
+      const normalizedFlowState = parseSuicFlowState(suicRecord.flowState);
+      flowState.value = normalizedFlowState;
+      lastPersistedStep3Status = normalizedFlowState.step3.status;
       
       if (suicRecord.rpaStatus === 'running' || suicRecord.rpaStatus === 'pending') {
         console.log('🔄 Estado en ejecución detectado, iniciando monitoreo');
@@ -772,7 +889,7 @@ onMounted(async () => {
         console.log('❌ Estado de error detectado inicialmente');
         rpaProcessing.value = true;
         rpaProcessingStatus.value = 'error';
-        useToast().add({
+        toast.add({
           title: 'Error al procesar la SUIC',
           description: 'La SUIC terminó con errores. Por favor, revisa los detalles.',
           color: 'red'
@@ -802,6 +919,17 @@ onMounted(async () => {
     }
   } catch (err) {
     console.error('Error verificando estado inicial del RPA:', err);
+  }
+
+  // Verificar restricciones de RPA
+  console.log('🔒 Verificando restricciones de RPA en EjecutarRPA');
+  try {
+    const status = await checkRestrictionStatus();
+    console.log('📊 Estado de restricción recibido:', status);
+    console.log('📊 isRestricted.value:', isRestricted.value);
+    console.log('📊 getActiveWindow.value:', getActiveWindow.value);
+  } catch (error) {
+    console.error('❌ Error verificando restricciones:', error);
   }
 });
 
