@@ -123,7 +123,7 @@
     <div class="flex flex-col items-center">
       <button
         @click="ejecutarExplosion"
-        :disabled="explosionInProgress || !suicData || !primerMes || pipelineStatus === 'InProgress' || pipelineStatus === 'Queued'"
+        :disabled="explosionInProgress || !suicData || !primerMes || pipelineStatus === 'InProgress' || pipelineStatus === 'Queued' || !isStep1Completed"
         class="rounded-md inline-flex items-center px-8 py-4 text-lg gap-2 shadow-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
       >
         <UIcon v-if="!explosionInProgress" name="i-heroicons-bolt" class="w-6 h-6" />
@@ -146,6 +146,7 @@
 
 <script setup>
 import { generateClient } from "aws-amplify/data";
+import { createDefaultSuicFlowState, parseSuicFlowState, useSuicFlowState } from '~/composables/useSuicFlowState';
 import { useSuicMySQL } from '~/composables/useSuicMySQL';
 import { useSuicMetaDiariaFinal } from '~/composables/useSuicMetaDiariaFinal';
 import MetaDiariaFinalDisplay from '~/components/suic/MetaDiariaFinalDisplay.vue';
@@ -158,6 +159,10 @@ const props = defineProps({
 });
 
 const client = generateClient();
+const { updateSuicFlowState } = useSuicFlowState();
+const flowState = ref(createDefaultSuicFlowState());
+let lastPersistedStep2Status = flowState.value.step2.status;
+const isStep1Completed = computed(() => flowState.value.step1.status === 'completed');
 
 // Nombres de meses
 const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -192,6 +197,27 @@ const pipelineStatus = ref(null); // 'Queued', 'InProgress', 'Succeeded', 'Faile
 // Composable para MySQL
 const { getSuicSummary } = useSuicMySQL();
 
+const persistStep2Status = async (status, message) => {
+  const normalizedMessage = message ?? null;
+
+  if (
+    lastPersistedStep2Status === status &&
+    flowState.value.step2.message === normalizedMessage
+  ) {
+    return;
+  }
+
+  try {
+    const updatedState = await updateSuicFlowState(props.suicId, {
+      step2: { status, message: normalizedMessage }
+    });
+    flowState.value = updatedState;
+    lastPersistedStep2Status = updatedState.step2.status;
+  } catch (error) {
+    console.error('❌ Error actualizando estado del paso 2 en SUIC:', error);
+  }
+};
+
 // Cargar datos SUIC y determinar primer mes
 const loadSuicData = async () => {
   try {
@@ -201,6 +227,12 @@ const loadSuicData = async () => {
     // Cargar datos del SUIC
     const { data } = await client.models.SUIC.get({ id: props.suicId });
     suicData.value = data;
+
+    if (data) {
+      const normalizedFlowState = parseSuicFlowState(data.flowState);
+      flowState.value = normalizedFlowState;
+      lastPersistedStep2Status = normalizedFlowState.step2.status;
+    }
     
     console.log('📋 Datos SUIC cargados:', data);
     
@@ -271,6 +303,7 @@ const consultarEstadoPipelineExplosion = async (runId) => {
       case 'Succeeded':
         console.log('✅ Pipeline de explosión SUIC completado exitosamente');
         explosionInProgress.value = false;
+        await persistStep2Status('completed', 'Generación SUIC finalizada');
         
         // Actualizar SUIC con estado completado
         await actualizarSuicStatus('Completado');
@@ -306,6 +339,7 @@ const consultarEstadoPipelineExplosion = async (runId) => {
       case 'Canceling':
         console.log('❌ Pipeline de explosión SUIC falló o fue cancelado');
         explosionInProgress.value = false;
+        await persistStep2Status('error', `Pipeline finalizado con estado ${status}`);
         
         // Actualizar SUIC con estado de error
         await actualizarSuicStatus('Error');
@@ -320,10 +354,12 @@ const consultarEstadoPipelineExplosion = async (runId) => {
 
       case 'Queued':
         console.log('⏳ Pipeline de explosión SUIC en cola, preparándose para ejecutar...');
+        await persistStep2Status('processing', 'Pipeline en cola');
         break;
 
       case 'InProgress':
         console.log('⏳ Pipeline de explosión SUIC aún en progreso...');
+        await persistStep2Status('processing', 'Generación SUIC en progreso');
         break;
 
       default:
@@ -583,6 +619,10 @@ const checkInitialExplosionState = async () => {
     const { data } = await client.models.SUIC.get({ id: props.suicId });
     if (!data) return;
 
+    const normalizedFlowState = parseSuicFlowState(data.flowState);
+    flowState.value = normalizedFlowState;
+    lastPersistedStep2Status = normalizedFlowState.step2.status;
+
     const runIdExplosion = data.explosionRunId;
     const statusExplosion = data.explosionStatus;
 
@@ -594,12 +634,14 @@ const checkInitialExplosionState = async () => {
       
       if (statusExplosion === 'En Proceso') {
         pipelineStatusValue = 'InProgress'; // Asumir que está en progreso si no sabemos el estado exacto
+        await persistStep2Status('processing', 'Generación SUIC en progreso');
       } else if (statusExplosion === 'Completado') {
         pipelineStatusValue = 'Succeeded';
         explosionInProgress.value = false;
         pipelineStatus.value = 'Succeeded';
         runId.value = runIdExplosion;
         console.log('✅ Pipeline de explosión SUIC ya completado');
+        await persistStep2Status('completed', 'Generación SUIC finalizada');
         
         // Consultar datos de meta_diaria_final si ya está completado
         await consultarMetaDiariaFinal();
@@ -609,6 +651,7 @@ const checkInitialExplosionState = async () => {
         explosionInProgress.value = false;
         pipelineStatus.value = 'Failed';
         console.log('❌ Pipeline de explosión SUIC en estado de error, permitiendo reintento');
+        await persistStep2Status('error', 'El pipeline de generación falló');
         return; // No necesitamos polling para estado de error
       }
       
@@ -647,6 +690,7 @@ const ejecutarExplosion = async () => {
   try {
     explosionInProgress.value = true;
     explosionStatus.value = 'running';
+    await persistStep2Status('processing', 'Iniciando generación de SUIC');
 
     // Preparar argumentos
     const pipelineArgs = {
@@ -721,6 +765,7 @@ const ejecutarExplosion = async () => {
     console.error('Error ejecutando explosión:', error);
     explosionStatus.value = 'error';
     errorMessage.value = error.message;
+    await persistStep2Status('error', error instanceof Error ? error.message : 'Error ejecutando pipeline');
 
     useToast().add({
       title: 'Error en generación',

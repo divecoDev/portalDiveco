@@ -5,6 +5,7 @@
       <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
         <!-- Botón para descargar plantilla -->
         <button
+          v-if="!isSuicFinalized"
           @click="downloadTemplate"
           class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
         >
@@ -14,6 +15,7 @@
         
         <!-- Botón para abrir modal de carga -->
         <button
+          v-if="!isSuicFinalized"
           @click="showUploadModal = true"
           class="rounded-md inline-flex items-center px-6 py-3 text-base gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
         >
@@ -64,6 +66,7 @@
       :is-validating="isValidating"
       :validation-progress="validationProgress"
       :mysql-counts="mysqlCounts"
+      :disable-actions="isSuicFinalized"
       @clear-country="handleClearCountry"
       @clear-all="handleClearAll"
       @retry-country="handleRetryCountry"
@@ -118,10 +121,11 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { useSuicData } from '~/composables/useSuicData';
 import { useSuicMySQL } from '~/composables/useSuicMySQL';
 import { useSuicValidations } from '~/composables/useSuicValidations';
+import { createDefaultSuicFlowState, useSuicFlowState, type SuicFlowState, type SuicStepStatus } from '~/composables/useSuicFlowState';
 import { generateClient } from 'aws-amplify/data';
 
 const props = defineProps({
@@ -138,6 +142,7 @@ const emit = defineEmits(['next-step']);
 const { loadedCounts, loadData, clearCountry, clearAll, clearCountriesInMySQL, isLoading, error, loadDataFromStorageAsync } = useSuicData(props.suicId);
 const { saveSuicToMySQL, getSuicSummary } = useSuicMySQL();
 const { validateMultipleCountries, monthsMetadata, isValidating, validationProgress } = useSuicValidations();
+const { updateSuicFlowState, ensureSuicFlowState } = useSuicFlowState();
 
 const client = generateClient();
 
@@ -152,8 +157,14 @@ const previewModalRef = ref(null);
 const mysqlCounts = ref({});
 const isLoadingSummary = ref(false);
 
+const flowState = ref<SuicFlowState>(createDefaultSuicFlowState());
+let lastPersistedStep1Status: SuicStepStatus | null = flowState.value.step1.status;
+
+const isSuicFinalized = computed(() => flowState.value.step1.status === 'completed');
+
 // Computed para verificar si hay datos para guardar
 const hasDataToSave = computed(() => {
+  if (isSuicFinalized.value) return false;
   return Object.keys(loadedCounts.value).length > 0;
 });
 
@@ -178,6 +189,33 @@ const confirmText = ref('');
 const pendingAction = ref(null);
 const suicFilesPath = ref({});
 
+const persistStep1Status = async (status: SuicStepStatus, message?: string | null) => {
+  const normalizedMessage = message ?? null;
+
+  if (
+    lastPersistedStep1Status === status &&
+    flowState.value.step1.message === normalizedMessage
+  ) {
+    return;
+  }
+
+  try {
+    const updatedState = await updateSuicFlowState(props.suicId, {
+      step1: { status, message: normalizedMessage }
+    });
+    flowState.value = updatedState;
+    lastPersistedStep1Status = updatedState.step1.status;
+  } catch (err) {
+    console.error('❌ Error actualizando estado del paso 1 en SUIC:', err);
+  }
+};
+
+watch(isSuicFinalized, (locked) => {
+  if (locked) {
+    showUploadModal.value = false;
+  }
+});
+
 // Función para cargar resumen de MySQL
 const loadMySQLSummary = async () => {
   isLoadingSummary.value = true;
@@ -196,6 +234,10 @@ const loadMySQLSummary = async () => {
       });
       mysqlCounts.value = counts;
       console.log('✅ Resumen MySQL cargado:', counts);
+
+      if (Object.keys(counts).length > 0) {
+        await persistStep1Status('completed', 'Datos confirmados en MySQL');
+      }
       
       // Limpiar países que ya están en MySQL de IndexedDB
       const countsForCleanup = {};
@@ -230,6 +272,12 @@ const loadSuicFilesPath = async () => {
     }
     
     const { data: suic } = await models.SUIC.get({ id: props.suicId });
+    
+    if (suic) {
+      const ensuredFlowState = await ensureSuicFlowState(props.suicId, suic.flowState);
+      flowState.value = ensuredFlowState;
+      lastPersistedStep1Status = ensuredFlowState.step1.status;
+    }
     
     if (suic && suic.filesPath) {
       console.log('✅ filesPath cargado (raw):', suic.filesPath);
@@ -347,6 +395,8 @@ const handleConfirm = async () => {
 // Reintentar guardado de país específico
 const handleRetryCountry = async (paisCode) => {
   try {
+    await persistStep1Status('processing', `Reintentando guardado para ${paisCode}`);
+
     // Cargar datos del país específico desde IndexedDB
     const allData = await loadDataFromStorageAsync();
     const countryData = allData[paisCode];
@@ -408,6 +458,15 @@ const handleRetryCountry = async (paisCode) => {
         description: `${countryData.length} registros guardados exitosamente`,
         color: 'green'
       });
+
+      const stillHasErrors = Object.values(saveStates.value).some(
+        (state) => state.status === 'error'
+      );
+
+      if (!stillHasErrors) {
+        await persistStep1Status('completed', 'Datos guardados después del reintento');
+        emit('next-step');
+      }
     }
 
     // Refrescar resumen MySQL después de guardar exitosamente
@@ -420,6 +479,11 @@ const handleRetryCountry = async (paisCode) => {
       progress: 0
     };
 
+    await persistStep1Status(
+      'error',
+      error instanceof Error ? error.message : `Error reintentando guardado de ${paisCode}`
+    );
+
     useToast().add({
       title: `Error en ${paisCode}`,
       description: error.message,
@@ -430,36 +494,47 @@ const handleRetryCountry = async (paisCode) => {
 
 // Guardar datos en MySQL
 const handleSaveToMySQL = async () => {
-  // Hacer scroll hacia arriba para ver el inicio de la página
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  
+
+  if (isSuicFinalized.value) {
+    return;
+  }
+
   isSaving.value = true;
+  await persistStep1Status('processing', 'Guardando datos en MySQL');
+
+  let hasErrors = false;
+  let totalProcessed = 0;
 
   try {
-    // Cargar datos de IndexedDB
     const allData = await loadDataFromStorageAsync();
 
-    // Ordenar países según el orden especificado: GT, SV, HN, NI, CR, PA
     const countryOrder = ['GT', 'SV', 'HN', 'NI', 'CR', 'PA'];
     const sortedEntries = Object.entries(allData).sort((a, b) => {
       const indexA = countryOrder.indexOf(a[0]);
       const indexB = countryOrder.indexOf(b[0]);
-      // Países no en la lista al final
       if (indexA === -1) return 1;
       if (indexB === -1) return -1;
       return indexA - indexB;
     });
 
-    // Procesar cada país en el orden especificado
+    if (sortedEntries.length === 0) {
+      useToast().add({
+        title: 'Sin datos',
+        description: 'No hay información pendiente de guardar.',
+        color: 'yellow'
+      });
+      await persistStep1Status('pending', 'Sin datos en caché para guardar');
+      return;
+    }
+
     for (const [paisCode, data] of sortedEntries) {
-      // Inicializar estado
       saveStates.value[paisCode] = {
         status: 'saving',
         progress: 0
       };
 
       try {
-        // Guardar con callback de progreso
         const results = await saveSuicToMySQL(
           props.suicId,
           paisCode,
@@ -469,28 +544,33 @@ const handleSaveToMySQL = async () => {
           }
         );
 
-        // Verificar si hay errores en los resultados
-        const hasErrors = results.some(result => 
-          result.errors && result.errors.length > 0
+        const processedRecords = results.reduce(
+          (sum, result) => sum + (result.processedRecords ?? 0),
+          0
+        );
+        totalProcessed += processedRecords;
+
+        const countryHasErrors = results.some(
+          (result) => result.errors && result.errors.length > 0
         );
 
-        if (hasErrors) {
-          // Marcar como error si hay errores en cualquier lote
+        if (countryHasErrors) {
+          hasErrors = true;
           saveStates.value[paisCode] = {
             status: 'error',
             progress: 1,
-            errorCount: results.reduce((total, result) => 
-              total + (result.errors?.length || 0), 0
+            errorCount: results.reduce(
+              (total, result) => total + (result.errors?.length || 0),
+              0
             )
           };
 
           useToast().add({
             title: `Error en ${paisCode}`,
-            description: `Se procesaron ${results.reduce((sum, r) => sum + r.processedRecords, 0)} registros pero con errores`,
+            description: `Se procesaron ${processedRecords} registros pero con errores.`,
             color: 'red'
           });
         } else {
-          // Marcar como guardado exitoso
           saveStates.value[paisCode] = {
             status: 'saved',
             progress: 1
@@ -502,8 +582,8 @@ const handleSaveToMySQL = async () => {
             color: 'green'
           });
         }
-
       } catch (error) {
+        hasErrors = true;
         console.error(`Error guardando ${paisCode}:`, error);
         saveStates.value[paisCode] = {
           status: 'error',
@@ -512,23 +592,36 @@ const handleSaveToMySQL = async () => {
 
         useToast().add({
           title: `Error en ${paisCode}`,
-          description: error.message,
+          description: error instanceof Error ? error.message : 'Error desconocido',
           color: 'red'
         });
       }
     }
 
-    // Refrescar resumen MySQL después de guardar
     await loadMySQLSummary();
 
-    useToast().add({
-      title: 'Proceso completado',
-      description: 'Todos los datos han sido procesados',
-      color: 'blue'
-    });
-
+    if (hasErrors) {
+      await persistStep1Status('error', 'No se pudieron guardar todos los países');
+      useToast().add({
+        title: 'Guardado con incidencias',
+        description: 'Revisa los países marcados con error para reintentar.',
+        color: 'red'
+      });
+    } else {
+      await persistStep1Status('completed', `Datos guardados (${totalProcessed.toLocaleString()} registros)`);
+      useToast().add({
+        title: 'Proceso completado',
+        description: 'Todos los datos han sido procesados correctamente.',
+        color: 'blue'
+      });
+      emit('next-step');
+    }
   } catch (error) {
     console.error('Error general:', error);
+    await persistStep1Status(
+      'error',
+      error instanceof Error ? error.message : 'Error guardando datos en MySQL'
+    );
     useToast().add({
       title: 'Error',
       description: 'Error guardando datos en MySQL',
