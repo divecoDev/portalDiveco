@@ -147,8 +147,9 @@ export const useSubscriptionManager = () => {
   });
 
   onUnmounted(() => {
-    if (hubListener) {
-      Hub.remove('auth', hubListener);
+    if (hubListener && typeof hubListener === 'function') {
+      // En Amplify v6, Hub.listen retorna una función de cleanup
+      hubListener();
       hubListener = null;
     }
   });
