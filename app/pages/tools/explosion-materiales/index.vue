@@ -44,6 +44,16 @@
             </UButton>
           </NuxtLink>
 
+          <!-- Botón para unificar BOOMs - Solo para ADMIN y EXPLOSION -->
+          <NuxtLink v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')" to="/tools/explosion-materiales/unificaciones-boom">
+            <UButton
+              icon="i-heroicons-squares-plus"
+              class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
+            >
+              Unificar BOOMs
+            </UButton>
+          </NuxtLink>
+
           <!-- Botón para crear nueva explosión - Para ADMIN y EXPLOSION -->
           <NuxtLink v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')" to="/tools/explosion-materiales/new">
             <button

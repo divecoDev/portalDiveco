@@ -191,6 +191,21 @@ const mainTools = computed(() => {
     });
   }
 
+  // Mostrar herramienta de Viáticos si es ADMIN o VIATICOS
+  if (hasGroup("ADMIN") || hasGroup("VIATICOS")) {
+    tools.push({
+      id: 4,
+      name: "Gestión de Viáticos",
+      category: "Finanzas",
+      description: "Dashboard y gestión de liquidación de gastos y viáticos",
+      icon: "i-heroicons-banknotes",
+      iconColor: "text-cyan-600",
+      route: "/tools/viaticos",
+      lastUpdate: "Hoy",
+      status: "active",
+    });
+  }
+
   return tools;
 });
 
@@ -204,6 +219,7 @@ const getModuleIcon = (toolName) => {
     "Gestión de Contraseñas SAP": "i-heroicons-key",
     "Explosión de Materiales": "i-heroicons-squares-2x2",
     "SUIC": "i-heroicons-chart-bar",
+    "Gestión de Viáticos": "i-heroicons-banknotes",
     "Gestión de Inventario": "i-heroicons-cube",
     "Reportes Financieros": "i-heroicons-chart-pie",
     "Control de Calidad": "i-heroicons-shield-check",
