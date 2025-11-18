@@ -3,7 +3,7 @@ import { ref, computed, watch, readonly } from "vue";
 // Estado global del layout
 const sidebarOpen = ref(false);
 const sidebarCollapsed = ref(false);
-const sidebarCompact = ref(false);
+const sidebarCompact = ref(true);
 const isDark = ref(false);
 const searchQuery = ref("");
 const mobileMenuOpen = ref(false);
@@ -266,7 +266,7 @@ export const useLayoutState = () => {
         try {
           const parsed = JSON.parse(preferences);
           sidebarCollapsed.value = parsed.sidebarCollapsed || false;
-          sidebarCompact.value = parsed.sidebarCompact || false;
+          sidebarCompact.value = parsed.sidebarCompact !== undefined ? parsed.sidebarCompact : true;
         } catch (error) {
           console.warn("Error parsing user preferences:", error);
         }
