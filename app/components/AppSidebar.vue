@@ -550,6 +550,14 @@ const toolConfig = {
       badgeColor: "green",
       requiredGroups: ["ADMINISTRAR-SUIC", "ADMIN"],
     },
+    {
+      name: "Viáticos",
+      href: "/tools/viaticos",
+      icon: "i-heroicons-banknotes",
+      badge: "Nuevo",
+      badgeColor: "cyan",
+      requiredGroups: ["ADMIN", "VIATICOS"],
+    },
   ],
   administrative: [
     {

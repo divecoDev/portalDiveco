@@ -1,58 +1,85 @@
 <template>
   <div class="0">
-    <!-- Header de la página integrado -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1
-            class="text-4xl font-bold text-gray-900 dark:text-white flex items-center"
-          >
-            <div
-              class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl flex items-center justify-center mr-4 shadow-lg shadow-cyan-500/25"
-            >
-              <UIcon
-                name="i-heroicons-squares-2x2"
-                class="w-7 h-7 text-white"
-              />
+    <!-- Header de la página mejorado -->
+    <div class="bg-gradient-to-br from-cyan-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 border-b border-cyan-100 dark:border-cyan-900/30">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <!-- Título y descripción -->
+        <div class="mb-6">
+          <div class="flex items-center mb-3">
+            <div class="w-14 h-14 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/30 ring-4 ring-cyan-100 dark:ring-cyan-900/30">
+              <UIcon name="i-heroicons-squares-2x2" class="w-8 h-8 text-white" />
             </div>
-            Explosión de Materiales
-          </h1>
-          <p class="mt-3 text-lg text-gray-600 dark:text-gray-300 ml-16">
-            Gestión de explosión de materiales
-          </p>
+            <div class="ml-4">
+              <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">
+                Explosión de Materiales
+              </h1>
+              <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
+                Sistema integral de gestión y control de materiales
+              </p>
+            </div>
+          </div>
         </div>
 
-        <!-- Botones de acción -->
-        <div class="flex items-center space-x-3">
-          <!-- Botón para materiales por centro - Solo para ADMIN y EXPLOSION -->
-          <NuxtLink v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')" to="/tools/explosion-materiales/materiales-por-centro">
-            <UButton
-              icon="i-heroicons-building-office-2"
-              class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
-            >
-              Materiales por Centro
-            </UButton>
+        <!-- Grid de botones de acción mejorado -->
+        <div v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <!-- Botón Materiales por Centro -->
+          <NuxtLink to="/tools/explosion-materiales/materiales-por-centro" class="group">
+            <div class="relative bg-white dark:bg-gray-800 rounded-xl p-4 border-2 border-green-200 dark:border-green-800/50 hover:border-green-400 dark:hover:border-green-600 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/20 hover:-translate-y-1">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                    <UIcon name="i-heroicons-building-office-2" class="w-6 h-6 text-green-600 dark:text-green-400" />
+                  </div>
+                  <h3 class="font-semibold text-gray-900 dark:text-white leading-tight">Materiales por Centro</h3>
+                </div>
+                <UIcon name="i-heroicons-arrow-right" class="w-5 h-5 text-green-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300" />
+              </div>
+            </div>
           </NuxtLink>
 
-          <!-- Botón para porcentajes de asignación - Solo para ADMIN y EXPLOSION -->
-          <NuxtLink v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')" to="/tools/explosion-materiales/porcentajes-asignacion">
-            <UButton
-              icon="i-heroicons-percent-badge"
-              class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
-            >
-              Aprovisionamiento
-            </UButton>
+          <!-- Botón Aprovisionamiento -->
+          <NuxtLink to="/tools/explosion-materiales/porcentajes-asignacion" class="group">
+            <div class="relative bg-white dark:bg-gray-800 rounded-xl p-4 border-2 border-blue-200 dark:border-blue-800/50 hover:border-blue-400 dark:hover:border-blue-600 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/20 hover:-translate-y-1">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                    <UIcon name="i-heroicons-percent-badge" class="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h3 class="font-semibold text-gray-900 dark:text-white leading-tight">Aprovisionamiento</h3>
+                </div>
+                <UIcon name="i-heroicons-arrow-right" class="w-5 h-5 text-blue-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300" />
+              </div>
+            </div>
           </NuxtLink>
 
-          <!-- Botón para crear nueva explosión - Para ADMIN y EXPLOSION -->
-          <NuxtLink v-if="hasGroup('ADMIN') || hasGroup('EXPLOSION')" to="/tools/explosion-materiales/new">
-            <button
-              type="button"
-              class="rounded-md inline-flex items-center px-4 py-3 text-sm gap-2 shadow-lg bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold tracking-wide transition-all duration-300 transform hover:scale-105 hover:shadow-xl border-0 cursor-pointer"
-            >
-              <UIcon name="i-heroicons-plus" class="w-5 h-5" />
-              Nueva Explosión
-            </button>
+          <!-- Botón Unificar BOOMs -->
+          <NuxtLink to="/tools/explosion-materiales/unificaciones-boom" class="group">
+            <div class="relative bg-white dark:bg-gray-800 rounded-xl p-4 border-2 border-emerald-200 dark:border-emerald-800/50 hover:border-emerald-400 dark:hover:border-emerald-600 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/20 hover:-translate-y-1">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                    <UIcon name="i-heroicons-squares-plus" class="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <h3 class="font-semibold text-gray-900 dark:text-white leading-tight">Unificar BOOMs</h3>
+                </div>
+                <UIcon name="i-heroicons-arrow-right" class="w-5 h-5 text-emerald-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300" />
+              </div>
+            </div>
+          </NuxtLink>
+
+          <!-- Botón Nueva Explosión -->
+          <NuxtLink to="/tools/explosion-materiales/new" class="group">
+            <div class="relative bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl p-4 border-2 border-cyan-400 hover:border-cyan-300 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/40 hover:-translate-y-1">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="p-2 bg-white/20 rounded-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                    <UIcon name="i-heroicons-plus-circle" class="w-6 h-6 text-white" />
+                  </div>
+                  <h3 class="font-semibold text-white leading-tight">Nueva Explosión</h3>
+                </div>
+                <UIcon name="i-heroicons-arrow-right" class="w-5 h-5 text-white/80 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300" />
+              </div>
+            </div>
           </NuxtLink>
         </div>
       </div>

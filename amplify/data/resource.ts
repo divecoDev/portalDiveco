@@ -140,6 +140,34 @@ const schema = a.schema({
     .authorization((allow) => [allow.publicApiKey()]),
 
   /**
+   * Modelo para unificaciones de BOOMs
+   * Agrupa múltiples explosiones para consolidación
+   */
+  BoomUnificacion: a
+    .model({
+      descripcion: a.string().required(),
+      username: a.string().required(),
+      status: a.string().required(), // CREADA, PROCESANDO, COMPLETADA, ERROR
+      
+      // Array de BOOMs incluidos (snapshot del momento de creación)
+      boomsIncluidos: a.json().required(), 
+      // Estructura: [{ id, version, descripcion, status, createdAt }]
+      
+      // Metadatos adicionales
+      aditionalData: a.json(),
+      
+      // Campos de soft delete
+      deletedAt: a.string(),
+      deletedBy: a.string(),
+      deletionReason: a.string(),
+    })
+    .secondaryIndexes((index) => [
+      index("username"),        // Filtrar por usuario
+      index("status"),          // Filtrar por estado
+    ])
+    .authorization((allow) => [allow.publicApiKey()]),
+
+  /**
    * Módulo de Auditoría - Modelo AuditLog
    * Registra todas las acciones de usuarios con bitácora detallada
    */
