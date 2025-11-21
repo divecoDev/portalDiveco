@@ -4,7 +4,7 @@ import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 // Obtener región de AWS (disponible automáticamente en Lambda)
 const AWS_REGION = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "us-east-1";
 const sesClient = new SESClient({ region: AWS_REGION });
-const FROM_EMAIL = "portal_diveco@camasolympia.com";
+const FROM_EMAIL = "no_reply@grupodiveco.com";
 
 interface EmailPayload {
   to: string;
